@@ -17,7 +17,7 @@ public class FirstController {
         response.put("status", "UP");
         response.put("timestamp", LocalDateTime.now());
         response.put("service", "Drones API");
-        response.put("version", "2.2.0");
+        response.put("version", "2.3.0");
         
         System.out.println("Health check requested at: " + LocalDateTime.now());
         
