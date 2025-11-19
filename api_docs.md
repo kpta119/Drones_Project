@@ -566,12 +566,17 @@ Base URL: `/api/photos`.
 
     ```json
     {
-      "id": 2611,
-      "operator_id": 123,
       "title": "Moje prace",
-      "photos_urls": [
-          "https://api.drony.pl/uploads/img1.jpg",
-          "https://api.drony.pl/uploads/nowe_zdjecie.jpg" // Nowe
+      "description": "opis",
+      "photos": [
+        {
+          "id": 1,
+          "name": "Zdjęcie skanu",
+        },
+        {
+          "id": 2,
+          "name": "Zdjęcie skanu v2",
+        }
       ]
     }
     ```
@@ -584,11 +589,13 @@ Base URL: `/api/photos`.
 
     ```json
     {
-      "id": 2611,
-      "operator_id": 123,
       "title": "Moje prace",
-      "photos_urls": [
-          "[https://api.drony.pl/uploads/img1.jpg](https://api.drony.pl/uploads/img1.jpg)"
+      "description": "opis",
+      "photos": [
+        {
+          "id": 1,
+          "name": "Zdjęcie skanu",
+        },
       ]
     }
     ```
