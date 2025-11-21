@@ -255,7 +255,16 @@ Base URL: `/api/operators`.
           "id": 1,
           "title": "Wesele w Krakowie",
           "description": "Ujęcia z drona...",
-          "photos_id": [12, 13, 14]
+          "photos": [
+            {
+              "id": 1,
+              "name": "Zdjęcie skanu",
+            },
+            {
+              "id": 2,
+              "name": "Zdjęcie skanu v2",
+            }
+           ]
         }
       ]
     }
@@ -330,7 +339,7 @@ Base URL: `/api/operators`.
     {
       "title": "Inspekcja mostu",
       "description": "Szczegółowe zdjęcia pęknięć...",
-      "photos_id": []
+      "photos": []
     }
     ```
 
@@ -354,7 +363,7 @@ Base URL: `/api/operators`.
       "operator_id": 123,
       "title": "Inspekcja mostu (Aktualizacja)", // zmieniona wartość
       "description": "Szczegółowe zdjęcia pęknięć...",
-      "photos_urls": []
+      "photos": []
     }
     ```
 
@@ -566,8 +575,6 @@ Base URL: `/api/photos`.
 
     ```json
     {
-      "title": "Moje prace",
-      "description": "opis",
       "photos": [
         {
           "id": 1,
@@ -589,8 +596,6 @@ Base URL: `/api/photos`.
 
     ```json
     {
-      "title": "Moje prace",
-      "description": "opis",
       "photos": [
         {
           "id": 1,
