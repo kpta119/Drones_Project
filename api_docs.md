@@ -48,10 +48,8 @@ Endpointy publiczne `/api/auth`.
       "password": "superhaslo123",
       "name": "Jan",
       "surname": "Kowalski",
-      "contact": {
-        "email": "jan@example.com",
-        "phone": "+48 123 456 789"
-      }
+      "email": "jan@example.com",
+      "phone_number": "+48 123 456 789"
     }
     ```
 
@@ -82,10 +80,8 @@ Base URL: `/api/user`.
   "username": "jan_kowalski",,
   "name": "Jan",
   "surname": "Kowalski",
-  "contact": {
-    "email": "jan@example.com",
-    "phone": "+48 123 456 789"
-     }
+  "email": "jan@example.com",
+  "phone_number": "+48 123 456 789"
 
 }
 ```
@@ -100,7 +96,7 @@ Base URL: `/api/user`.
     np.
     {
       "name": "Janusz",
-      "contact": { "phone": "+48 000 000 000" }
+      "phone_number": "+48 000 000 000"
     }
     ```
 
@@ -112,7 +108,8 @@ Base URL: `/api/user`.
       "role": "client",
       "name": "Janusz", // Zmienione
       "surname": "Kowalski",
-      "contact": { "email": "jan@example.com", "phone": "+48 000 000 000" }, // Zmienione
+      "email": "jan@example.com",
+      "phone_number": "+48 000 000 000", // Zmienione
       "created_at": "2025-05-20T12:00:00"
     }
     ```
@@ -249,7 +246,8 @@ Base URL: `/api/operators`.
       "username": "droniarz_pl",
       "certificates": ["UAVO VLOS"],
       "operator_services": ["Fotografia", "Wideo"],
-      "contact": { "email": "jan@example.com", "phone": "123456789" },
+      "email": "jan@example.com",
+      "phone_number": "123456789",
       "portfolio": [
         {
           "id": 1,
@@ -496,7 +494,8 @@ Base URL: `/api/admins`.
         "role": "client",
         "name": "Jan",
         "surname": "Kowalski",
-        "contact": { "email": "jan@example.com", "phone": "+48..." }
+        "email": "jan@example.com",
+        "phone_number": "+48..."
       }
     ]
     ```
