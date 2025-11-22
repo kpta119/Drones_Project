@@ -13,24 +13,24 @@ DROP TYPE IF EXISTS order_status CASCADE;
 DROP TYPE IF EXISTS user_role CASCADE;
 
 CREATE TYPE user_role AS ENUM (
-    'client',
-    'operator',
-    'admin',
-    'blocked'
+    'CLIENT',
+    'OPERATOR',
+    'ADMIN',
+    'BLOCKED'
     );
 
 CREATE TYPE order_status AS ENUM (
-    'open',
-    'awaiting_operator',
-    'in_progress',
-    'completed',
-    'cancelled'
+    'OPEN',
+    'AWAITING_OPERATOR',
+    'IN_PROGRESS',
+    'COMPLETED',
+    'CANCELLED'
     );
 
 CREATE TYPE matched_order_status AS ENUM (
-    'pending',
-    'accepted',
-    'rejected'
+    'PENDING',
+    'ACCEPTED',
+    'REJECTED'
     );
 
 
@@ -38,12 +38,13 @@ CREATE TYPE matched_order_status AS ENUM (
 CREATE TABLE users
 (
     id                  UUID PRIMARY KEY             DEFAULT gen_random_uuid(),
-    role                user_role           NOT NULL DEFAULT 'client',
-    username            VARCHAR(255) UNIQUE NOT NULL,
+    role                user_role           NOT NULL DEFAULT 'CLIENT',
+    username            VARCHAR(255)        NOT NULL,
     name                VARCHAR(255)        NOT NULL,
     surname             VARCHAR(255)        NOT NULL,
     password            VARCHAR(255)        NOT NULL,
-    contact             JSONB               NOT NULL,
+    email               VARCHAR(255) UNIQUE NOT NULL,
+    phone_number        VARCHAR(20),
     created_at          TIMESTAMP                    DEFAULT NOW(),
     google_user_id      VARCHAR(255),
     google_access_token VARCHAR(255)
@@ -99,7 +100,7 @@ CREATE TABLE orders
     from_date   TIMESTAMP,
     to_date     TIMESTAMP,
     created_at  TIMESTAMP    DEFAULT NOW(),
-    status      order_status DEFAULT 'open'
+    status      order_status DEFAULT 'OPEN'
 );
 
 CREATE TABLE new_matched_orders
@@ -107,8 +108,8 @@ CREATE TABLE new_matched_orders
     id              SERIAL PRIMARY KEY,
     operator_id     UUID NOT NULL REFERENCES drone_operator (user_id) ON DELETE CASCADE,
     order_id        UUID NOT NULL REFERENCES orders (id) ON DELETE CASCADE,
-    operator_status matched_order_status DEFAULT 'pending',
-    client_status   matched_order_status DEFAULT 'pending',
+    operator_status matched_order_status DEFAULT 'PENDING',
+    client_status   matched_order_status DEFAULT 'PENDING',
     UNIQUE (operator_id, order_id) -- One operator can match to one order only once
 );
 

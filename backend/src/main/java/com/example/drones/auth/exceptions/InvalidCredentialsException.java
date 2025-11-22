@@ -1,4 +1,4 @@
-package com.example.drones.common.exceptions;
+package com.example.drones.auth.exceptions;
 
 public class InvalidCredentialsException extends RuntimeException {
     public InvalidCredentialsException() {
