@@ -1,6 +1,7 @@
 DROP TABLE IF EXISTS reviews CASCADE;
 DROP TABLE IF EXISTS new_matched_orders CASCADE;
 DROP TABLE IF EXISTS operator_service CASCADE;
+DROP TABLE IF EXISTS photos CASCADE;
 DROP TABLE IF EXISTS portfolio CASCADE;
 DROP TABLE IF EXISTS drone_operator CASCADE;
 DROP TABLE IF EXISTS orders CASCADE;
@@ -67,18 +68,15 @@ CREATE TABLE portfolio
     id          UUID PRIMARY KEY,
     operator_id UUID NOT NULL REFERENCES drone_operator (user_id) ON DELETE CASCADE,
     description TEXT,
-    title       VARCHAR(255),
-    photos      JSONB
-    /** np. "photos": [{
-                "id": 1,
-                "name": "photo scan",
-                "photo_url": "https://example.com/photo1.jpg"
-                    },
-                {
-                    "id": 2,
-                    "name": "photo scan v2",
-                    "photo_url": "https://example.com/photo2.jpg"
-                }]**/
+    title       VARCHAR(255)
+);
+
+CREATE TABLE photos
+(
+    id          SERIAL PRIMARY KEY,
+    portfolio_id UUID NOT NULL REFERENCES portfolio (id) ON DELETE CASCADE,
+    name        VARCHAR(255) NOT NULL,
+    photo_url   VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE operator_service
