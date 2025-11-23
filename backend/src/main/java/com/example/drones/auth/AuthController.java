@@ -1,5 +1,7 @@
 package com.example.drones.auth;
 
+import com.example.drones.auth.dto.LoginRequest;
+import com.example.drones.auth.dto.LoginResponse;
 import com.example.drones.auth.dto.RegisterRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,5 +20,21 @@ public class AuthController {
     public ResponseEntity<Void> register(@RequestBody @Valid RegisterRequest request) {
         authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
+        return ResponseEntity.ok(authService.login(request));
+    }
+
+}
+
+@RestController
+@RequestMapping("/api/lol")
+class LolController {
+
+    @GetMapping("/hello")
+    public String hello() {
+        return "Hello, World!";
     }
 }
