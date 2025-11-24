@@ -13,6 +13,9 @@ on:
         - '.github/workflows/frontend.yml'
 
 jobs:
+defaults:
+  run:
+    working-directory: ./frontend/web
   build-and-test:
     runs-on: ubuntu-latest
 
