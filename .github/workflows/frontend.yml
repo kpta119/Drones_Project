@@ -12,10 +12,11 @@ on:
         - 'frontend/**'
         - '.github/workflows/frontend.yml'
 
-jobs:
 defaults:
   run:
     working-directory: ./frontend/web
+
+jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
