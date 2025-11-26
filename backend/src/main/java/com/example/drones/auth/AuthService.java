@@ -8,6 +8,7 @@ import com.example.drones.auth.exceptions.InvalidCredentialsException;
 import com.example.drones.auth.exceptions.UserAlreadyExistsException;
 import com.example.drones.config.JwtService;
 import com.example.drones.user.UserEntity;
+import com.example.drones.user.UserMapper;
 import com.example.drones.user.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final UserMapper userMapper;
 
     @Transactional
     public void register(RegisterRequest request) {
@@ -32,13 +34,7 @@ public class AuthService {
             throw new UserAlreadyExistsException(email);
         }
         String hashedPassword = passwordEncoder.encode(request.password());
-        UserEntity user = new UserEntity();
-        user.setEmail(request.email());
-        user.setPassword(hashedPassword);
-        user.setDisplayName(request.displayName());
-        user.setName(request.name());
-        user.setSurname(request.surname());
-        user.setPhoneNumber(request.phoneNumber());
+        UserEntity user = userMapper.toEntity(request, hashedPassword);
         userRepository.save(user);
     }
 
