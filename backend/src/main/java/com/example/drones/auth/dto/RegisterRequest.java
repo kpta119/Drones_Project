@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 
 public record RegisterRequest(
-        @NotNull String username,
+        @NotNull @JsonProperty("username") String displayName,
         @NotNull String password,
         @NotNull String name,
         @NotNull String surname,

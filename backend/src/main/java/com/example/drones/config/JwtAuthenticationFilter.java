@@ -51,6 +51,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+
+                    String refreshedToken = jwtService.refreshTokenIfNeeded(jwt);
+                    if (!refreshedToken.equals(jwt)) {
+                        response.setHeader("X-Refresh-Token", refreshedToken);
+                    }
                 }
             }
 

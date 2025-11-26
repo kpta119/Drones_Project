@@ -7,13 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -21,7 +16,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserEntity implements UserDetails {
+public class UserEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -32,8 +27,8 @@ public class UserEntity implements UserDetails {
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private UserRole role = UserRole.CLIENT;
 
-    @Column(nullable = false)
-    private String username;
+    @Column(name = "username", nullable = false)
+    private String displayName;
 
     @Column(nullable = false)
     private String name;
@@ -48,7 +43,7 @@ public class UserEntity implements UserDetails {
     @Email
     private String email;
 
-    @Column(columnDefinition = "phone_number",nullable = false)
+    @Column(name = "phone_number",nullable = false)
     private String phoneNumber;
 
     @Column(name = "created_at")
@@ -59,14 +54,4 @@ public class UserEntity implements UserDetails {
 
     @Column(name = "google_access_token")
     private String googleAccessToken;
-
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
-    }
-
-    @Override
-    public String getUsername() {
-        return email;
-    }
 }

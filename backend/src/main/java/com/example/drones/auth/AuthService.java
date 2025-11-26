@@ -1,5 +1,6 @@
 package com.example.drones.auth;
 
+
 import com.example.drones.auth.dto.LoginRequest;
 import com.example.drones.auth.dto.LoginResponse;
 import com.example.drones.auth.dto.RegisterRequest;
@@ -9,7 +10,6 @@ import com.example.drones.config.JwtService;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
 import jakarta.transaction.Transactional;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -35,14 +35,14 @@ public class AuthService {
         UserEntity user = new UserEntity();
         user.setEmail(request.email());
         user.setPassword(hashedPassword);
-        user.setUsername(request.username());
+        user.setDisplayName(request.displayName());
         user.setName(request.name());
         user.setSurname(request.surname());
         user.setPhoneNumber(request.phoneNumber());
         userRepository.save(user);
     }
 
-    public LoginResponse login(@Valid LoginRequest request) {
+    public LoginResponse login(LoginRequest request) {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.email(), request.password())
