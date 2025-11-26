@@ -118,72 +118,158 @@ Base URL: `/api/user`.
 
 ## 3. Zlecenia (Orders)
 
-Base URL: `/api/orders`.
+**Base URL:** `/api/orders`
+**Autoryzacja:** Wymagany token JWT w nagłówku HTTP (`Authorization: Bearer <token>`).
 
 ### Utwórz zamówienie
 
-**POST** `/orders/createOrder`
+**POST** `/createOrder`
 
-* **Request:**
+* **Request Body:**
 
     ```json
     {
-      "title": "Inspekcja dachu",
-      "description": "Opis zlecenia...",
-      "serviceId": 1,
-      "parameters": { "typ_dachu": "spadzisty" },
+      "title": "Inspekcja dachu kamienicy",
+      "description": "Potrzebuję nagrania inspekcyjnego dachu.",
+      "service_id": 1,
+      "parameters": {
+        "cecha": "wartość_cechy"
+      },
       "coordinates": "52.2300,21.0100",
       "from_date": "2025-06-10T10:00:00",
       "to_date": "2025-06-10T12:00:00"
     }
     ```
 
-* **Response (201 Created) - Nowe Zamówienie:**
+* **Response (201 Created):**
+  Zwraca nowo utworzony obiekt zlecenia.
 
     ```json
     {
-      "id": 55,
-      "title": "Inspekcja dachu",
-      "description": "Opis zlecenia...",
-      "service_id": 1,
-      "parameters": { "typ_dachu": "spadzisty" },
+      "id": 123,
+      "title": "Inspekcja dachu kamienicy",
+      "description": "Potrzebuję nagrania inspekcyjnego dachu.",
+      "services": ["malowanie scian", "pisanie"],
+      "parameters": { "cecha": "wartość_cechy" },
       "coordinates": "52.2300,21.0100",
       "from_date": "2025-06-10T10:00:00",
       "to_date": "2025-06-10T12:00:00",
       "status": "open",
-      "created_at": "2025-05-21T09:00:00"
+      "created_at": "2025-05-21T10:00:00"
     }
     ```
+
+---
 
 ### Edytuj zamówienie
 
-**PATCH** `/orders/editOrder/:orderId`
+**PATCH** `/editOrder/:orderId`
 
-* **Request:** `{ "description": "Nowy opis..." }`
-* **Response (202 Accepted):** Pełny obiekt zamówienia z nowym opisem.
-
-### Akceptuj ofertę
-
-**PATCH** `/orders/acceptOrder/:orderId`
-
-* **Parametry:** `?operatorId=...` (należy podać jeśli akceptuje klient, gdy akceptuje operator nie podawać).
-* **Response (201 Created):**
+* **Request Body:**
 
     ```json
     {
-      "id": 55,
-      "title": "Inspekcja dachu",
-      "status": "in_progress", // Status zmieniony
-      // ...reszta pól zamówienia
+      "description": "Zaktualizowany opis zlecenia..."
     }
     ```
 
-### Odrzuć / Anuluj ofertę
+* **Response (200 OK):**
+  Zwraca zaktualizowany obiekt zlecenia.
 
-**PATCH** `/orders/rejectOrder/:orderId`
-**PATCH** `/orders/cancelOrder/:orderId`
+    ```json
+    {
+      "id": 123,
+      "title": "Inspekcja dachu kamienicy",
+      "description": "Zaktualizowany opis zlecenia...", // zmiana
+      "services": ["malowanie scian", "pisanie"],
+      "status": "open",
+      "updated_at": "2025-05-21T10:05:00"
+      // ...pozostałe pola bez zmian
+    }
+    ```
 
-* **Response:** Pełny obiekt zamówienia ze statusem `cancelled`
+---
+
+### Akceptuj ofertę
+
+**PATCH** `/acceptOrder/:orderId`
+
+* **Query Parameters:**
+  * `?operatorId=...` – **Wymagane** tylko, gdy ofertę akceptuje **Klient**.
+  * *(Brak parametru)* – Gdy zlecenie akceptuje **Operator**, podajemy tylko `orderId` w ścieżce.
+
+* **Response (201 Created):**
+  Zwraca obiekt zlecenia ze zmienionym statusem (np. na `in_progress` lub `awaiting_operator`).
+
+    ```json
+    {
+      "id": 123,
+      "title": "Inspekcja dachu kamienicy",
+      "status": "in_progress", // "in_progress" jeśli zaakceptował klient, "awaiting_operator" jeśli zaakceptował operator
+      "operator_id": 55,
+      "updated_at": "2025-05-21T11:00:00"
+      // ...pozostałe pola
+    }
+    ```
+
+---
+
+### Odrzuć ofertę
+
+**PATCH** `/rejectOrder/:orderId`
+
+* **Query Parameters:**
+  * `?operatorId=...` – (Opcjonalnie).
+
+* **Response (200 ok):**
+Odrzucenie operatora przez zleceniodawce i na odwrót nie wpływa na staus zlecenia więc nic nie zwracamy
+
+---
+
+### Anuluj zamówienie
+
+**PATCH** `/cancelOrder/:orderId`
+
+* **Response (200 OK):**
+  Zwraca anulowany obiekt zlecenia.
+
+    ```json
+    {
+      "id": 123,
+      "title": "Inspekcja dachu kamienicy",
+      "status": "cancelled",
+      "updated_at": "2025-05-21T12:00:00"
+      // ...pozostałe pola
+    }
+    ```
+
+---
+
+### Pobierz listę zamówień
+
+**GET** `/getOrders/:status`
+
+* **Dostępne statusy:** `open`, `awaiting_operator`, `in_progress`, `completed`, `cancelled`.
+
+* **Response (200 OK):**
+
+    ```json
+    [
+      {
+        "orderId": 123,
+        "title": "Inspekcja dachu kamienicy",
+        "description": "Potrzebuję nagrania inspekcyjnego dachu.",
+        "service_name": "nazwa_usługi",
+        "parameters": {
+          "cecha": "wartość_cechy"
+        },
+        "coordinates": "52.2300,21.0100",
+        "from_date": "2025-06-10T10:00:00",
+        "to_date": "2025-06-10T12:00:00",
+        "status": "open"
+      }
+    ]
+    ```
 
 ---
 
