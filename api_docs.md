@@ -278,6 +278,7 @@ Base URL: `/api/operators`.
     {
       "coordinates": "52.230000, 21.010000",
       "radius": 300, // Zasięg w km
+      "certificates": ["Certyfikat UB321, XY321"]
       "services": [1, 2] // Lista ID usług
     }
     ```
@@ -288,7 +289,7 @@ Base URL: `/api/operators`.
     {
       "coordinates": "52.230000, 21.010000",
       "radius": 300,
-      "certificates": [], // Domyślnie pusta lista
+      "certificates": ["Certyfikat UB321, XY321"],
       "services": [1, 2]
     }
     ```
