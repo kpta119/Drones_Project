@@ -2,8 +2,9 @@
 
 ## Informacje Ogólne
 
+* **Zabezpieczenie dostępu** Wymagany token autoryzacji googla w nagłówku HTTP (`Authorization: Bearer <token>`). Tworzony przez bibliteoke Google Auth. Zabezpiecza to dostęp do backendu przed zewnętrznym ruchem sieciowym.
 * **Base URL:** `/api`
-* **Uwierzytelnianie:** Wymagany token JWT w nagłówku HTTP (`Authorization: Bearer <token>`) dla prawie wszystkich endpointów poza sekcją Auth.
+* **Uwierzytelnianie:** Wymagany token JWT w nagłówku HTTP (`X-USER-TOKEN <token>`) dla prawie wszystkich endpointów poza sekcją Auth.
 * **Format danych:** JSON.
 
 ---
