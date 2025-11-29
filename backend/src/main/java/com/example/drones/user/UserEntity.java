@@ -6,10 +6,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -48,12 +50,24 @@ public class UserEntity {
     @Column(name = "phone_number", nullable = false)
     private String phoneNumber;
 
+    @CreationTimestamp
     @Column(name = "created_at")
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
 
     @Column(name = "google_user_id")
     private String googleUserId;
 
     @Column(name = "google_access_token")
     private String googleAccessToken;
+
+    @Column(name = "coordinates")
+    private String coordinates;
+
+    @Column(name = "radius")
+    private Integer radius;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "certificates")
+    private List<String> certificates;
+
 }
