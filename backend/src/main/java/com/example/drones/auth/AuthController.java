@@ -28,13 +28,3 @@ public class AuthController {
     }
 
 }
-
-@RestController
-@RequestMapping("/api/lol")
-class LolController {
-
-    @GetMapping("/hello")
-    public String hello() {
-        return "Hello, World!";
-    }
-}
