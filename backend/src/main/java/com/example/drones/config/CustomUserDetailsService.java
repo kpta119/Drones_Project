@@ -21,14 +21,19 @@ public class CustomUserDetailsService implements UserDetailsService {
     private final UserRepository userRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String email) {
-        return createUserDetails(userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException(email)));
-    }
+    public UserDetails loadUserByUsername(String identifier) {
+        UserEntity user;
 
-    public UserDetails loadUserById(UUID userId) {
-        return createUserDetails(userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId.toString())));
+        try {
+            UUID userId = UUID.fromString(identifier);
+            user = userRepository.findById(userId)
+                    .orElseThrow(() -> new UserNotFoundException(identifier));
+        } catch (IllegalArgumentException e) {
+            user = userRepository.findByEmail(identifier)
+                    .orElseThrow(() -> new UserNotFoundException(identifier));
+        }
+
+        return createUserDetails(user);
     }
 
     private UserDetails createUserDetails(UserEntity user) {

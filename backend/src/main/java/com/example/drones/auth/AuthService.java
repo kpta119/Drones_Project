@@ -15,8 +15,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -38,9 +42,11 @@ public class AuthService {
         userRepository.save(user);
     }
 
+    @Transactional
     public LoginResponse login(LoginRequest request) {
+        Authentication authentication;
         try {
-            authenticationManager.authenticate(
+            authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.email(), request.password())
             );
 
@@ -48,9 +54,8 @@ public class AuthService {
             throw new InvalidCredentialsException();
 
         }
-        UserEntity user = userRepository.findByEmail(request.email())
-                .orElseThrow(InvalidCredentialsException::new);
-        String jwtToken = jwtService.generateToken(user.getId());
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String jwtToken = jwtService.generateToken(UUID.fromString(userDetails.getUsername()));
         return new LoginResponse(jwtToken);
 
     }
