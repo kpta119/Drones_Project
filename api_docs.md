@@ -132,7 +132,7 @@ Base URL: `/api/user`.
     {
       "title": "Inspekcja dachu kamienicy",
       "description": "Potrzebuję nagrania inspekcyjnego dachu.",
-      "service_id": 1,
+      "service": "Kopanie rowów",
       "parameters": {
         "cecha": "wartość_cechy"
       },
@@ -150,7 +150,7 @@ Base URL: `/api/user`.
       "id": 123,
       "title": "Inspekcja dachu kamienicy",
       "description": "Potrzebuję nagrania inspekcyjnego dachu.",
-      "services": ["malowanie scian", "pisanie"],
+      "service": "Kopanie rowów",
       "parameters": { "cecha": "wartość_cechy" },
       "coordinates": "52.2300,21.0100",
       "from_date": "2025-06-10T10:00:00",
@@ -182,7 +182,7 @@ Base URL: `/api/user`.
       "id": 123,
       "title": "Inspekcja dachu kamienicy",
       "description": "Zaktualizowany opis zlecenia...", // zmiana
-      "services": ["malowanie scian", "pisanie"],
+      "service": "Kopanie rowów",
       "status": "open",
       "updated_at": "2025-05-21T10:05:00"
       // ...pozostałe pola bez zmian
@@ -260,7 +260,7 @@ Odrzucenie operatora przez zleceniodawce i na odwrót nie wpływa na staus zlece
         "orderId": 123,
         "title": "Inspekcja dachu kamienicy",
         "description": "Potrzebuję nagrania inspekcyjnego dachu.",
-        "service_name": "nazwa_usługi",
+        "service": "Kopanie rowów",
         "parameters": {
           "cecha": "wartość_cechy"
         },
@@ -292,7 +292,7 @@ Base URL: `/api/operators`.
         "id": 55,
         "title": "Inspekcja dachu",
         "description": "Potrzebuję nagrania...",
-        "service_name": "Inspekcja",
+        "service": "Kopanie rowów",
         "parameters": { "wysokosc": "20m" },
         "coordinates": "52.2300,21.0100",
         "from_date": "2025-06-10T10:00:00",
@@ -366,7 +366,7 @@ Base URL: `/api/operators`.
       "coordinates": "52.230000, 21.010000",
       "radius": 300, // Zasięg w km
       "certificates": ["Certyfikat UB321, XY321"]
-      "services": [1, 2] // Lista ID usług
+      "services": ["Kopanie rowów", "Malowanie scian"] // Lista ID usług
     }
     ```
 
@@ -377,7 +377,7 @@ Base URL: `/api/operators`.
       "coordinates": "52.230000, 21.010000",
       "radius": 300,
       "certificates": ["Certyfikat UB321, XY321"],
-      "services": [1, 2]
+      "services": ["Kopanie rowów", "Malowanie scian"]
     }
     ```
 
@@ -402,7 +402,7 @@ Base URL: `/api/operators`.
       "coordinates": "52.230000, 21.010000",
       "radius": 500, // Zmienione
       "certificates": ["UAVO BVLOS"], // Zmienione
-      "services": [1, 2]
+      "services": ["Kopanie rowów", "Malowanie scian"]
     }
     ```
 
@@ -445,8 +445,6 @@ Base URL: `/api/operators`.
 
     ```json
     {
-      "id": 2611,
-      "operator_id": 123,
       "title": "Inspekcja mostu (Aktualizacja)", // zmieniona wartość
       "description": "Szczegółowe zdjęcia pęknięć...",
       "photos": []
@@ -466,10 +464,10 @@ Base URL: `/api/services`.
 * **Response:** Mapa lub lista dostępnych usług.
 
     ```json
-    {
-      "1": "Inspekcja techniczna",
-      "2": "Fotografia ślubna"
-    }
+    [
+      "Inspekcja techniczna",
+      "Fotografia ślubna"
+    ]
     ```
 
 ### Dodaj nowe usługi
@@ -479,17 +477,18 @@ Base URL: `/api/services`.
 * **Request:**
 
     ```json
-    {
-      "names": ["Geodezja", "Rolnictwo"]
-    }
+    [
+      "Geodezja",
+      "Rolnictwo"
+    ]
     ```
 
 * **Response (201 Created) - Utworzone Usługi:**
 
     ```json
     [
-      { "id": 112, "name": "Geodezja" },
-      { "id": 113, "name": "Rolnictwo" }
+      "Geodezja",
+      "Rolnictwo"
     ]
     ```
 
