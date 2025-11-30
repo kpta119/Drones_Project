@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 import java.util.function.Function;
@@ -17,13 +19,16 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
+    private final Clock clock;
     @Value("${security.jwt.secret-key}")
     private String secretKey;
-
     @Value("${security.jwt.expiration-time}")
     private long jwtExpiration;
-
     private long refreshThreshold;
+
+    public JwtService(Clock clock) {
+        this.clock = clock;
+    }
 
     @PostConstruct
     public void init() {
@@ -31,10 +36,11 @@ public class JwtService {
     }
 
     public String generateToken(UUID userId) {
+        Instant now = clock.instant();
         return Jwts.builder()
                 .setSubject(userId.toString())
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
+                .setIssuedAt(Date.from(now))
+                .setExpiration(Date.from(now.plusMillis(jwtExpiration)))
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -43,7 +49,7 @@ public class JwtService {
         UUID userId = extractUserId(token);
         Date expiration = extractExpiration(token);
 
-        long timeToExpiration = expiration.getTime() - System.currentTimeMillis();
+        long timeToExpiration = expiration.getTime() - Date.from(Instant.now(clock)).getTime();
         if (timeToExpiration < refreshThreshold) {
             return generateToken(userId);
         }
@@ -60,7 +66,7 @@ public class JwtService {
     }
 
     private boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
+        return extractExpiration(token).before(Date.from(Instant.now(clock)));
     }
 
     private Date extractExpiration(String token) {
@@ -75,6 +81,7 @@ public class JwtService {
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSignInKey())
+                .setClock(() -> Date.from(Instant.now(clock)))
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
