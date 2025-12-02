@@ -60,70 +60,86 @@ export default function OperatorMatchingPage() {
   };
 
   return (
-    <div>
-      <h1>Zaakceptuj / odrzuć chętnych operatorów</h1>
+    <div
+      className="p-6 mx-auto my-8 min-h-[450px]
+    max-w-2xl font-opensans
+    border border-gray-200
+    shadow-lg rounded-3xl bg-gray-100
+    transition hover:bg-gray-50 hover:shadow-xl flex flex-col justify-between"
+    >
+      <h1 className="font-montserrat test-xs">
+        Zaakceptuj / odrzuć chętnych operatorów
+      </h1>
 
       {!showResult ? (
-        <div>
-          <div>
-            <h2>
+        <div className="flex flex-col grow justify-between">
+          <div className="space-y-4">
+            <h2 className="text-center font-opensans font-bold text-2xl p-5">
               {currentOperator.name} {currentOperator.surname} (
               {currentOperator.username})
             </h2>
           </div>
 
           <div>
-            <h3>Specjalizuje się w: </h3>
-            <p>{currentOperator.services.join(", ")}</p>
+            <h3 className="text-lg space-y-2">Specjalizuje się w: </h3>
+            <p className="py font-extralight">
+              {currentOperator.services.join(", ")}
+            </p>
           </div>
 
           <div>
-            <h3>Certyfikaty: </h3>
-            <p>{currentOperator.certificates.join(", ")}</p>
+            <h3 className="text-lg space-y-2">Certyfikaty: </h3>
+            <p className="py-0.5 font-light">
+              {currentOperator.certificates.join(", ")}
+            </p>
           </div>
 
-          <div>
+          <div className="mt-8 space-y-4">
             <button
               onClick={handleCheckUserAccount}
-              style={{ border: "1px solid blue", margin: "4px" }}
+              className="w-full py-2 text-lg font-medium
+                           border border-blue-200 shadow-2xs
+                           bg-blue-200 text-blue-800 rounded-lg hover:bg-blue-300 transition"
             >
               Szczegóły operatora
             </button>
           </div>
 
-          <div>
+          <div className="grid grid-cols-2 gap-4">
             <button
               onClick={reject}
-              style={{ border: "1px solid red", margin: "4px" }}
+              className="py-2 border border-red-400 text-red-600 rounded-lg hover:bg-red-100 transition"
             >
               Odrzuć prośbę
             </button>
             <button
               onClick={accept}
-              style={{ border: "1px solid green", margin: "4px" }}
+              className="py-2 border border-green-400 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
             >
               Akceptuj prośbę
             </button>
           </div>
         </div>
       ) : (
-        <div>
+        <div className="mt-4">
           {matchResult?.decision === "accept" ? (
-            <div>
-              <h2>Zaakceptowano operatora! </h2>
-              <p>Zostałeś sparowany z {currentOperator.name}!</p>
-              <p>Operator zostanie wkrótce powiadomiony o akceptacji.</p>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold">Zaakceptowano operatora! </h2>
+              <p>Zostałeś sparowany z {currentOperator.username}!</p>
+              <p className="text-sm italic text-gray-500">
+                Operator zostanie wkrótce powiadomiony o akceptacji.
+              </p>
             </div>
           ) : (
-            <div>
-              <h2>Odrzucono operatora.</h2>
-              <p>Odrzucono prośbę od {currentOperator.name}.</p>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold">Odrzucono operatora.</h2>
+              <p>Odrzucono prośbę od {currentOperator.username}.</p>
             </div>
           )}
 
           <button
             onClick={handleNextOperator}
-            style={{ border: "1px solid orange" }}
+            className="w-full mt-4 py-2 text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition"
           >
             Następny operator
           </button>
