@@ -37,7 +37,12 @@ export default function RootLayout({
     >
       <body>
         <PageHeader />
-        {children}
+        <div className="flex justify-center">
+          <div className="w-4/5">
+            {children}
+          </div>
+        </div>
+
       </body>
     </html>
   );

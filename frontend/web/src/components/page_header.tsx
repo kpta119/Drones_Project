@@ -25,7 +25,7 @@ export default function PageHeader() {
     }, []);
 
     return (
-        <header className="bg-yellow-200 w-full shadow-md">
+        <header className="bg-yellow-200 w-full shadow-md mb-8">
             <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
                 <Link href="/login">
                     <span className="font-bold text-lg cursor-pointer">Dronex</span>
@@ -35,7 +35,7 @@ export default function PageHeader() {
                     {user ? (
                         <div className="flex items-center space-x-4">
                             <span className="font-medium">{user.name}</span>
-                            <LogoutButton />
+                            <LogoutButton setUser={setUser} />
                         </div>
                     ) : (
                         <div className="flex space-x-4">

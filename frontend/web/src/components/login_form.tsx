@@ -34,28 +34,41 @@ export default function LoginForm() {
             setLoginError('Błąd sieci');
         }
     };
+
     return (
-        <div style={{ display: 'flex', gap: '2rem', padding: '2rem' }}>
-            <form onSubmit={handleLogin} style={{ flex: 1 }}>
-                <h2>Logowanie</h2>
-                <input
-                    type="email"
-                    placeholder="Email"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    required
-                />
-                <br />
-                <input
-                    type="password"
-                    placeholder="Hasło"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    required
-                />
-                <br />
-                <button type="submit">Zaloguj</button>
-                {loginError && <p style={{ color: 'red' }}>{loginError}</p>}
+        <div className="p-8 max-w-md mx-auto bg-white rounded-2xl shadow-md border border-gray-200">
+            <h2 className="text-2xl font-semibold mb-6 text-center">Logowanie</h2>
+            <form
+                onSubmit={handleLogin}
+                className="flex flex-col h-full gap-4"
+                style={{ minHeight: '250px' }}
+            >
+                <div className="flex flex-col gap-4">
+                    <input
+                        type="email"
+                        placeholder="Email"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        className="p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        required
+                    />
+                    <input
+                        type="password"
+                        placeholder="Hasło"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        className="p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        required
+                    />
+                    {loginError && <p className="text-red-500 text-sm">{loginError}</p>}
+                </div>
+
+                <button
+                    type="submit"
+                    className="mt-auto bg-yellow-500 text-white p-3 rounded-lg hover:bg-yellow-600 transition"
+                >
+                    Zaloguj
+                </button>
             </form>
         </div>
     );

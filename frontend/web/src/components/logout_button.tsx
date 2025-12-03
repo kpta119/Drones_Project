@@ -2,19 +2,24 @@
 
 import { useRouter } from "next/navigation";
 
-export default function LogoutButton() {
+type Props = {
+    setUser: (user: null) => void;
+};
+
+export default function LogoutButton({ setUser }: Props) {
     const router = useRouter();
 
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('role');
+        localStorage.removeItem("name");
+        setUser(null);
         router.push('/login');
     };
 
     return (
-        <button
+        <button className="bg-white text-yellow-300 px-3 py-1 rounded hover:bg-gray-100"
             onClick={handleLogout}
-            style={{ marginTop: '1rem', padding: '0.5rem 1rem' }}
         >
             Logout
         </button>

@@ -40,59 +40,77 @@ export default function RegisterForm() {
     };
 
     return (
-        <div style={{ display: 'flex', gap: '2rem', padding: '2rem' }}>
-            <form onSubmit={handleRegister} style={{ flex: 1 }}>
-                <h2>Rejestracja</h2>
-                <input
-                    type="text"
-                    placeholder="Nazwa użytkownika"
-                    value={regUsername}
-                    onChange={(e) => setRegUsername(e.target.value)}
-                    required
-                />
-                <br />
-                <input
-                    type="password"
-                    placeholder="Hasło"
-                    value={regPassword}
-                    onChange={(e) => setRegPassword(e.target.value)}
-                    required
-                />
-                <br />
-                <input
-                    type="text"
-                    placeholder="Imię"
-                    value={regName}
-                    onChange={(e) => setRegName(e.target.value)}
-                    required
-                />
-                <br />
-                <input
-                    type="text"
-                    placeholder="Nazwisko"
-                    value={regSurname}
-                    onChange={(e) => setRegSurname(e.target.value)}
-                    required
-                />
-                <br />
-                <input
-                    type="email"
-                    placeholder="Email"
-                    value={regEmail}
-                    onChange={(e) => setRegEmail(e.target.value)}
-                    required
-                />
-                <br />
-                <input
-                    type="tel"
-                    placeholder="Numer telefonu"
-                    value={regPhone}
-                    onChange={(e) => setRegPhone(e.target.value)}
-                    required
-                />
-                <br />
-                <button type="submit">Zarejestruj</button>
-                {regMessage && <p>{regMessage}</p>}
+        <div className="p-8 max-w-md mx-auto bg-white rounded-2xl shadow-md border border-gray-200">
+            <h2 className="text-2xl font-semibold mb-6 text-center">Rejestracja</h2>
+            <form
+                onSubmit={handleRegister}
+                className="flex flex-col h-full gap-4"
+                style={{ minHeight: '400px' }}
+            >
+                <div className="flex flex-col gap-4">
+                    <input
+                        type="text"
+                        placeholder="Nazwa użytkownika"
+                        value={regUsername}
+                        onChange={(e) => setRegUsername(e.target.value)}
+                        className="p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        required
+                    />
+                    <input
+                        type="password"
+                        placeholder="Hasło"
+                        value={regPassword}
+                        onChange={(e) => setRegPassword(e.target.value)}
+                        className="p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        required
+                    />
+                    <input
+                        type="text"
+                        placeholder="Imię"
+                        value={regName}
+                        onChange={(e) => setRegName(e.target.value)}
+                        className="p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        required
+                    />
+                    <input
+                        type="text"
+                        placeholder="Nazwisko"
+                        value={regSurname}
+                        onChange={(e) => setRegSurname(e.target.value)}
+                        className="p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        required
+                    />
+                    <input
+                        type="email"
+                        placeholder="Email"
+                        value={regEmail}
+                        onChange={(e) => setRegEmail(e.target.value)}
+                        className="p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        required
+                    />
+                    <input
+                        type="tel"
+                        placeholder="Numer telefonu"
+                        value={regPhone}
+                        onChange={(e) => setRegPhone(e.target.value)}
+                        className="p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        required
+                    />
+                    {regMessage && (
+                        <p
+                            className={`text-center text-sm ${regMessage.includes('sukces') ? 'text-green-500' : 'text-red-500'
+                                }`}
+                        >
+                            {regMessage}
+                        </p>
+                    )}
+                </div>
+                <button
+                    type="submit"
+                    className="mt-auto bg-yellow-500 text-white p-3 rounded-lg hover:bg-yellow-600 transition"
+                >
+                    Zarejestruj
+                </button>
             </form>
         </div>
     );
