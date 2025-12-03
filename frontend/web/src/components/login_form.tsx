@@ -30,7 +30,7 @@ export default function LoginForm() {
             } else {
                 setLoginError('Błąd logowania');
             }
-        } catch (err) {
+        } catch {
             setLoginError('Błąd sieci');
         }
     };

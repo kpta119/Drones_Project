@@ -25,7 +25,7 @@ export default function OperatorMatchingPage() {
     certificates: ["A2"],
     services: ["ortofotomapa, fotogrametria"],
   };
-
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currentOperator, setCurrentOperator] =
     useState<Operator>(exampleOperator);
   const [matchResult, setMatchResult] = useState<MatchResult | null>(null);

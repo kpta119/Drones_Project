@@ -34,7 +34,7 @@ export default function RegisterForm() {
                 const data = await res.json();
                 setRegMessage(`Błąd: ${data.message || res.status}`);
             }
-        } catch (err) {
+        } catch {
             setRegMessage('Błąd sieci');
         }
     };

@@ -29,7 +29,7 @@ export default function OfferMatchingPage() {
     service: "ortofotomapa",
     endDate: new Date(2025, 10, 24, 23, 59),
   };
-
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currentOffer, setCurrentOffer] = useState<Offer>(exampleOffer);
   const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
   const [showResult, setShowResult] = useState(false);
