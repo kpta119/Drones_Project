@@ -21,9 +21,9 @@ interface MatchResult {
 export default function OfferMatchingPage() {
   const exampleOffer: Offer = {
     id: 1,
-    clientName: "Andrzej",
-    clientSurname: "Jeziorski",
-    clientUsername: "ajezior",
+    clientName: "Sara",
+    clientSurname: "Jeziorska",
+    clientUsername: "sjeziorska",
     location: "api google maps",
     shortDesc: "Chcę zdjęć mojej działki",
     service: "ortofotomapa",

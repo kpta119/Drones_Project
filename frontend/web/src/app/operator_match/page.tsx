@@ -19,9 +19,9 @@ interface MatchResult {
 export default function OperatorMatchingPage() {
   const exampleOperator: Operator = {
     id: 1,
-    name: "Jan",
-    surname: "Kowalski",
-    username: "jkowalski",
+    name: "Marek",
+    surname: "Droński",
+    username: "mdronski",
     certificates: ["A2"],
     services: ["ortofotomapa, fotogrametria"],
   };
