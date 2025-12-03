@@ -50,7 +50,7 @@ jobs:
           cache: 'maven'
           cache-dependency-path: backend/pom.xml
 
-      - name: Run unit tests
+      - name: Run tests
         run: mvn -B test
 
   package:

@@ -8,13 +8,14 @@ import com.example.drones.config.JwtService;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserMapper;
 import com.example.drones.user.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
@@ -44,9 +45,12 @@ public class AuthServiceTests {
     @InjectMocks
     private AuthService authService;
 
-    @Test
-    public void givenValidRegisterRequest_whenRegister_thenUserIsSaved() {
-        RegisterRequest registerRequest = RegisterRequest.builder()
+    private RegisterRequest validRegister;
+    private LoginRequest validLogin;
+
+    @BeforeEach
+    public void setUp() {
+        validRegister = RegisterRequest.builder()
                 .displayName("testUser")
                 .password("password123")
                 .name("Test")
@@ -54,6 +58,15 @@ public class AuthServiceTests {
                 .email("user123@gmail.com")
                 .phoneNumber("1234567890")
                 .build();
+        validLogin = LoginRequest.builder()
+                .email("user@gmail.com")
+                .password("password123")
+                .build();
+    }
+
+    @Test
+    public void givenValidRegisterRequest_whenRegister_thenUserIsSaved() {
+        RegisterRequest registerRequest = validRegister;
         UserEntity expectedUser = UserEntity.builder()
                 .id(null)
                 .displayName(registerRequest.displayName())
@@ -75,14 +88,7 @@ public class AuthServiceTests {
 
     @Test
     public void givenExistingEmail_whenRegister_thenUserAlreadyExistsExceptionIsThrown() {
-        RegisterRequest registerRequest = RegisterRequest.builder()
-                .displayName("testUser")
-                .password("password123")
-                .name("Test")
-                .surname("User")
-                .email("user123@gmail.com")
-                .phoneNumber("1234567890")
-                .build();
+        RegisterRequest registerRequest = validRegister;
         when(userRepository.existsByEmail(registerRequest.email())).thenReturn(true);
         UserAlreadyExistsException ex = assertThrows(UserAlreadyExistsException.class,
                 () -> authService.register(registerRequest)
@@ -94,10 +100,7 @@ public class AuthServiceTests {
 
     @Test
     public void givenValidLoginRequest_whenLogin_thenReturnsJwtToken() {
-        LoginRequest loginRequest = LoginRequest.builder()
-                .email("user@gmail.com")
-                .password("password123")
-                .build();
+        LoginRequest loginRequest = validLogin;
         UserDetails userDetails = new User(
                 "550e8400-e29b-41d4-a716-446655440000",
                 "password123",
@@ -116,12 +119,9 @@ public class AuthServiceTests {
 
     @Test
     public void givenInvalidLoginRequest_whenLogin_thenInvalidCredentialsExceptionIsThrown() {
-        LoginRequest loginRequest = LoginRequest.builder()
-                .email("user@gmail.com")
-                .password("password123")
-                .build();
+        LoginRequest loginRequest = validLogin;
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenThrow(new BadCredentialsException("Bad credentials"));
+                .thenThrow(new InternalAuthenticationServiceException("Bad credentials"));
         InvalidCredentialsException ex = assertThrows(InvalidCredentialsException.class,
                 () -> authService.login(loginRequest)
         );

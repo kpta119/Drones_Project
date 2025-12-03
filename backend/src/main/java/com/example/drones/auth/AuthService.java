@@ -14,6 +14,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -50,7 +51,7 @@ public class AuthService {
                     new UsernamePasswordAuthenticationToken(request.email(), request.password())
             );
 
-        } catch (BadCredentialsException e) {
+        } catch (InternalAuthenticationServiceException | BadCredentialsException e) {
             throw new InvalidCredentialsException();
 
         }
