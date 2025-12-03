@@ -16,9 +16,16 @@ export default function AuthPage() {
   }, [router]);
 
   return (
-    <div>
-      <LoginForm />
-      <RegisterForm />
+
+    <div className="flex flex-col md:flex-row gap-6 mx-auto max-w-4xl p-6">
+      <div className="flex-1 bg-white rounded-2xl ">
+        <LoginForm />
+      </div>
+      <div className="flex-1 bg-white rounded-2xl ">
+
+        <RegisterForm />
+      </div>
     </div>
+
   );
 }
