@@ -35,6 +35,32 @@ export default function ProfilePage() {
                     </div>
 
                 </div>
+                <div className="mt-6 grid grid-cols-3 gap-4">
+                    <div className="w-full h-40 relative">
+                        <Image
+                            src="/dron.png"
+                            alt="Image 1"
+                            fill
+                            className="object-cover rounded-lg"
+                        />
+                    </div>
+                    <div className="w-full h-40 relative">
+                        <Image
+                            src="/dron.png"
+                            alt="Image 2"
+                            fill
+                            className="object-cover rounded-lg"
+                        />
+                    </div>
+                    <div className="w-full h-40 relative">
+                        <Image
+                            src="/dron.png"
+                            alt="Image 3"
+                            fill
+                            className="object-cover rounded-lg"
+                        />
+                    </div>
+                </div>
 
             </div>
         </div>
