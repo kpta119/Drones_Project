@@ -10,7 +10,7 @@ export default function UserProfilePage() {
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (!token) {
-            router.push('/login'); // Redirect if not logged in
+            router.push('/login');
         }
     }, [router]);
 

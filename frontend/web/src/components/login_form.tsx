@@ -21,6 +21,7 @@ export default function LoginForm() {
                 const data = await res.json();
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('role', data.role);
+                localStorage.setItem('name', loginEmail);
                 window.location.reload();
             } else if (res.status === 401) {
                 setLoginError('Nieprawidłowe hasło');

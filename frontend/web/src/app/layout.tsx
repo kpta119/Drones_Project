@@ -1,3 +1,4 @@
+import PageHeader from "../components/page_header";
 import "./globals.css";
 import {
   Montserrat,
@@ -34,7 +35,10 @@ export default function RootLayout({
       lang="en"
       className={`${montserrat.variable} ${openSans.variable} ${novaMono.variable} ${lato.variable} ${fredoka.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <PageHeader />
+        {children}
+      </body>
     </html>
   );
 }
