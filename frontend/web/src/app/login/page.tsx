@@ -11,20 +11,14 @@ export default function AuthPage() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      router.push('/user_profile');
+      router.push('/marek_profile');
     }
   }, [router]);
 
   return (
-    <div className="flex flex-col md:flex-row gap-6 mx-auto max-w-4xl p-6">
-      <div className="flex-1 bg-white rounded-2xl ">
-        <LoginForm />
-      </div>
-      <div className="flex-1 bg-white rounded-2xl ">
-
-        <RegisterForm />
-      </div>
+    <div>
+      <LoginForm />
+      <RegisterForm />
     </div>
-
   );
 }

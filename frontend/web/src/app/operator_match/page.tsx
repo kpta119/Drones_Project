@@ -56,7 +56,7 @@ export default function OperatorMatchingPage() {
   };
 
   const handleCheckUserAccount = () => {
-    window.location.href = `/user_profile/`;
+    window.location.href = `/marek_profile/`;
   };
 
   return (

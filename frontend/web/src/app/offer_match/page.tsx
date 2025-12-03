@@ -64,7 +64,7 @@ export default function OfferMatchingPage() {
   };
 
   const handleCheckUserAccount = () => {
-    window.location.href = `/user_profile/`;
+    window.location.href = `/sara_profile/`;
   };
 
   return (
