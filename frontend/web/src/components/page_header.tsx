@@ -15,13 +15,15 @@ export default function PageHeader() {
     const [user, setUser] = useState<User | null>(null);
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        const role = localStorage.getItem("role");
-        const name = localStorage.getItem("name")
+        Promise.resolve().then(() => {
+            const token = localStorage.getItem("token");
+            const role = localStorage.getItem("role");
+            const name = localStorage.getItem("name");
 
-        if (token && role && name) {
-            setUser({ token, role, name });
-        }
+            if (token && role && name) {
+                setUser({ token, role, name });
+            }
+        });
     }, []);
 
     return (
