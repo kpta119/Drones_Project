@@ -368,8 +368,8 @@ Base URL: `/api/operators`.
     {
       "coordinates": "52.230000, 21.010000",
       "radius": 300, // Zasięg w km
-      "certificates": ["Certyfikat UB321, XY321"]
-      "services": ["Kopanie rowów", "Malowanie scian"] // Lista ID usług
+      "certificates": ["Certyfikat UB321", "XY321"],
+      "services": ["Kopanie rowów", "Malowanie scian"]
     }
     ```
 
@@ -379,7 +379,7 @@ Base URL: `/api/operators`.
     {
       "coordinates": "52.230000, 21.010000",
       "radius": 300,
-      "certificates": ["Certyfikat UB321, XY321"],
+      "certificates": ["Certyfikat UB321", "XY321"],
       "services": ["Kopanie rowów", "Malowanie scian"]
     }
     ```
