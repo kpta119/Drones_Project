@@ -26,6 +26,7 @@ public class UserEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "user_role", nullable = false)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)

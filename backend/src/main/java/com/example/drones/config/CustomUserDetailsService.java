@@ -23,12 +23,12 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) {
         return createUserDetails(userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException(email)));
+                .orElseThrow(UserNotFoundException::new));
     }
 
     public UserDetails loadUserById(UUID userId) {
         return createUserDetails(userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId.toString())));
+                .orElseThrow(UserNotFoundException::new));
     }
 
     private UserDetails createUserDetails(UserEntity user) {
