@@ -14,9 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -63,7 +61,11 @@ public class AuthControllerTests {
         LoginRequest request = validLogin;
 
         String expectedToken = "mock";
-        when(authService.login(request)).thenReturn(new LoginResponse(expectedToken));
+        when(authService.login(request)).thenReturn(new LoginResponse(expectedToken,
+                null,
+                null,
+                null,
+                null));
 
         ResponseEntity<LoginResponse> response = authController.login(request);
 
