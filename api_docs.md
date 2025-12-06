@@ -32,6 +32,9 @@ Endpointy publiczne `/api/auth`.
     {
       "token": "45674353gfgdfhgfhgfhfghbf",
       "role": "user", // lub "admin", "operator"
+      "userId": 124,
+      "email" : "1243@gmail.com"
+      "username": "user12345"
     }
     ```
 
