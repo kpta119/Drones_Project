@@ -7,10 +7,10 @@ import java.util.List;
 
 @SuppressFBWarnings(value = {"EI_EXPOSE_REP", "EI_EXPOSE_REP2"}, justification = "DTO class with short lifecycle")
 @Builder
-public record EditOperatorProfileDto(
-    String coordinates,
-    Integer radius,
-    List<String> certificates,
-    List<String> services
+public record OperatorProfileDto(
+        String coordinates,
+        Integer radius,
+        List<String> certificates,
+        List<String> services
 ) {
 }

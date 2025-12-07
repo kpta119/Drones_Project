@@ -1,7 +1,7 @@
 package com.example.drones.operators;
 
 import com.example.drones.common.config.JwtService;
-import com.example.drones.operators.dto.CreateOperatorDto;
+import com.example.drones.operators.dto.CreateOperatorProfileDto;
 import com.example.drones.services.OperatorServicesRepository;
 import com.example.drones.services.ServicesEntity;
 import com.example.drones.services.ServicesRepository;
@@ -96,7 +96,7 @@ public class OperatorsIntegrationTests {
 
     @Test
     void givenValidOperatorDto_whenCreateOperatorProfile_thenReturnsCreatedOperatorDto() throws Exception {
-        CreateOperatorDto operatorDto = CreateOperatorDto.builder()
+        CreateOperatorProfileDto operatorDto = CreateOperatorProfileDto.builder()
                 .coordinates("52.2297,21.0122")
                 .radius(50)
                 .certificates(List.of("UAV License", "Commercial Pilot"))
@@ -132,7 +132,7 @@ public class OperatorsIntegrationTests {
 
     @Test
     void givenValidOperatorDtoWithNoCertificates_whenCreateOperatorProfile_thenReturnsCreated() throws Exception {
-        CreateOperatorDto operatorDto = CreateOperatorDto.builder()
+        CreateOperatorProfileDto operatorDto = CreateOperatorProfileDto.builder()
                 .coordinates("52.2297,21.0122")
                 .radius(50)
                 .certificates(List.of())
@@ -156,7 +156,7 @@ public class OperatorsIntegrationTests {
 
     @Test
     void givenNoAuthToken_whenCreateOperatorProfile_thenReturnsUnauthorized() throws Exception {
-        CreateOperatorDto operatorDto = CreateOperatorDto.builder()
+        CreateOperatorProfileDto operatorDto = CreateOperatorProfileDto.builder()
                 .coordinates("52.2297,21.0122")
                 .radius(50)
                 .certificates(List.of("UAV License"))
@@ -174,7 +174,7 @@ public class OperatorsIntegrationTests {
 
     @Test
     void givenInvalidToken_whenCreateOperatorProfile_thenReturnsUnauthorized() throws Exception {
-        CreateOperatorDto operatorDto = CreateOperatorDto.builder()
+        CreateOperatorProfileDto operatorDto = CreateOperatorProfileDto.builder()
                 .coordinates("52.2297,21.0122")
                 .radius(50)
                 .certificates(List.of("UAV License"))
@@ -193,7 +193,7 @@ public class OperatorsIntegrationTests {
 
     @Test
     void givenServiceNotExistsInDatabase_whenCreateOperatorProfile_thenReturnsInternalServerError() throws Exception {
-        CreateOperatorDto operatorDto = CreateOperatorDto.builder()
+        CreateOperatorProfileDto operatorDto = CreateOperatorProfileDto.builder()
                 .coordinates("52.2297,21.0122")
                 .radius(50)
                 .certificates(List.of("UAV License"))
@@ -221,7 +221,7 @@ public class OperatorsIntegrationTests {
         testUser.setRadius(30);
         userRepository.save(testUser);
 
-        CreateOperatorDto operatorDto = CreateOperatorDto.builder()
+        CreateOperatorProfileDto operatorDto = CreateOperatorProfileDto.builder()
                 .coordinates("52.2297,21.0122")
                 .radius(50)
                 .certificates(List.of("UAV License"))
