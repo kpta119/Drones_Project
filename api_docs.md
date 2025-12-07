@@ -401,7 +401,6 @@ Base URL: `/api/operators`.
 
     ```json
     {
-      "user_id": 123,
       "coordinates": "52.230000, 21.010000",
       "radius": 500, // Zmienione
       "certificates": ["UAVO BVLOS"], // Zmienione
