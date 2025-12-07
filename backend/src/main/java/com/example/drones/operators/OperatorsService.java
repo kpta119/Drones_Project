@@ -1,9 +1,10 @@
 package com.example.drones.operators;
 
-import com.example.drones.config.JwtService;
-import com.example.drones.config.exceptions.UserNotFoundException;
-import com.example.drones.operators.dto.OperatorAlreadyExistsException;
-import com.example.drones.operators.dto.OperatorDto;
+import com.example.drones.common.config.JwtService;
+import com.example.drones.common.config.exceptions.UserNotFoundException;
+import com.example.drones.operators.exceptions.OperatorAlreadyExistsException;
+import com.example.drones.operators.dto.CreateOperatorDto;
+import com.example.drones.operators.dto.EditOperatorProfileDto;
 import com.example.drones.services.OperatorServicesService;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
@@ -25,7 +26,7 @@ public class OperatorsService {
     private final OperatorServicesService operatorServicesService;
 
     @Transactional
-    public OperatorDto createProfile(OperatorDto operatorDto) {
+    public CreateOperatorDto createProfile(CreateOperatorDto operatorDto) {
         UUID userId = jwtService.extractUserId();
 
         UserEntity user = userRepository.findById(userId)
@@ -41,5 +42,10 @@ public class OperatorsService {
 
         operatorServicesService.addOperatorServices(user, operatorDto.services());
         return operatorDto;
+    }
+
+    @Transactional
+    public EditOperatorProfileDto editProfile(EditOperatorProfileDto operatorDto) {
+        return operatorDto; // TODO: Placeholder for future implementation
     }
 }

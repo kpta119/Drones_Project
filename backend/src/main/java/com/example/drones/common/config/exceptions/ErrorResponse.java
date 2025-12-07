@@ -1,4 +1,4 @@
-package com.example.drones.config.exceptions;
+package com.example.drones.common.config.exceptions;
 
 import java.time.LocalDateTime;
 

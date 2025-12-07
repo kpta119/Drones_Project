@@ -3,7 +3,7 @@ package com.example.drones.auth;
 import com.example.drones.auth.dto.LoginRequest;
 import com.example.drones.auth.dto.LoginResponse;
 import com.example.drones.auth.dto.RegisterRequest;
-import com.example.drones.config.exceptions.ErrorResponse;
+import com.example.drones.common.config.exceptions.ErrorResponse;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
 import org.junit.jupiter.api.AfterEach;

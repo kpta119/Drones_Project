@@ -1,8 +1,8 @@
 package com.example.drones.operators;
 
-import com.example.drones.config.exceptions.UserNotFoundException;
-import com.example.drones.operators.dto.OperatorAlreadyExistsException;
-import com.example.drones.operators.dto.OperatorDto;
+import com.example.drones.common.config.exceptions.UserNotFoundException;
+import com.example.drones.operators.exceptions.OperatorAlreadyExistsException;
+import com.example.drones.operators.dto.CreateOperatorDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,11 +28,11 @@ public class OperatorsControllerTests {
     @InjectMocks
     private OperatorsController operatorsController;
 
-    private OperatorDto validOperatorDto;
+    private CreateOperatorDto validOperatorDto;
 
     @BeforeEach
     public void setUp() {
-        validOperatorDto = OperatorDto.builder()
+        validOperatorDto = CreateOperatorDto.builder()
                 .coordinates("52.2297,21.0122")
                 .radius(50)
                 .certificates(List.of("UAV License"))
@@ -42,10 +42,10 @@ public class OperatorsControllerTests {
 
     @Test
     public void givenValidOperatorDto_whenCreateOperatorProfile_thenReturnsCreated() {
-        OperatorDto request = validOperatorDto;
+        CreateOperatorDto request = validOperatorDto;
         when(operatorsService.createProfile(request)).thenReturn(request);
 
-        ResponseEntity<OperatorDto> response = operatorsController.createOperatorProfile(request);
+        ResponseEntity<CreateOperatorDto> response = operatorsController.createOperatorProfile(request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody()).isEqualTo(request);
@@ -54,7 +54,7 @@ public class OperatorsControllerTests {
 
     @Test
     public void givenUserNotFound_whenCreateOperatorProfile_thenThrowsUserNotFoundException() {
-        OperatorDto request = validOperatorDto;
+        CreateOperatorDto request = validOperatorDto;
         when(operatorsService.createProfile(request)).thenThrow(new UserNotFoundException());
 
         assertThatThrownBy(() -> operatorsController.createOperatorProfile(request))
@@ -65,7 +65,7 @@ public class OperatorsControllerTests {
 
     @Test
     public void givenUserAlreadyOperator_whenCreateOperatorProfile_thenThrowsOperatorAlreadyExistsException() {
-        OperatorDto request = validOperatorDto;
+        CreateOperatorDto request = validOperatorDto;
         when(operatorsService.createProfile(request)).thenThrow(new OperatorAlreadyExistsException());
 
         assertThatThrownBy(() -> operatorsController.createOperatorProfile(request))

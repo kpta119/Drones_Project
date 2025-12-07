@@ -1,9 +1,9 @@
 package com.example.drones.operators;
 
-import com.example.drones.config.JwtService;
-import com.example.drones.config.exceptions.UserNotFoundException;
-import com.example.drones.operators.dto.OperatorAlreadyExistsException;
-import com.example.drones.operators.dto.OperatorDto;
+import com.example.drones.common.config.JwtService;
+import com.example.drones.common.config.exceptions.UserNotFoundException;
+import com.example.drones.operators.exceptions.OperatorAlreadyExistsException;
+import com.example.drones.operators.dto.CreateOperatorDto;
 import com.example.drones.services.OperatorServicesService;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
@@ -42,7 +42,7 @@ public class OperatorsServiceTests {
     @Test
     public void givenValidOperatorDto_whenCreateProfile_thenProfileCreatedAndReturnsDto() {
         UUID userId = UUID.randomUUID();
-        OperatorDto operatorDto = OperatorDto.builder()
+        CreateOperatorDto operatorDto = CreateOperatorDto.builder()
                 .coordinates("45.0,90.0")
                 .radius(10)
                 .certificates(List.of("Cert1", "Cert2"))
@@ -56,7 +56,7 @@ public class OperatorsServiceTests {
         when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        OperatorDto result = service.createProfile(operatorDto);
+        CreateOperatorDto result = service.createProfile(operatorDto);
 
         verify(jwtService).extractUserId();
         verify(userRepository).findById(userId);
@@ -73,7 +73,7 @@ public class OperatorsServiceTests {
     @Test
     public void givenOperatorDtoWithNoCertificates_whenCreateProfile_thenProfileCreatedWithNullCertificates() {
         UUID userId = UUID.randomUUID();
-        OperatorDto operatorDto = OperatorDto.builder()
+        CreateOperatorDto operatorDto = CreateOperatorDto.builder()
                 .coordinates("45.0,90.0")
                 .radius(10)
                 .certificates(null)
@@ -87,7 +87,7 @@ public class OperatorsServiceTests {
         when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        OperatorDto result = service.createProfile(operatorDto);
+        CreateOperatorDto result = service.createProfile(operatorDto);
 
         assertThat(user.getCertificates()).isNull();
         assertThat(result).isEqualTo(operatorDto);
@@ -97,7 +97,7 @@ public class OperatorsServiceTests {
     @Test
     public void givenUserNotFound_whenCreateProfile_thenThrowsUserNotFoundException() {
         UUID userId = UUID.randomUUID();
-        OperatorDto operatorDto = OperatorDto.builder()
+        CreateOperatorDto operatorDto = CreateOperatorDto.builder()
                 .coordinates("45.0,90.0")
                 .radius(10)
                 .certificates(List.of("Cert1"))
@@ -120,7 +120,7 @@ public class OperatorsServiceTests {
     @Test
     public void givenUserAlreadyOperator_whenCreateProfile_thenThrowsOperatorAlreadyExistsException() {
         UUID userId = UUID.randomUUID();
-        OperatorDto operatorDto = OperatorDto.builder()
+        CreateOperatorDto operatorDto = CreateOperatorDto.builder()
                 .coordinates("45.0,90.0")
                 .radius(10)
                 .certificates(List.of("Cert1"))

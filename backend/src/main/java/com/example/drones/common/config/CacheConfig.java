@@ -1,4 +1,4 @@
-package com.example.drones.config;
+package com.example.drones.common.config;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.cache.CacheManager;

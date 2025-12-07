@@ -1,7 +1,7 @@
 package com.example.drones.operators;
 
-import com.example.drones.config.JwtService;
-import com.example.drones.operators.dto.OperatorDto;
+import com.example.drones.common.config.JwtService;
+import com.example.drones.operators.dto.CreateOperatorDto;
 import com.example.drones.services.OperatorServicesRepository;
 import com.example.drones.services.ServicesEntity;
 import com.example.drones.services.ServicesRepository;
@@ -96,7 +96,7 @@ public class OperatorsIntegrationTests {
 
     @Test
     void givenValidOperatorDto_whenCreateOperatorProfile_thenReturnsCreatedOperatorDto() throws Exception {
-        OperatorDto operatorDto = OperatorDto.builder()
+        CreateOperatorDto operatorDto = CreateOperatorDto.builder()
                 .coordinates("52.2297,21.0122")
                 .radius(50)
                 .certificates(List.of("UAV License", "Commercial Pilot"))
@@ -132,10 +132,10 @@ public class OperatorsIntegrationTests {
 
     @Test
     void givenValidOperatorDtoWithNoCertificates_whenCreateOperatorProfile_thenReturnsCreated() throws Exception {
-        OperatorDto operatorDto = OperatorDto.builder()
+        CreateOperatorDto operatorDto = CreateOperatorDto.builder()
                 .coordinates("52.2297,21.0122")
                 .radius(50)
-                .certificates(null)
+                .certificates(List.of())
                 .services(List.of("Delivery"))
                 .build();
 
@@ -151,12 +151,12 @@ public class OperatorsIntegrationTests {
 
         UserEntity updatedUser = userRepository.findById(testUser.getId()).orElseThrow();
         assertThat(updatedUser.getRole()).isEqualTo(UserRole.OPERATOR);
-        assertThat(updatedUser.getCertificates()).isNull();
+        assertThat(updatedUser.getCertificates()).isEmpty();
     }
 
     @Test
     void givenNoAuthToken_whenCreateOperatorProfile_thenReturnsUnauthorized() throws Exception {
-        OperatorDto operatorDto = OperatorDto.builder()
+        CreateOperatorDto operatorDto = CreateOperatorDto.builder()
                 .coordinates("52.2297,21.0122")
                 .radius(50)
                 .certificates(List.of("UAV License"))
@@ -174,7 +174,7 @@ public class OperatorsIntegrationTests {
 
     @Test
     void givenInvalidToken_whenCreateOperatorProfile_thenReturnsUnauthorized() throws Exception {
-        OperatorDto operatorDto = OperatorDto.builder()
+        CreateOperatorDto operatorDto = CreateOperatorDto.builder()
                 .coordinates("52.2297,21.0122")
                 .radius(50)
                 .certificates(List.of("UAV License"))
@@ -193,7 +193,7 @@ public class OperatorsIntegrationTests {
 
     @Test
     void givenServiceNotExistsInDatabase_whenCreateOperatorProfile_thenReturnsInternalServerError() throws Exception {
-        OperatorDto operatorDto = OperatorDto.builder()
+        CreateOperatorDto operatorDto = CreateOperatorDto.builder()
                 .coordinates("52.2297,21.0122")
                 .radius(50)
                 .certificates(List.of("UAV License"))
@@ -221,7 +221,7 @@ public class OperatorsIntegrationTests {
         testUser.setRadius(30);
         userRepository.save(testUser);
 
-        OperatorDto operatorDto = OperatorDto.builder()
+        CreateOperatorDto operatorDto = CreateOperatorDto.builder()
                 .coordinates("52.2297,21.0122")
                 .radius(50)
                 .certificates(List.of("UAV License"))

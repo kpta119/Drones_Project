@@ -1,6 +1,6 @@
-package com.example.drones.config;
+package com.example.drones.common.config;
 
-import com.example.drones.config.exceptions.UserNotFoundException;
+import com.example.drones.common.config.exceptions.UserNotFoundException;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
 import com.example.drones.user.UserRole;
