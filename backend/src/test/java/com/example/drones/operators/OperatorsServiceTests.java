@@ -175,5 +175,216 @@ public class OperatorsServiceTests {
         verify(userRepository, never()).save(any());
         verify(operatorServicesService, never()).addOperatorServices(any(), any());
     }
+
+    @Test
+    public void givenValidOperatorDto_whenEditProfile_thenProfileUpdatedAndReturnsDto() {
+        UUID userId = UUID.randomUUID();
+        OperatorProfileDto operatorDto = OperatorProfileDto.builder()
+                .coordinates("52.2297,21.0122")
+                .radius(100)
+                .certificates(List.of("Advanced License", "Night Flight"))
+                .services(List.of("Photography", "Mapping"))
+                .build();
+        UserEntity user = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.OPERATOR)
+                .coordinates("45.0,90.0")
+                .radius(10)
+                .certificates(List.of("Basic License"))
+                .build();
+
+        when(jwtService.extractUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(UserEntity.class))).thenReturn(user);
+        when(operatorServicesService.editOperatorServices(any(UserEntity.class), anyList()))
+                .thenReturn(operatorDto.services());
+        when(operatorMapper.toOperatorProfileDto(any(UserEntity.class), anyList()))
+                .thenReturn(operatorDto);
+
+        OperatorProfileDto result = service.editProfile(operatorDto);
+
+        assertThat(user.getCoordinates()).isEqualTo("52.2297,21.0122");
+        assertThat(user.getRadius()).isEqualTo(100);
+        assertThat(user.getCertificates()).isEqualTo(List.of("Advanced License", "Night Flight"));
+        assertThat(result).isEqualTo(operatorDto);
+        verify(jwtService).extractUserId();
+        verify(userRepository).findById(userId);
+        verify(userRepository).save(any(UserEntity.class));
+        verify(operatorServicesService).editOperatorServices(any(UserEntity.class), eq(operatorDto.services()));
+        verify(operatorMapper).toOperatorProfileDto(any(UserEntity.class), eq(operatorDto.services()));
+    }
+
+    @Test
+    public void givenPartialOperatorDto_whenEditProfile_thenOnlyProvidedFieldsUpdated() {
+        UUID userId = UUID.randomUUID();
+        OperatorProfileDto operatorDto = OperatorProfileDto.builder()
+                .coordinates("52.2297,21.0122")
+                .radius(null)
+                .certificates(null)
+                .services(List.of("Photography"))
+                .build();
+        OperatorProfileDto expectedDto = OperatorProfileDto.builder()
+                .coordinates("52.2297,21.0122")
+                .radius(10)
+                .certificates(List.of("Basic License"))
+                .services(List.of("Photography"))
+                .build();
+        UserEntity user = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.OPERATOR)
+                .coordinates("45.0,90.0")
+                .radius(10)
+                .certificates(List.of("Basic License"))
+                .build();
+
+        when(jwtService.extractUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(UserEntity.class))).thenReturn(user);
+        when(operatorServicesService.editOperatorServices(any(UserEntity.class), anyList()))
+                .thenReturn(operatorDto.services());
+        when(operatorMapper.toOperatorProfileDto(any(UserEntity.class), anyList()))
+                .thenReturn(expectedDto);
+
+        OperatorProfileDto result = service.editProfile(operatorDto);
+
+        assertThat(user.getCoordinates()).isEqualTo("52.2297,21.0122");
+        assertThat(user.getRadius()).isEqualTo(10);
+        assertThat(user.getCertificates()).isEqualTo(List.of("Basic License")); // unchanged
+        assertThat(result).isEqualTo(expectedDto);
+        verify(userRepository).save(any(UserEntity.class));
+        verify(operatorServicesService).editOperatorServices(any(UserEntity.class), eq(operatorDto.services()));
+    }
+
+    @Test
+    public void givenOperatorDtoWithNoServices_whenEditProfile_thenExistingServicesRetrieved() {
+        UUID userId = UUID.randomUUID();
+        OperatorProfileDto operatorDto = OperatorProfileDto.builder()
+                .coordinates("52.2297,21.0122")
+                .radius(100)
+                .certificates(List.of("Advanced License"))
+                .services(null)
+                .build();
+        List<String> existingServices = List.of("Delivery", "Surveillance");
+        OperatorProfileDto expectedDto = OperatorProfileDto.builder()
+                .coordinates("52.2297,21.0122")
+                .radius(100)
+                .certificates(List.of("Advanced License"))
+                .services(existingServices)
+                .build();
+        UserEntity user = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.OPERATOR)
+                .coordinates("45.0,90.0")
+                .radius(10)
+                .certificates(List.of("Basic License"))
+                .build();
+
+        when(jwtService.extractUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(UserEntity.class))).thenReturn(user);
+        when(operatorServicesService.getOperatorServices(any(UserEntity.class)))
+                .thenReturn(existingServices);
+        when(operatorMapper.toOperatorProfileDto(any(UserEntity.class), anyList()))
+                .thenReturn(expectedDto);
+
+        OperatorProfileDto result = service.editProfile(operatorDto);
+
+        assertThat(result).isEqualTo(expectedDto);
+        verify(userRepository).save(any(UserEntity.class));
+        verify(operatorServicesService).getOperatorServices(any(UserEntity.class));
+        verify(operatorServicesService, never()).editOperatorServices(any(), any());
+        verify(operatorMapper).toOperatorProfileDto(any(UserEntity.class), eq(existingServices));
+    }
+
+    @Test
+    public void givenOperatorDtoWithEmptyServices_whenEditProfile_thenServicesCleared() {
+        UUID userId = UUID.randomUUID();
+        OperatorProfileDto operatorDto = OperatorProfileDto.builder()
+                .coordinates("52.2297,21.0122")
+                .radius(100)
+                .certificates(List.of("Advanced License"))
+                .services(List.of())
+                .build();
+        OperatorProfileDto expectedDto = OperatorProfileDto.builder()
+                .coordinates("52.2297,21.0122")
+                .radius(100)
+                .certificates(List.of("Advanced License"))
+                .services(List.of())
+                .build();
+        UserEntity user = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.OPERATOR)
+                .coordinates("45.0,90.0")
+                .radius(10)
+                .certificates(List.of("Basic License"))
+                .build();
+
+        when(jwtService.extractUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(UserEntity.class))).thenReturn(user);
+        when(operatorServicesService.editOperatorServices(any(UserEntity.class), anyList()))
+                .thenReturn(List.of());
+        when(operatorMapper.toOperatorProfileDto(any(UserEntity.class), anyList()))
+                .thenReturn(expectedDto);
+
+        OperatorProfileDto result = service.editProfile(operatorDto);
+
+        assertThat(result).isEqualTo(expectedDto);
+        verify(userRepository).save(any(UserEntity.class));
+        verify(operatorServicesService).editOperatorServices(any(UserEntity.class), eq(List.of()));
+        verify(operatorMapper).toOperatorProfileDto(any(UserEntity.class), eq(List.of()));
+    }
+
+    @Test
+    public void givenUserNotFound_whenEditProfile_thenThrowsUserNotFoundException() {
+        UUID userId = UUID.randomUUID();
+        OperatorProfileDto operatorDto = OperatorProfileDto.builder()
+                .coordinates("52.2297,21.0122")
+                .radius(100)
+                .certificates(List.of("Advanced License"))
+                .services(List.of("Photography"))
+                .build();
+
+        when(jwtService.extractUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.editProfile(operatorDto))
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessage("User not found");
+
+        verify(jwtService).extractUserId();
+        verify(userRepository).findById(userId);
+        verify(userRepository, never()).save(any());
+        verify(operatorServicesService, never()).editOperatorServices(any(), any());
+        verify(operatorServicesService, never()).getOperatorServices(any());
+    }
+
+    @Test
+    public void givenUserNotOperator_whenEditProfile_thenThrowsNoSuchOperatorException() {
+        UUID userId = UUID.randomUUID();
+        OperatorProfileDto operatorDto = OperatorProfileDto.builder()
+                .coordinates("52.2297,21.0122")
+                .radius(100)
+                .certificates(List.of("Advanced License"))
+                .services(List.of("Photography"))
+                .build();
+        UserEntity user = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.CLIENT)
+                .build();
+
+        when(jwtService.extractUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> service.editProfile(operatorDto))
+                .isInstanceOf(com.example.drones.operators.exceptions.NoSuchOperatorException.class)
+                .hasMessage("No operator profile found for this user.");
+
+        verify(jwtService).extractUserId();
+        verify(userRepository).findById(userId);
+        verify(userRepository, never()).save(any());
+        verify(operatorServicesService, never()).editOperatorServices(any(), any());
+        verify(operatorServicesService, never()).getOperatorServices(any());
+    }
 }
 

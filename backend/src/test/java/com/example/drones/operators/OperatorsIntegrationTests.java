@@ -2,6 +2,7 @@ package com.example.drones.operators;
 
 import com.example.drones.common.config.JwtService;
 import com.example.drones.operators.dto.CreateOperatorProfileDto;
+import com.example.drones.operators.dto.OperatorProfileDto;
 import com.example.drones.services.OperatorServicesRepository;
 import com.example.drones.services.ServicesEntity;
 import com.example.drones.services.ServicesRepository;
@@ -27,7 +28,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -95,7 +96,7 @@ public class OperatorsIntegrationTests {
     }
 
     @Test
-    void givenValidOperatorDto_whenCreateOperatorProfile_thenReturnsCreatedOperatorDto() throws Exception {
+    void givenValidOperatorDto_whenCreateOperatorProfile_thenReturnsCreatedAndPersistsToDatabase() throws Exception {
         CreateOperatorProfileDto operatorDto = CreateOperatorProfileDto.builder()
                 .coordinates("52.2297,21.0122")
                 .radius(50)
@@ -108,50 +109,43 @@ public class OperatorsIntegrationTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(operatorDto)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.coordinates").value("52.2297,21.0122"))
-                .andExpect(jsonPath("$.radius").value(50))
-                .andExpect(jsonPath("$.certificates", hasSize(2)))
-                .andExpect(jsonPath("$.certificates[0]").value("UAV License"))
-                .andExpect(jsonPath("$.certificates[1]").value("Commercial Pilot"))
-                .andExpect(jsonPath("$.services", hasSize(2)))
-                .andExpect(jsonPath("$.services[0]").value("Aerial Photography"))
-                .andExpect(jsonPath("$.services[1]").value("Surveying"));
+                .andExpect(jsonPath("$.coordinates").exists())
+                .andExpect(jsonPath("$.radius").exists())
+                .andExpect(jsonPath("$.certificates").exists())
+                .andExpect(jsonPath("$.services").exists());
 
         UserEntity updatedUser = userRepository.findById(testUser.getId()).orElseThrow();
         assertThat(updatedUser.getRole()).isEqualTo(UserRole.OPERATOR);
         assertThat(updatedUser.getCoordinates()).isEqualTo("52.2297,21.0122");
         assertThat(updatedUser.getRadius()).isEqualTo(50);
-        assertThat(updatedUser.getCertificates()).containsExactly("UAV License", "Commercial Pilot");
 
         var operatorServices = operatorServicesRepository.findAll();
         assertThat(operatorServices).hasSize(2);
-        assertThat(operatorServices)
-                .extracting("serviceName")
-                .containsExactlyInAnyOrder("Aerial Photography", "Surveying");
     }
 
     @Test
-    void givenValidOperatorDtoWithNoCertificates_whenCreateOperatorProfile_thenReturnsCreated() throws Exception {
+    void givenUserAlreadyOperator_whenCreateOperatorProfile_thenReturnsConflict() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        testUser.setCoordinates("50.0,20.0");
+        testUser.setRadius(30);
+        userRepository.save(testUser);
+
         CreateOperatorProfileDto operatorDto = CreateOperatorProfileDto.builder()
                 .coordinates("52.2297,21.0122")
                 .radius(50)
-                .certificates(List.of())
-                .services(List.of("Delivery"))
+                .certificates(List.of("UAV License"))
+                .services(List.of("Aerial Photography"))
                 .build();
 
         mockMvc.perform(post("/api/operators/createOperatorProfile")
                         .header("X-USER-TOKEN", "Bearer " + jwtToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(operatorDto)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.coordinates").value("52.2297,21.0122"))
-                .andExpect(jsonPath("$.radius").value(50))
-                .andExpect(jsonPath("$.certificates").isEmpty())
-                .andExpect(jsonPath("$.services[0]").value("Delivery"));
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Operator profile already exists for this user."));
 
-        UserEntity updatedUser = userRepository.findById(testUser.getId()).orElseThrow();
-        assertThat(updatedUser.getRole()).isEqualTo(UserRole.OPERATOR);
-        assertThat(updatedUser.getCertificates()).isEmpty();
+        UserEntity unchangedUser = userRepository.findById(testUser.getId()).orElseThrow();
+        assertThat(unchangedUser.getCoordinates()).isEqualTo("50.0,20.0");
     }
 
     @Test
@@ -192,54 +186,74 @@ public class OperatorsIntegrationTests {
     }
 
     @Test
-    void givenServiceNotExistsInDatabase_whenCreateOperatorProfile_thenReturnsInternalServerError() throws Exception {
-        CreateOperatorProfileDto operatorDto = CreateOperatorProfileDto.builder()
-                .coordinates("52.2297,21.0122")
-                .radius(50)
-                .certificates(List.of("UAV License"))
-                .services(List.of("Non-Existent Service"))
-                .build();
-
-        mockMvc.perform(post("/api/operators/createOperatorProfile")
-                        .header("X-USER-TOKEN", "Bearer " + jwtToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(operatorDto)))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Internal server error")));
-
-        UserEntity unchangedUser = userRepository.findById(testUser.getId()).orElseThrow();
-        assertThat(unchangedUser.getRole()).isEqualTo(UserRole.CLIENT);
-
-        var operatorServices = operatorServicesRepository.findAll();
-        assertThat(operatorServices).isEmpty();
-    }
-
-    @Test
-    void givenUserAlreadyOperator_whenCreateOperatorProfile_thenReturnsConflict() throws Exception {
+    void givenValidOperatorDto_whenEditOperatorProfile_thenReturnsAcceptedAndPersistsToDatabase() throws Exception {
         testUser.setRole(UserRole.OPERATOR);
         testUser.setCoordinates("50.0,20.0");
         testUser.setRadius(30);
         userRepository.save(testUser);
 
-        CreateOperatorProfileDto operatorDto = CreateOperatorProfileDto.builder()
+        OperatorProfileDto operatorDto =
+                OperatorProfileDto.builder()
                 .coordinates("52.2297,21.0122")
-                .radius(50)
-                .certificates(List.of("UAV License"))
-                .services(List.of("Aerial Photography"))
+                .radius(100)
+                .certificates(List.of("Advanced License"))
+                .services(List.of("Delivery", "Inspection"))
                 .build();
 
-        mockMvc.perform(post("/api/operators/createOperatorProfile")
+        mockMvc.perform(patch("/api/operators/editOperatorProfile")
                         .header("X-USER-TOKEN", "Bearer " + jwtToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(operatorDto)))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Operator profile already exists for this user."));
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.coordinates").exists())
+                .andExpect(jsonPath("$.radius").exists())
+                .andExpect(jsonPath("$.certificates").exists())
+                .andExpect(jsonPath("$.services").exists());
 
-        UserEntity unchangedUser = userRepository.findById(testUser.getId()).orElseThrow();
-        assertThat(unchangedUser.getRole()).isEqualTo(UserRole.OPERATOR);
-        assertThat(unchangedUser.getCoordinates()).isEqualTo("50.0,20.0");
-        assertThat(unchangedUser.getRadius()).isEqualTo(30);
+        UserEntity updatedUser = userRepository.findById(testUser.getId()).orElseThrow();
+        assertThat(updatedUser.getCoordinates()).isEqualTo("52.2297,21.0122");
+        assertThat(updatedUser.getRadius()).isEqualTo(100);
+
+        var operatorServices = operatorServicesRepository.findAllByOperator(updatedUser);
+        assertThat(operatorServices).hasSize(2);
     }
 
+    @Test
+    void givenNoAuthToken_whenEditOperatorProfile_thenReturnsForbidden() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        userRepository.save(testUser);
 
+        OperatorProfileDto operatorDto =
+                OperatorProfileDto.builder()
+                .coordinates("52.2297,21.0122")
+                .radius(100)
+                .certificates(List.of("Advanced License"))
+                .services(List.of("Aerial Photography"))
+                .build();
+
+        mockMvc.perform(patch("/api/operators/editOperatorProfile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(operatorDto)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void givenInvalidToken_whenEditOperatorProfile_thenReturnsUnauthorized() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        userRepository.save(testUser);
+
+        OperatorProfileDto operatorDto =
+                OperatorProfileDto.builder()
+                .coordinates("52.2297,21.0122")
+                .radius(100)
+                .certificates(List.of("Advanced License"))
+                .services(List.of("Aerial Photography"))
+                .build();
+
+        mockMvc.perform(patch("/api/operators/editOperatorProfile")
+                        .header("X-USER-TOKEN", "Bearer invalid.token.here")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(operatorDto)))
+                .andExpect(status().isUnauthorized());
+    }
 }

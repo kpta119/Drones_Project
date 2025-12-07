@@ -3,6 +3,7 @@ package com.example.drones.operators;
 import com.example.drones.common.config.exceptions.UserNotFoundException;
 import com.example.drones.operators.dto.CreateOperatorProfileDto;
 import com.example.drones.operators.dto.OperatorProfileDto;
+import com.example.drones.operators.exceptions.NoSuchOperatorException;
 import com.example.drones.operators.exceptions.OperatorAlreadyExistsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,5 +82,45 @@ public class OperatorsControllerTests {
                 .isInstanceOf(OperatorAlreadyExistsException.class)
                 .hasMessage("Operator profile already exists for this user.");
         verify(operatorsService).createProfile(request);
+    }
+
+    @Test
+    public void givenValidOperatorDto_whenEditOperatorProfile_thenReturnsAccepted() {
+        OperatorProfileDto request = response;
+        OperatorProfileDto updatedResponse = OperatorProfileDto.builder()
+                .coordinates("52.2297,21.0122")
+                .radius(100)
+                .certificates(List.of("UAV License", "Advanced License"))
+                .services(List.of("Aerial Photography", "Surveillance"))
+                .build();
+        when(operatorsService.editProfile(request)).thenReturn(updatedResponse);
+
+        ResponseEntity<OperatorProfileDto> response = operatorsController.editOperatorProfile(request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
+        assertThat(response.getBody()).isEqualTo(updatedResponse);
+        verify(operatorsService).editProfile(request);
+    }
+
+    @Test
+    public void givenUserNotFound_whenEditOperatorProfile_thenThrowsUserNotFoundException() {
+        OperatorProfileDto request = response;
+        when(operatorsService.editProfile(request)).thenThrow(new UserNotFoundException());
+
+        assertThatThrownBy(() -> operatorsController.editOperatorProfile(request))
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessage("User not found");
+        verify(operatorsService).editProfile(request);
+    }
+
+    @Test
+    public void givenUserNotOperator_whenEditOperatorProfile_thenThrowsNoSuchOperatorException() {
+        OperatorProfileDto request = response;
+        when(operatorsService.editProfile(request)).thenThrow(new NoSuchOperatorException());
+
+        assertThatThrownBy(() -> operatorsController.editOperatorProfile(request))
+                .isInstanceOf(NoSuchOperatorException.class)
+                .hasMessage("No operator profile found for this user.");
+        verify(operatorsService).editProfile(request);
     }
 }
