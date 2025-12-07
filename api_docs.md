@@ -338,9 +338,7 @@ Base URL: `/api/operators`.
       "operator_services": ["Fotografia", "Wideo"],
       "email": "jan@example.com",
       "phone_number": "123456789",
-      "portfolio": [
-        {
-          "id": 1,
+      "portfolio": {
           "title": "Wesele w Krakowie",
           "description": "Ujęcia z drona...",
           "photos": [
@@ -354,7 +352,6 @@ Base URL: `/api/operators`.
             }
            ]
         }
-      ]
     }
     ```
 
