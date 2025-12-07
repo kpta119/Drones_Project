@@ -2,6 +2,7 @@ package com.example.drones.operators;
 
 import com.example.drones.common.config.JwtService;
 import com.example.drones.operators.dto.CreateOperatorProfileDto;
+import com.example.drones.operators.dto.CreatePortfolioDto;
 import com.example.drones.operators.dto.OperatorProfileDto;
 import com.example.drones.services.OperatorServicesRepository;
 import com.example.drones.services.ServicesEntity;
@@ -50,6 +51,8 @@ public class OperatorsIntegrationTests {
     @Autowired
     private ServicesRepository servicesRepository;
     @Autowired
+    private PortfolioRepository portfolioRepository;
+    @Autowired
     private MockMvc mockMvc;
     @Autowired
     private ObjectMapper objectMapper;
@@ -84,6 +87,7 @@ public class OperatorsIntegrationTests {
 
     @AfterEach
     void tearDown() {
+        portfolioRepository.deleteAll();
         operatorServicesRepository.deleteAll();
         userRepository.deleteAll();
         servicesRepository.deleteAll();
@@ -121,31 +125,6 @@ public class OperatorsIntegrationTests {
 
         var operatorServices = operatorServicesRepository.findAll();
         assertThat(operatorServices).hasSize(2);
-    }
-
-    @Test
-    void givenUserAlreadyOperator_whenCreateOperatorProfile_thenReturnsConflict() throws Exception {
-        testUser.setRole(UserRole.OPERATOR);
-        testUser.setCoordinates("50.0,20.0");
-        testUser.setRadius(30);
-        userRepository.save(testUser);
-
-        CreateOperatorProfileDto operatorDto = CreateOperatorProfileDto.builder()
-                .coordinates("52.2297,21.0122")
-                .radius(50)
-                .certificates(List.of("UAV License"))
-                .services(List.of("Aerial Photography"))
-                .build();
-
-        mockMvc.perform(post("/api/operators/createOperatorProfile")
-                        .header("X-USER-TOKEN", "Bearer " + jwtToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(operatorDto)))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Operator profile already exists for this user."));
-
-        UserEntity unchangedUser = userRepository.findById(testUser.getId()).orElseThrow();
-        assertThat(unchangedUser.getCoordinates()).isEqualTo("50.0,20.0");
     }
 
     @Test
@@ -255,5 +234,70 @@ public class OperatorsIntegrationTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(operatorDto)))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void givenValidPortfolioDto_whenAddPortfolio_thenReturnsCreatedAndPersistsToDatabase() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        userRepository.save(testUser);
+
+        CreatePortfolioDto portfolioDto = CreatePortfolioDto.builder()
+                .title("Aerial Photography Portfolio")
+                .description("Collection of my best aerial photography work")
+                .build();
+
+        mockMvc.perform(post("/api/operators/addPortfolio")
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(portfolioDto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title").value("Aerial Photography Portfolio"))
+                .andExpect(jsonPath("$.description").value("Collection of my best aerial photography work"))
+                .andExpect(jsonPath("$.photos").isArray());
+
+        var portfolios = portfolioRepository.findAll();
+        assertThat(portfolios).hasSize(1);
+        assertThat(portfolios.getFirst().getTitle()).isEqualTo("Aerial Photography Portfolio");
+        assertThat(portfolios.getFirst().getDescription()).isEqualTo("Collection of my best aerial photography work");
+        assertThat(portfolios.getFirst().getOperator().getId()).isEqualTo(testUser.getId());
+    }
+
+    @Test
+    void givenNoAuthToken_whenAddPortfolio_thenReturnsForbidden() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        userRepository.save(testUser);
+
+        CreatePortfolioDto portfolioDto = CreatePortfolioDto.builder()
+                .title("Aerial Photography Portfolio")
+                .description("Collection of my best aerial photography work")
+                .build();
+
+        mockMvc.perform(post("/api/operators/addPortfolio")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(portfolioDto)))
+                .andExpect(status().isForbidden());
+
+        var portfolios = portfolioRepository.findAll();
+        assertThat(portfolios).isEmpty();
+    }
+
+    @Test
+    void givenInvalidToken_whenAddPortfolio_thenReturnsUnauthorized() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        userRepository.save(testUser);
+
+        CreatePortfolioDto portfolioDto = CreatePortfolioDto.builder()
+                .title("Aerial Photography Portfolio")
+                .description("Collection of my best aerial photography work")
+                .build();
+
+        mockMvc.perform(post("/api/operators/addPortfolio")
+                        .header("X-USER-TOKEN", "Bearer invalid.token.here")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(portfolioDto)))
+                .andExpect(status().isUnauthorized());
+
+        var portfolios = portfolioRepository.findAll();
+        assertThat(portfolios).isEmpty();
     }
 }

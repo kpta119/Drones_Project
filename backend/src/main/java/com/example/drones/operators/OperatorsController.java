@@ -1,6 +1,8 @@
 package com.example.drones.operators;
 
 import com.example.drones.operators.dto.CreateOperatorProfileDto;
+import com.example.drones.operators.dto.CreatePortfolioDto;
+import com.example.drones.operators.dto.OperatorPortfolioDto;
 import com.example.drones.operators.dto.OperatorProfileDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,4 +29,11 @@ public class OperatorsController {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
 
     }
+
+    @PostMapping("/addPortfolio")
+    public ResponseEntity<OperatorPortfolioDto> addPortfolio(@RequestBody @Valid CreatePortfolioDto portfolioDto) {
+        OperatorPortfolioDto response = operatorsService.createPortfolio(portfolioDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
 }

@@ -3,7 +3,10 @@ package com.example.drones.operators;
 import com.example.drones.common.config.JwtService;
 import com.example.drones.common.config.exceptions.UserNotFoundException;
 import com.example.drones.operators.dto.CreateOperatorProfileDto;
+import com.example.drones.operators.dto.CreatePortfolioDto;
+import com.example.drones.operators.dto.OperatorPortfolioDto;
 import com.example.drones.operators.dto.OperatorProfileDto;
+import com.example.drones.operators.exceptions.NoSuchOperatorException;
 import com.example.drones.operators.exceptions.OperatorAlreadyExistsException;
 import com.example.drones.services.OperatorServicesService;
 import com.example.drones.user.UserEntity;
@@ -32,6 +35,8 @@ public class OperatorsServiceTests {
     @Mock
     private UserRepository userRepository;
     @Mock
+    private PortfolioRepository portfolioRepository;
+    @Mock
     private JwtService jwtService;
     @Mock
     private CacheManager cacheManager;
@@ -39,6 +44,8 @@ public class OperatorsServiceTests {
     private OperatorServicesService operatorServicesService;
     @Mock
     private UserMapper operatorMapper;
+    @Mock
+    private PortfolioMapper portfolioMapper;
 
     @InjectMocks
     private OperatorsService service;
@@ -385,6 +392,90 @@ public class OperatorsServiceTests {
         verify(userRepository, never()).save(any());
         verify(operatorServicesService, never()).editOperatorServices(any(), any());
         verify(operatorServicesService, never()).getOperatorServices(any());
+    }
+
+    @Test
+    public void givenValidPortfolioDto_whenCreatePortfolio_thenPortfolioCreatedAndReturnsDto() {
+        UUID userId = UUID.randomUUID();
+        CreatePortfolioDto portfolioDto = CreatePortfolioDto.builder()
+                .title("Aerial Photography Portfolio")
+                .description("Collection of my best aerial photography work")
+                .build();
+        UserEntity user = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.OPERATOR)
+                .build();
+        PortfolioEntity savedPortfolio = PortfolioEntity.builder()
+                .id(1)
+                .operator(user)
+                .title(portfolioDto.title())
+                .description(portfolioDto.description())
+                .build();
+        OperatorPortfolioDto expectedDto = OperatorPortfolioDto.builder()
+                .title(portfolioDto.title())
+                .description(portfolioDto.description())
+                .photos(List.of())
+                .build();
+
+        when(jwtService.extractUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(portfolioRepository.save(any(PortfolioEntity.class))).thenReturn(savedPortfolio);
+        when(portfolioMapper.toOperatorPortfolioDto(any(PortfolioEntity.class))).thenReturn(expectedDto);
+
+        OperatorPortfolioDto result = service.createPortfolio(portfolioDto);
+
+        verify(jwtService).extractUserId();
+        verify(userRepository).findById(userId);
+        verify(portfolioRepository).save(any(PortfolioEntity.class));
+        verify(portfolioMapper).toOperatorPortfolioDto(savedPortfolio);
+
+        assertThat(result).isEqualTo(expectedDto);
+    }
+
+    @Test
+    public void givenUserNotFound_whenCreatePortfolio_thenThrowsUserNotFoundException() {
+        UUID userId = UUID.randomUUID();
+        CreatePortfolioDto portfolioDto = CreatePortfolioDto.builder()
+                .title("Aerial Photography Portfolio")
+                .description("Collection of my best aerial photography work")
+                .build();
+
+        when(jwtService.extractUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.createPortfolio(portfolioDto))
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessage("User not found");
+
+        verify(jwtService).extractUserId();
+        verify(userRepository).findById(userId);
+        verify(portfolioRepository, never()).save(any());
+        verify(portfolioMapper, never()).toOperatorPortfolioDto(any());
+    }
+
+    @Test
+    public void givenUserNotOperator_whenCreatePortfolio_thenThrowsNoSuchOperatorException() {
+        UUID userId = UUID.randomUUID();
+        CreatePortfolioDto portfolioDto = CreatePortfolioDto.builder()
+                .title("Aerial Photography Portfolio")
+                .description("Collection of my best aerial photography work")
+                .build();
+        UserEntity user = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.CLIENT)
+                .build();
+
+        when(jwtService.extractUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> service.createPortfolio(portfolioDto))
+                .isInstanceOf(NoSuchOperatorException.class)
+                .hasMessage("No operator profile found for this user.");
+
+        verify(jwtService).extractUserId();
+        verify(userRepository).findById(userId);
+        verify(portfolioRepository, never()).save(any());
+        verify(portfolioMapper, never()).toOperatorPortfolioDto(any());
     }
 }
 

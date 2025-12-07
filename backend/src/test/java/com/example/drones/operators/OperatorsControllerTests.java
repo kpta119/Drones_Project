@@ -2,6 +2,8 @@ package com.example.drones.operators;
 
 import com.example.drones.common.config.exceptions.UserNotFoundException;
 import com.example.drones.operators.dto.CreateOperatorProfileDto;
+import com.example.drones.operators.dto.CreatePortfolioDto;
+import com.example.drones.operators.dto.OperatorPortfolioDto;
 import com.example.drones.operators.dto.OperatorProfileDto;
 import com.example.drones.operators.exceptions.NoSuchOperatorException;
 import com.example.drones.operators.exceptions.OperatorAlreadyExistsException;
@@ -31,7 +33,9 @@ public class OperatorsControllerTests {
     private OperatorsController operatorsController;
 
     private CreateOperatorProfileDto validCreateOperatorDto;
-    private OperatorProfileDto response;
+    private OperatorProfileDto operatorProfileDto;
+    private CreatePortfolioDto validCreatePortfolioDto;
+    private OperatorPortfolioDto operatorPortfolioDto;
 
     @BeforeEach
     public void setUp() {
@@ -42,23 +46,34 @@ public class OperatorsControllerTests {
                 .services(List.of("Aerial Photography"))
                 .build();
 
-        response = OperatorProfileDto.builder()
+        operatorProfileDto = OperatorProfileDto.builder()
                 .coordinates("52.2297,21.0122")
                 .radius(50)
                 .certificates(List.of("UAV License"))
                 .services(List.of("Aerial Photography"))
+                .build();
+
+        validCreatePortfolioDto = CreatePortfolioDto.builder()
+                .title("Aerial Photography Portfolio")
+                .description("Collection of my best aerial photography work")
+                .build();
+
+        operatorPortfolioDto = OperatorPortfolioDto.builder()
+                .title("Aerial Photography Portfolio")
+                .description("Collection of my best aerial photography work")
+                .photos(List.of())
                 .build();
     }
 
     @Test
     public void givenValidOperatorDto_whenCreateOperatorProfile_thenReturnsCreated() {
         CreateOperatorProfileDto request = validCreateOperatorDto;
-        when(operatorsService.createProfile(request)).thenReturn(response);
+        when(operatorsService.createProfile(request)).thenReturn(operatorProfileDto);
 
         ResponseEntity<OperatorProfileDto> response = operatorsController.createOperatorProfile(request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody()).isEqualTo(this.response);
+        assertThat(response.getBody()).isEqualTo(this.operatorProfileDto);
         verify(operatorsService).createProfile(request);
     }
 
@@ -86,7 +101,7 @@ public class OperatorsControllerTests {
 
     @Test
     public void givenValidOperatorDto_whenEditOperatorProfile_thenReturnsAccepted() {
-        OperatorProfileDto request = response;
+        OperatorProfileDto request = operatorProfileDto;
         OperatorProfileDto updatedResponse = OperatorProfileDto.builder()
                 .coordinates("52.2297,21.0122")
                 .radius(100)
@@ -104,7 +119,7 @@ public class OperatorsControllerTests {
 
     @Test
     public void givenUserNotFound_whenEditOperatorProfile_thenThrowsUserNotFoundException() {
-        OperatorProfileDto request = response;
+        OperatorProfileDto request = operatorProfileDto;
         when(operatorsService.editProfile(request)).thenThrow(new UserNotFoundException());
 
         assertThatThrownBy(() -> operatorsController.editOperatorProfile(request))
@@ -115,12 +130,47 @@ public class OperatorsControllerTests {
 
     @Test
     public void givenUserNotOperator_whenEditOperatorProfile_thenThrowsNoSuchOperatorException() {
-        OperatorProfileDto request = response;
+        OperatorProfileDto request = operatorProfileDto;
         when(operatorsService.editProfile(request)).thenThrow(new NoSuchOperatorException());
 
         assertThatThrownBy(() -> operatorsController.editOperatorProfile(request))
                 .isInstanceOf(NoSuchOperatorException.class)
                 .hasMessage("No operator profile found for this user.");
         verify(operatorsService).editProfile(request);
+    }
+
+    @Test
+    public void givenValidPortfolioDto_whenAddPortfolio_thenReturnsCreated() {
+        CreatePortfolioDto request = validCreatePortfolioDto;
+        OperatorPortfolioDto response = operatorPortfolioDto;
+        when(operatorsService.createPortfolio(request)).thenReturn(response);
+
+        ResponseEntity<OperatorPortfolioDto> result = operatorsController.addPortfolio(request);
+
+        assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(result.getBody()).isEqualTo(response);
+        verify(operatorsService).createPortfolio(request);
+    }
+
+    @Test
+    public void givenUserNotFound_whenAddPortfolio_thenThrowsUserNotFoundException() {
+        CreatePortfolioDto request = validCreatePortfolioDto;
+        when(operatorsService.createPortfolio(request)).thenThrow(new UserNotFoundException());
+
+        assertThatThrownBy(() -> operatorsController.addPortfolio(request))
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessage("User not found");
+        verify(operatorsService).createPortfolio(request);
+    }
+
+    @Test
+    public void givenUserNotOperator_whenAddPortfolio_thenThrowsNoSuchOperatorException() {
+        CreatePortfolioDto request = validCreatePortfolioDto;
+        when(operatorsService.createPortfolio(request)).thenThrow(new NoSuchOperatorException());
+
+        assertThatThrownBy(() -> operatorsController.addPortfolio(request))
+                .isInstanceOf(NoSuchOperatorException.class)
+                .hasMessage("No operator profile found for this user.");
+        verify(operatorsService).createPortfolio(request);
     }
 }

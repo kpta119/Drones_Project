@@ -3,6 +3,8 @@ package com.example.drones.operators;
 import com.example.drones.common.config.JwtService;
 import com.example.drones.common.config.exceptions.UserNotFoundException;
 import com.example.drones.operators.dto.CreateOperatorProfileDto;
+import com.example.drones.operators.dto.CreatePortfolioDto;
+import com.example.drones.operators.dto.OperatorPortfolioDto;
 import com.example.drones.operators.dto.OperatorProfileDto;
 import com.example.drones.operators.exceptions.NoSuchOperatorException;
 import com.example.drones.operators.exceptions.OperatorAlreadyExistsException;
@@ -24,10 +26,12 @@ import java.util.UUID;
 public class OperatorsService {
 
     private final UserRepository userRepository;
+    private final PortfolioRepository portfolioRepository;
     private final JwtService jwtService;
     private final CacheManager cacheManager;
     private final OperatorServicesService operatorServicesService;
     private final UserMapper operatorMapper;
+    private final PortfolioMapper portfolioMapper;
 
     @Transactional
     public OperatorProfileDto createProfile(CreateOperatorProfileDto operatorDto) {
@@ -76,5 +80,23 @@ public class OperatorsService {
             savedServices = operatorServicesService.getOperatorServices(savedUser);
         }
         return operatorMapper.toOperatorProfileDto(savedUser, savedServices);
+    }
+
+    @Transactional
+    public OperatorPortfolioDto createPortfolio(CreatePortfolioDto portfolioDto) {
+        UUID userId = jwtService.extractUserId();
+
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+        if (user.getRole() != UserRole.OPERATOR) {
+            throw new NoSuchOperatorException();
+        }
+        PortfolioEntity portfolio = new PortfolioEntity();
+        portfolio.setOperator(user);
+        portfolio.setTitle(portfolioDto.title());
+        portfolio.setDescription(portfolioDto.description());
+        PortfolioEntity savedPortfolio = portfolioRepository.save(portfolio);
+
+        return portfolioMapper.toOperatorPortfolioDto(savedPortfolio);
     }
 }
