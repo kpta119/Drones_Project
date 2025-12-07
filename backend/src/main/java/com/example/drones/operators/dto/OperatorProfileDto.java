@@ -5,7 +5,7 @@ import lombok.Builder;
 
 import java.util.List;
 
-@SuppressFBWarnings(value = {"EI_EXPOSE_REP", "EI_EXPOSE_REP2"}, justification = "DTO class with short lifecycle")
+@SuppressFBWarnings(value = {"EI_EXPOSE_REP"}, justification = "DTO class with short lifecycle")
 @Builder
 public record OperatorProfileDto(
         String coordinates,
