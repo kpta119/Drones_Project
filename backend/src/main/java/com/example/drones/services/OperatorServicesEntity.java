@@ -23,7 +23,7 @@ public class OperatorServicesEntity {
     @Column(name = "operator_id", insertable = false, updatable = false)
     private UUID operatorId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_name", referencedColumnName = "name", insertable = false, updatable = false)
     private ServicesEntity service;
 

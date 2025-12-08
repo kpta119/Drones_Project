@@ -19,7 +19,7 @@ public class CacheConfig {
     public CacheManager cacheManager() {
         SimpleCacheManager cacheManager = new SimpleCacheManager();
         cacheManager.setCaches(List.of(
-                buildCache("Operators", 60, 1000)
+                buildCache("operators", 60, 1000)
         ));
         return cacheManager;
     }

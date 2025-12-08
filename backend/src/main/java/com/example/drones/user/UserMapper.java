@@ -2,6 +2,8 @@ package com.example.drones.user;
 
 import com.example.drones.auth.dto.LoginResponse;
 import com.example.drones.auth.dto.RegisterRequest;
+import com.example.drones.operators.dto.OperatorDto;
+import com.example.drones.operators.dto.OperatorPortfolioDto;
 import com.example.drones.operators.dto.OperatorProfileDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -25,4 +27,9 @@ public interface UserMapper {
 
     @Mapping(target = "services", source = "services")
     OperatorProfileDto toOperatorProfileDto(UserEntity userEntity, List<String> services);
+
+    @Mapping(target = "username", source = "user.displayName")
+    @Mapping(target = "operatorServices", source = "services")
+    @Mapping(target = "portfolio", source = "portfolio")
+    OperatorDto toOperatorDto(UserEntity user, List<String> services, OperatorPortfolioDto portfolio);
 }

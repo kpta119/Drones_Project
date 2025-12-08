@@ -1,14 +1,11 @@
 package com.example.drones.operators;
 
-import com.example.drones.common.config.JwtService;
 import com.example.drones.common.config.exceptions.UserNotFoundException;
-import com.example.drones.operators.dto.CreateOperatorProfileDto;
-import com.example.drones.operators.dto.CreatePortfolioDto;
-import com.example.drones.operators.dto.OperatorPortfolioDto;
-import com.example.drones.operators.dto.OperatorProfileDto;
+import com.example.drones.operators.dto.*;
 import com.example.drones.operators.exceptions.NoSuchOperatorException;
 import com.example.drones.operators.exceptions.NoSuchPortfolioException;
 import com.example.drones.operators.exceptions.OperatorAlreadyExistsException;
+import com.example.drones.operators.exceptions.PortfolioAlreadyExistsException;
 import com.example.drones.services.OperatorServicesService;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserMapper;
@@ -19,7 +16,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cache.CacheManager;
 
 import java.util.List;
 import java.util.Optional;
@@ -37,10 +33,6 @@ public class OperatorsServiceTests {
     private UserRepository userRepository;
     @Mock
     private PortfolioRepository portfolioRepository;
-    @Mock
-    private JwtService jwtService;
-    @Mock
-    private CacheManager cacheManager;
     @Mock
     private OperatorServicesService operatorServicesService;
     @Mock
@@ -72,7 +64,6 @@ public class OperatorsServiceTests {
                 .build();
 
 
-        when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(UserEntity.class))).thenReturn(user);
         when(operatorServicesService.addOperatorServices(any(UserEntity.class), anyList()))
@@ -80,9 +71,8 @@ public class OperatorsServiceTests {
         when(operatorMapper.toOperatorProfileDto(any(UserEntity.class), anyList()))
                 .thenReturn(expectedDto);
 
-        OperatorProfileDto result = service.createProfile(operatorDto);
+        OperatorProfileDto result = service.createProfile(userId, operatorDto);
 
-        verify(jwtService).extractUserId();
         verify(userRepository).findById(userId);
         verify(userRepository).save(any(UserEntity.class));
         verify(operatorServicesService).addOperatorServices(any(UserEntity.class), eq(operatorDto.services()));
@@ -115,7 +105,6 @@ public class OperatorsServiceTests {
                 .role(UserRole.CLIENT)
                 .build();
 
-        when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(UserEntity.class))).thenReturn(user);
         when(operatorServicesService.addOperatorServices(any(UserEntity.class), anyList()))
@@ -123,7 +112,7 @@ public class OperatorsServiceTests {
         when(operatorMapper.toOperatorProfileDto(any(UserEntity.class), anyList()))
                 .thenReturn(expectedDto);
 
-        OperatorProfileDto result = service.createProfile(operatorDto);
+        OperatorProfileDto result = service.createProfile(userId, operatorDto);
 
         assertThat(user.getCertificates()).isEmpty();
         assertThat(result).isEqualTo(expectedDto);
@@ -142,14 +131,12 @@ public class OperatorsServiceTests {
                 .services(List.of("Delivery"))
                 .build();
 
-        when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.createProfile(operatorDto))
+        assertThatThrownBy(() -> service.createProfile(userId, operatorDto))
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessage("User not found");
 
-        verify(jwtService).extractUserId();
         verify(userRepository).findById(userId);
         verify(userRepository, never()).save(any());
         verify(operatorServicesService, never()).addOperatorServices(any(), any());
@@ -171,14 +158,12 @@ public class OperatorsServiceTests {
                 .radius(5)
                 .build();
 
-        when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        assertThatThrownBy(() -> service.createProfile(operatorDto))
+        assertThatThrownBy(() -> service.createProfile(userId, operatorDto))
                 .isInstanceOf(OperatorAlreadyExistsException.class)
                 .hasMessage("Operator profile already exists for this user.");
 
-        verify(jwtService).extractUserId();
         verify(userRepository).findById(userId);
         verify(userRepository, never()).save(any());
         verify(operatorServicesService, never()).addOperatorServices(any(), any());
@@ -201,7 +186,6 @@ public class OperatorsServiceTests {
                 .certificates(List.of("Basic License"))
                 .build();
 
-        when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(UserEntity.class))).thenReturn(user);
         when(operatorServicesService.editOperatorServices(any(UserEntity.class), anyList()))
@@ -209,13 +193,12 @@ public class OperatorsServiceTests {
         when(operatorMapper.toOperatorProfileDto(any(UserEntity.class), anyList()))
                 .thenReturn(operatorDto);
 
-        OperatorProfileDto result = service.editProfile(operatorDto);
+        OperatorProfileDto result = service.editProfile(userId, operatorDto);
 
         assertThat(user.getCoordinates()).isEqualTo("52.2297,21.0122");
         assertThat(user.getRadius()).isEqualTo(100);
         assertThat(user.getCertificates()).isEqualTo(List.of("Advanced License", "Night Flight"));
         assertThat(result).isEqualTo(operatorDto);
-        verify(jwtService).extractUserId();
         verify(userRepository).findById(userId);
         verify(userRepository).save(any(UserEntity.class));
         verify(operatorServicesService).editOperatorServices(any(UserEntity.class), eq(operatorDto.services()));
@@ -245,7 +228,6 @@ public class OperatorsServiceTests {
                 .certificates(List.of("Basic License"))
                 .build();
 
-        when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(UserEntity.class))).thenReturn(user);
         when(operatorServicesService.editOperatorServices(any(UserEntity.class), anyList()))
@@ -253,7 +235,7 @@ public class OperatorsServiceTests {
         when(operatorMapper.toOperatorProfileDto(any(UserEntity.class), anyList()))
                 .thenReturn(expectedDto);
 
-        OperatorProfileDto result = service.editProfile(operatorDto);
+        OperatorProfileDto result = service.editProfile(userId, operatorDto);
 
         assertThat(user.getCoordinates()).isEqualTo("52.2297,21.0122");
         assertThat(user.getRadius()).isEqualTo(10);
@@ -287,7 +269,6 @@ public class OperatorsServiceTests {
                 .certificates(List.of("Basic License"))
                 .build();
 
-        when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(UserEntity.class))).thenReturn(user);
         when(operatorServicesService.getOperatorServices(any(UserEntity.class)))
@@ -295,7 +276,7 @@ public class OperatorsServiceTests {
         when(operatorMapper.toOperatorProfileDto(any(UserEntity.class), anyList()))
                 .thenReturn(expectedDto);
 
-        OperatorProfileDto result = service.editProfile(operatorDto);
+        OperatorProfileDto result = service.editProfile(userId, operatorDto);
 
         assertThat(result).isEqualTo(expectedDto);
         verify(userRepository).save(any(UserEntity.class));
@@ -327,7 +308,6 @@ public class OperatorsServiceTests {
                 .certificates(List.of("Basic License"))
                 .build();
 
-        when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(UserEntity.class))).thenReturn(user);
         when(operatorServicesService.editOperatorServices(any(UserEntity.class), anyList()))
@@ -335,7 +315,7 @@ public class OperatorsServiceTests {
         when(operatorMapper.toOperatorProfileDto(any(UserEntity.class), anyList()))
                 .thenReturn(expectedDto);
 
-        OperatorProfileDto result = service.editProfile(operatorDto);
+        OperatorProfileDto result = service.editProfile(userId, operatorDto);
 
         assertThat(result).isEqualTo(expectedDto);
         verify(userRepository).save(any(UserEntity.class));
@@ -353,14 +333,12 @@ public class OperatorsServiceTests {
                 .services(List.of("Photography"))
                 .build();
 
-        when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.editProfile(operatorDto))
+        assertThatThrownBy(() -> service.editProfile(userId, operatorDto))
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessage("User not found");
 
-        verify(jwtService).extractUserId();
         verify(userRepository).findById(userId);
         verify(userRepository, never()).save(any());
         verify(operatorServicesService, never()).editOperatorServices(any(), any());
@@ -381,14 +359,12 @@ public class OperatorsServiceTests {
                 .role(UserRole.CLIENT)
                 .build();
 
-        when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        assertThatThrownBy(() -> service.editProfile(operatorDto))
+        assertThatThrownBy(() -> service.editProfile(userId, operatorDto))
                 .isInstanceOf(com.example.drones.operators.exceptions.NoSuchOperatorException.class)
                 .hasMessage("No operator profile found for this user.");
 
-        verify(jwtService).extractUserId();
         verify(userRepository).findById(userId);
         verify(userRepository, never()).save(any());
         verify(operatorServicesService, never()).editOperatorServices(any(), any());
@@ -418,14 +394,12 @@ public class OperatorsServiceTests {
                 .photos(List.of())
                 .build();
 
-        when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(portfolioRepository.save(any(PortfolioEntity.class))).thenReturn(savedPortfolio);
         when(portfolioMapper.toOperatorPortfolioDto(any(PortfolioEntity.class))).thenReturn(expectedDto);
 
-        OperatorPortfolioDto result = service.createPortfolio(portfolioDto);
+        OperatorPortfolioDto result = service.createPortfolio(userId, portfolioDto);
 
-        verify(jwtService).extractUserId();
         verify(userRepository).findById(userId);
         verify(portfolioRepository).save(any(PortfolioEntity.class));
         verify(portfolioMapper).toOperatorPortfolioDto(savedPortfolio);
@@ -441,14 +415,12 @@ public class OperatorsServiceTests {
                 .description("Collection of my best aerial photography work")
                 .build();
 
-        when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.createPortfolio(portfolioDto))
+        assertThatThrownBy(() -> service.createPortfolio(userId, portfolioDto))
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessage("User not found");
 
-        verify(jwtService).extractUserId();
         verify(userRepository).findById(userId);
         verify(portfolioRepository, never()).save(any());
         verify(portfolioMapper, never()).toOperatorPortfolioDto(any());
@@ -466,15 +438,44 @@ public class OperatorsServiceTests {
                 .role(UserRole.CLIENT)
                 .build();
 
-        when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        assertThatThrownBy(() -> service.createPortfolio(portfolioDto))
+        assertThatThrownBy(() -> service.createPortfolio(userId, portfolioDto))
                 .isInstanceOf(NoSuchOperatorException.class)
                 .hasMessage("No operator profile found for this user.");
 
-        verify(jwtService).extractUserId();
         verify(userRepository).findById(userId);
+        verify(portfolioRepository, never()).save(any());
+        verify(portfolioMapper, never()).toOperatorPortfolioDto(any());
+    }
+
+    @Test
+    public void givenOperatorWithPortfolio_whenCreatePortfolio_thenThrowsPortfolioAlreadyExistsException() {
+        UUID userId = UUID.randomUUID();
+        CreatePortfolioDto portfolioDto = CreatePortfolioDto.builder()
+                .title("Aerial Photography Portfolio")
+                .description("Collection of my best aerial photography work")
+                .build();
+        UserEntity user = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.OPERATOR)
+                .build();
+        PortfolioEntity existingPortfolio = PortfolioEntity.builder()
+                .id(1)
+                .operator(user)
+                .title("Existing Portfolio")
+                .description("Existing description")
+                .build();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(portfolioRepository.findByOperatorId(userId)).thenReturn(Optional.of(existingPortfolio));
+
+        assertThatThrownBy(() -> service.createPortfolio(userId, portfolioDto))
+                .isInstanceOf(PortfolioAlreadyExistsException.class)
+                .hasMessage("Portfolio already exists for this operator.");
+
+        verify(userRepository).findById(userId);
+        verify(portfolioRepository).findByOperatorId(userId);
         verify(portfolioRepository, never()).save(any());
         verify(portfolioMapper, never()).toOperatorPortfolioDto(any());
     }
@@ -509,18 +510,16 @@ public class OperatorsServiceTests {
                 .photos(List.of())
                 .build();
 
-        when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(portfolioRepository.findByOperatorId(userId)).thenReturn(Optional.of(existingPortfolio));
         when(portfolioRepository.save(any(PortfolioEntity.class))).thenReturn(savedPortfolio);
         when(portfolioMapper.toOperatorPortfolioDto(any(PortfolioEntity.class))).thenReturn(expectedDto);
 
-        OperatorPortfolioDto result = service.editPortfolio(portfolioDto);
+        OperatorPortfolioDto result = service.editPortfolio(userId, portfolioDto);
 
         assertThat(existingPortfolio.getTitle()).isEqualTo("Updated Portfolio Title");
         assertThat(existingPortfolio.getDescription()).isEqualTo("Updated description");
         assertThat(result).isEqualTo(expectedDto);
-        verify(jwtService).extractUserId();
         verify(userRepository).findById(userId);
         verify(portfolioRepository).findByOperatorId(userId);
         verify(portfolioRepository).save(existingPortfolio);
@@ -551,13 +550,12 @@ public class OperatorsServiceTests {
                 .photos(List.of())
                 .build();
 
-        when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(portfolioRepository.findByOperatorId(userId)).thenReturn(Optional.of(existingPortfolio));
         when(portfolioRepository.save(any(PortfolioEntity.class))).thenReturn(existingPortfolio);
         when(portfolioMapper.toOperatorPortfolioDto(any(PortfolioEntity.class))).thenReturn(expectedDto);
 
-        OperatorPortfolioDto result = service.editPortfolio(portfolioDto);
+        OperatorPortfolioDto result = service.editPortfolio(userId, portfolioDto);
 
         assertThat(existingPortfolio.getTitle()).isEqualTo("Updated Title Only");
         assertThat(existingPortfolio.getDescription()).isEqualTo("Old description");
@@ -590,13 +588,12 @@ public class OperatorsServiceTests {
                 .photos(List.of())
                 .build();
 
-        when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(portfolioRepository.findByOperatorId(userId)).thenReturn(Optional.of(existingPortfolio));
         when(portfolioRepository.save(any(PortfolioEntity.class))).thenReturn(existingPortfolio);
         when(portfolioMapper.toOperatorPortfolioDto(any(PortfolioEntity.class))).thenReturn(expectedDto);
 
-        OperatorPortfolioDto result = service.editPortfolio(portfolioDto);
+        OperatorPortfolioDto result = service.editPortfolio(userId, portfolioDto);
 
         assertThat(existingPortfolio.getTitle()).isEqualTo("Old Title");
         assertThat(existingPortfolio.getDescription()).isEqualTo("Updated description only");
@@ -614,14 +611,12 @@ public class OperatorsServiceTests {
                 .photos(List.of())
                 .build();
 
-        when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.editPortfolio(portfolioDto))
+        assertThatThrownBy(() -> service.editPortfolio(userId, portfolioDto))
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessage("User not found");
 
-        verify(jwtService).extractUserId();
         verify(userRepository).findById(userId);
         verify(portfolioRepository, never()).findByOperatorId(any());
         verify(portfolioRepository, never()).save(any());
@@ -641,14 +636,12 @@ public class OperatorsServiceTests {
                 .role(UserRole.CLIENT)
                 .build();
 
-        when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        assertThatThrownBy(() -> service.editPortfolio(portfolioDto))
+        assertThatThrownBy(() -> service.editPortfolio(userId, portfolioDto))
                 .isInstanceOf(NoSuchOperatorException.class)
                 .hasMessage("No operator profile found for this user.");
 
-        verify(jwtService).extractUserId();
         verify(userRepository).findById(userId);
         verify(portfolioRepository, never()).findByOperatorId(any());
         verify(portfolioRepository, never()).save(any());
@@ -668,19 +661,195 @@ public class OperatorsServiceTests {
                 .role(UserRole.OPERATOR)
                 .build();
 
-        when(jwtService.extractUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(portfolioRepository.findByOperatorId(userId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.editPortfolio(portfolioDto))
+        assertThatThrownBy(() -> service.editPortfolio(userId, portfolioDto))
                 .isInstanceOf(NoSuchPortfolioException.class)
                 .hasMessage("Operator portfolio not found");
 
-        verify(jwtService).extractUserId();
         verify(userRepository).findById(userId);
         verify(portfolioRepository).findByOperatorId(userId);
         verify(portfolioRepository, never()).save(any());
         verify(portfolioMapper, never()).toOperatorPortfolioDto(any());
+    }
+
+    @Test
+    public void givenValidOperatorWithPortfolio_whenGetOperatorProfile_thenReturnsCompleteOperatorDto() {
+        UUID userId = UUID.randomUUID();
+        List<String> services = List.of("Aerial Photography", "Surveying");
+        PortfolioEntity portfolio = PortfolioEntity.builder()
+                .id(1)
+                .title("My Portfolio")
+                .description("Portfolio description")
+                .build();
+        UserEntity operator = UserEntity.builder()
+                .id(userId)
+                .name("John")
+                .surname("Doe")
+                .displayName("john_doe")
+                .email("john@example.com")
+                .phoneNumber("+1234567890")
+                .role(UserRole.OPERATOR)
+                .coordinates("52.2297,21.0122")
+                .radius(50)
+                .certificates(List.of("UAV License", "Commercial Pilot"))
+                .portfolio(portfolio)
+                .build();
+        OperatorPortfolioDto portfolioDto = OperatorPortfolioDto.builder()
+                .title("My Portfolio")
+                .description("Portfolio description")
+                .photos(List.of())
+                .build();
+        OperatorDto expectedDto = OperatorDto.builder()
+                .name("John")
+                .surname("Doe")
+                .username("john_doe")
+                .email("john@example.com")
+                .phoneNumber("+1234567890")
+                .certificates(List.of("UAV License", "Commercial Pilot"))
+                .operatorServices(services)
+                .portfolio(portfolioDto)
+                .build();
+
+        when(userRepository.findByIdWithPortfolio(userId)).thenReturn(Optional.of(operator));
+        when(operatorServicesService.getOperatorServices(operator)).thenReturn(services);
+        when(portfolioMapper.toOperatorPortfolioDto(portfolio)).thenReturn(portfolioDto);
+        when(operatorMapper.toOperatorDto(operator, services, portfolioDto)).thenReturn(expectedDto);
+
+        OperatorDto result = service.getOperatorProfile(userId);
+
+        assertThat(result).isEqualTo(expectedDto);
+        verify(userRepository).findByIdWithPortfolio(userId);
+        verify(operatorServicesService).getOperatorServices(operator);
+        verify(portfolioMapper).toOperatorPortfolioDto(portfolio);
+        verify(operatorMapper).toOperatorDto(operator, services, portfolioDto);
+    }
+
+    @Test
+    public void givenValidOperatorWithoutPortfolio_whenGetOperatorProfile_thenReturnsOperatorDtoWithNullPortfolio() {
+        UUID userId = UUID.randomUUID();
+        List<String> services = List.of("Aerial Photography");
+        UserEntity operator = UserEntity.builder()
+                .id(userId)
+                .name("Jane")
+                .surname("Smith")
+                .displayName("Naismith")
+                .email("jane@example.com")
+                .phoneNumber("+9876543210")
+                .role(UserRole.OPERATOR)
+                .coordinates("40.7128,74.0060")
+                .radius(30)
+                .certificates(List.of("Basic UAV License"))
+                .portfolio(null)
+                .build();
+        OperatorDto expectedDto = OperatorDto.builder()
+                .name("Jane")
+                .surname("Smith")
+                .username("Naismith")
+                .email("jane@example.com")
+                .phoneNumber("+9876543210")
+                .certificates(List.of("Basic UAV License"))
+                .operatorServices(services)
+                .portfolio(null)
+                .build();
+
+        when(userRepository.findByIdWithPortfolio(userId)).thenReturn(Optional.of(operator));
+        when(operatorServicesService.getOperatorServices(operator)).thenReturn(services);
+        when(portfolioMapper.toOperatorPortfolioDto(null)).thenReturn(null);
+        when(operatorMapper.toOperatorDto(operator, services, null)).thenReturn(expectedDto);
+
+        OperatorDto result = service.getOperatorProfile(userId);
+
+        assertThat(result).isEqualTo(expectedDto);
+        assertThat(result.portfolio()).isNull();
+        verify(userRepository).findByIdWithPortfolio(userId);
+        verify(operatorServicesService).getOperatorServices(operator);
+        verify(portfolioMapper).toOperatorPortfolioDto(null);
+        verify(operatorMapper).toOperatorDto(operator, services, null);
+    }
+
+    @Test
+    public void givenUserNotFound_whenGetOperatorProfile_thenThrowsUserNotFoundException() {
+        UUID userId = UUID.randomUUID();
+
+        when(userRepository.findByIdWithPortfolio(userId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getOperatorProfile(userId))
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessage("User not found");
+
+        verify(userRepository).findByIdWithPortfolio(userId);
+        verify(operatorServicesService, never()).getOperatorServices(any());
+        verify(portfolioMapper, never()).toOperatorPortfolioDto(any());
+        verify(operatorMapper, never()).toOperatorDto(any(), any(), any());
+    }
+
+    @Test
+    public void givenUserNotOperator_whenGetOperatorProfile_thenThrowsNoSuchOperatorException() {
+        UUID userId = UUID.randomUUID();
+        UserEntity clientUser = UserEntity.builder()
+                .id(userId)
+                .name("Bob")
+                .surname("Client")
+                .displayName("bob client")
+                .email("bob@example.com")
+                .role(UserRole.CLIENT)
+                .build();
+
+        when(userRepository.findByIdWithPortfolio(userId)).thenReturn(Optional.of(clientUser));
+
+        assertThatThrownBy(() -> service.getOperatorProfile(userId))
+                .isInstanceOf(NoSuchOperatorException.class)
+                .hasMessage("No operator profile found for this user.");
+
+        verify(userRepository).findByIdWithPortfolio(userId);
+        verify(operatorServicesService, never()).getOperatorServices(any());
+        verify(portfolioMapper, never()).toOperatorPortfolioDto(any());
+        verify(operatorMapper, never()).toOperatorDto(any(), any(), any());
+    }
+
+    @Test
+    public void givenOperatorWithNoServices_whenGetOperatorProfile_thenReturnsOperatorDtoWithEmptyServices() {
+        UUID userId = UUID.randomUUID();
+        List<String> emptyServices = List.of();
+        UserEntity operator = UserEntity.builder()
+                .id(userId)
+                .name("Alice")
+                .surname("Operator")
+                .displayName("Alice")
+                .email("alice@example.com")
+                .phoneNumber("+1112223333")
+                .role(UserRole.OPERATOR)
+                .coordinates("51.5074,0.1278")
+                .radius(25)
+                .certificates(List.of())
+                .portfolio(null)
+                .build();
+        OperatorDto expectedDto = OperatorDto.builder()
+                .name("Alice")
+                .surname("Operator")
+                .username("Alice")
+                .email("alice@example.com")
+                .phoneNumber("+1112223333")
+                .certificates(List.of())
+                .operatorServices(emptyServices)
+                .portfolio(null)
+                .build();
+
+        when(userRepository.findByIdWithPortfolio(userId)).thenReturn(Optional.of(operator));
+        when(operatorServicesService.getOperatorServices(operator)).thenReturn(emptyServices);
+        when(portfolioMapper.toOperatorPortfolioDto(null)).thenReturn(null);
+        when(operatorMapper.toOperatorDto(operator, emptyServices, null)).thenReturn(expectedDto);
+
+        OperatorDto result = service.getOperatorProfile(userId);
+
+        assertThat(result).isEqualTo(expectedDto);
+        assertThat(result.operatorServices()).isEmpty();
+        verify(userRepository).findByIdWithPortfolio(userId);
+        verify(operatorServicesService).getOperatorServices(operator);
+        verify(portfolioMapper).toOperatorPortfolioDto(null);
+        verify(operatorMapper).toOperatorDto(operator, emptyServices, null);
     }
 }
 

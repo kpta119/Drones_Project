@@ -5,6 +5,7 @@ import com.example.drones.operators.dto.CreateOperatorProfileDto;
 import com.example.drones.operators.dto.CreatePortfolioDto;
 import com.example.drones.operators.dto.OperatorPortfolioDto;
 import com.example.drones.operators.dto.OperatorProfileDto;
+import com.example.drones.services.OperatorServicesEntity;
 import com.example.drones.services.OperatorServicesRepository;
 import com.example.drones.services.ServicesEntity;
 import com.example.drones.services.ServicesRepository;
@@ -28,10 +29,10 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -91,6 +92,13 @@ public class OperatorsIntegrationTests {
         ServicesEntity service = new ServicesEntity();
         service.setName(serviceName);
         servicesRepository.save(service);
+    }
+
+    private void addServiceToOperator(UserEntity operator, String serviceName) {
+        com.example.drones.services.OperatorServicesEntity operatorService = new OperatorServicesEntity();
+        operatorService.setServiceName(serviceName);
+        operatorService.setOperator(operator);
+        operatorServicesRepository.save(operatorService);
     }
 
     @Test
@@ -418,5 +426,149 @@ public class OperatorsIntegrationTests {
         assertThat(portfolios).hasSize(1);
         assertThat(portfolios.getFirst().getTitle()).isEqualTo("Original Portfolio Title");
         assertThat(portfolios.getFirst().getDescription()).isEqualTo("Original description");
+    }
+
+    @Test
+    void givenValidOperatorWithPortfolio_whenGetOperatorProfile_thenReturnsOkWithCompleteProfile() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        testUser.setCoordinates("52.2297,21.0122");
+        testUser.setRadius(50);
+        testUser.setCertificates(List.of("UAV License", "Commercial Pilot"));
+        userRepository.save(testUser);
+
+        PortfolioEntity portfolio = PortfolioEntity.builder()
+                .operator(testUser)
+                .title("My Portfolio")
+                .description("Portfolio description")
+                .build();
+        portfolio = portfolioRepository.save(portfolio);
+        testUser.setPortfolio(portfolio);
+        userRepository.save(testUser);
+
+        addServiceToOperator(testUser, "Aerial Photography");
+        addServiceToOperator(testUser, "Surveying");
+
+        mockMvc.perform(get("/api/operators/getOperatorProfile/{userId}", testUser.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Test"))
+                .andExpect(jsonPath("$.surname").value("Operator"))
+                .andExpect(jsonPath("$.username").value("testOperator"))
+                .andExpect(jsonPath("$.email").value("operator@test.com"))
+                .andExpect(jsonPath("$.phone_number").value("123456789"))
+                .andExpect(jsonPath("$.certificates").isArray())
+                .andExpect(jsonPath("$.certificates[0]").value("UAV License"))
+                .andExpect(jsonPath("$.certificates[1]").value("Commercial Pilot"))
+                .andExpect(jsonPath("$.operator_services").isArray())
+                .andExpect(jsonPath("$.operator_services.length()").value(2))
+                .andExpect(jsonPath("$.portfolio").exists())
+                .andExpect(jsonPath("$.portfolio.title").value("My Portfolio"))
+                .andExpect(jsonPath("$.portfolio.description").value("Portfolio description"));
+    }
+
+    @Test
+    void givenValidOperatorWithoutPortfolio_whenGetOperatorProfile_thenReturnsOkWithNullPortfolio() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        testUser.setCoordinates("40.7128,74.0060");
+        testUser.setRadius(30);
+        testUser.setCertificates(List.of("Basic UAV License"));
+        userRepository.save(testUser);
+
+        addServiceToOperator(testUser, "Delivery");
+
+        mockMvc.perform(get("/api/operators/getOperatorProfile/{userId}", testUser.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Test"))
+                .andExpect(jsonPath("$.surname").value("Operator"))
+                .andExpect(jsonPath("$.username").value("testOperator"))
+                .andExpect(jsonPath("$.email").value("operator@test.com"))
+                .andExpect(jsonPath("$.phone_number").value("123456789"))
+                .andExpect(jsonPath("$.certificates").isArray())
+                .andExpect(jsonPath("$.certificates[0]").value("Basic UAV License"))
+                .andExpect(jsonPath("$.operator_services").isArray())
+                .andExpect(jsonPath("$.operator_services.length()").value(1))
+                .andExpect(jsonPath("$.operator_services[0]").value("Delivery"))
+                .andExpect(jsonPath("$.portfolio").doesNotExist());
+    }
+
+    @Test
+    void givenValidOperatorWithNoServices_whenGetOperatorProfile_thenReturnsOkWithEmptyServices() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        testUser.setCoordinates("51.5074,0.1278");
+        testUser.setRadius(25);
+        testUser.setCertificates(List.of());
+        userRepository.save(testUser);
+
+        mockMvc.perform(get("/api/operators/getOperatorProfile/{userId}", testUser.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Test"))
+                .andExpect(jsonPath("$.surname").value("Operator"))
+                .andExpect(jsonPath("$.username").value("testOperator"))
+                .andExpect(jsonPath("$.email").value("operator@test.com"))
+                .andExpect(jsonPath("$.certificates").isArray())
+                .andExpect(jsonPath("$.certificates.length()").value(0))
+                .andExpect(jsonPath("$.operator_services").isArray())
+                .andExpect(jsonPath("$.operator_services.length()").value(0))
+                .andExpect(jsonPath("$.portfolio").doesNotExist());
+    }
+
+    @Test
+    void givenNonExistentUserId_whenGetOperatorProfile_thenReturnsNotFound() throws Exception {
+        UUID nonExistentUserId = UUID.randomUUID();
+
+        mockMvc.perform(get("/api/operators/getOperatorProfile/{userId}", nonExistentUserId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void givenNonOperatorUser_whenGetOperatorProfile_thenReturnsNotFound() throws Exception {
+        testUser.setRole(UserRole.CLIENT);
+        userRepository.save(testUser);
+
+        mockMvc.perform(get("/api/operators/getOperatorProfile/{userId}", testUser.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void givenOperatorWithMultipleServices_whenGetOperatorProfile_thenReturnsAllServices() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        testUser.setCoordinates("48.8566,2.3522");
+        testUser.setRadius(75);
+        testUser.setCertificates(List.of("Advanced UAV License", "Night Flight Certification", "Commercial Drone Pilot"));
+        userRepository.save(testUser);
+
+        addServiceToOperator(testUser, "Aerial Photography");
+        addServiceToOperator(testUser, "Surveying");
+        addServiceToOperator(testUser, "Delivery");
+        addServiceToOperator(testUser, "Inspection");
+
+        PortfolioEntity portfolio = PortfolioEntity.builder()
+                .operator(testUser)
+                .title("Professional Drone Services")
+                .description("Comprehensive drone services portfolio")
+                .build();
+        portfolio = portfolioRepository.save(portfolio);
+        testUser.setPortfolio(portfolio);
+        userRepository.save(testUser);
+
+        mockMvc.perform(get("/api/operators/getOperatorProfile/{userId}", testUser.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Test"))
+                .andExpect(jsonPath("$.surname").value("Operator"))
+                .andExpect(jsonPath("$.certificates.length()").value(3))
+                .andExpect(jsonPath("$.operator_services.length()").value(4))
+                .andExpect(jsonPath("$.portfolio").exists())
+                .andExpect(jsonPath("$.portfolio.title").value("Professional Drone Services"));
     }
 }

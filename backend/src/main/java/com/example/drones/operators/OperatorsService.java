@@ -1,25 +1,24 @@
 package com.example.drones.operators;
 
-import com.example.drones.common.config.JwtService;
 import com.example.drones.common.config.exceptions.UserNotFoundException;
-import com.example.drones.operators.dto.CreateOperatorProfileDto;
-import com.example.drones.operators.dto.CreatePortfolioDto;
-import com.example.drones.operators.dto.OperatorPortfolioDto;
-import com.example.drones.operators.dto.OperatorProfileDto;
+import com.example.drones.operators.dto.*;
 import com.example.drones.operators.exceptions.NoSuchOperatorException;
 import com.example.drones.operators.exceptions.NoSuchPortfolioException;
 import com.example.drones.operators.exceptions.OperatorAlreadyExistsException;
+import com.example.drones.operators.exceptions.PortfolioAlreadyExistsException;
 import com.example.drones.services.OperatorServicesService;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserMapper;
 import com.example.drones.user.UserRepository;
 import com.example.drones.user.UserRole;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -28,16 +27,12 @@ public class OperatorsService {
 
     private final UserRepository userRepository;
     private final PortfolioRepository portfolioRepository;
-    private final JwtService jwtService;
-    private final CacheManager cacheManager;
     private final OperatorServicesService operatorServicesService;
     private final UserMapper operatorMapper;
     private final PortfolioMapper portfolioMapper;
 
     @Transactional
-    public OperatorProfileDto createProfile(CreateOperatorProfileDto operatorDto) {
-        UUID userId = jwtService.extractUserId();
-
+    public OperatorProfileDto createProfile(UUID userId, CreateOperatorProfileDto operatorDto) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
         if (user.getRole() == UserRole.OPERATOR) {
@@ -53,10 +48,9 @@ public class OperatorsService {
         return operatorMapper.toOperatorProfileDto(savedUser, savedServices);
     }
 
+    @CacheEvict(value = "operators", key = "#userId")
     @Transactional
-    public OperatorProfileDto editProfile(OperatorProfileDto operatorDto) {
-        UUID userId = jwtService.extractUserId();
-
+    public OperatorProfileDto editProfile(UUID userId, OperatorProfileDto operatorDto) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
         if (user.getRole() != UserRole.OPERATOR) {
@@ -84,14 +78,18 @@ public class OperatorsService {
     }
 
     @Transactional
-    public OperatorPortfolioDto createPortfolio(CreatePortfolioDto portfolioDto) {
-        UUID userId = jwtService.extractUserId();
-
+    public OperatorPortfolioDto createPortfolio(UUID userId, CreatePortfolioDto portfolioDto) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
         if (user.getRole() != UserRole.OPERATOR) {
             throw new NoSuchOperatorException();
         }
+
+        Optional<PortfolioEntity> oldPortfolio = portfolioRepository.findByOperatorId(user.getId());
+        if (oldPortfolio.isPresent()) {
+            throw new PortfolioAlreadyExistsException();
+        }
+
         PortfolioEntity portfolio = new PortfolioEntity();
         portfolio.setOperator(user);
         portfolio.setTitle(portfolioDto.title());
@@ -101,10 +99,9 @@ public class OperatorsService {
         return portfolioMapper.toOperatorPortfolioDto(savedPortfolio);
     }
 
+    @CacheEvict(value = "operators", key = "#userId")
     @Transactional
-    public OperatorPortfolioDto editPortfolio(OperatorPortfolioDto portfolioDto) {
-        UUID userId = jwtService.extractUserId();
-
+    public OperatorPortfolioDto editPortfolio(UUID userId, OperatorPortfolioDto portfolioDto) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
         if (user.getRole() != UserRole.OPERATOR) {
@@ -122,5 +119,18 @@ public class OperatorsService {
         PortfolioEntity savedPortfolio = portfolioRepository.save(portfolio);
 
         return portfolioMapper.toOperatorPortfolioDto(savedPortfolio);
+    }
+
+    @Cacheable(value = "operators", key = "#userId")
+    @Transactional(readOnly = true)
+    public OperatorDto getOperatorProfile(UUID userId) {
+        UserEntity user = userRepository.findByIdWithPortfolio(userId)
+                .orElseThrow(UserNotFoundException::new);
+        if (user.getRole() != UserRole.OPERATOR) {
+            throw new NoSuchOperatorException();
+        }
+        List<String> services = operatorServicesService.getOperatorServices(user);
+        PortfolioEntity portfolio = user.getPortfolio();
+        return operatorMapper.toOperatorDto(user, services, portfolioMapper.toOperatorPortfolioDto(portfolio));
     }
 }
