@@ -652,7 +652,7 @@ Base URL: `/api/photos`.
 
 ### Dodaj zdjęcie do portfolio
 
-**POST** `/photos/addPortfolioPhoto`
+**POST** `/photos/addPortfolioPhoto/:photoName`
 
 * **Wymagania:** Request typu `multipart/form-data`.
 * **Parametry:** `photo` (plik).
