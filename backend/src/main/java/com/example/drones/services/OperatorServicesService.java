@@ -34,7 +34,7 @@ public class OperatorServicesService {
     }
 
     public List<String> getOperatorServices(UserEntity operator) {
-        List<OperatorServicesEntity> entities = operatorServicesRepository.findAllByOperator(operator);
+        List<OperatorServicesEntity> entities = operatorServicesRepository.findAllByOperatorId(operator.getId());
         List<String> services = new ArrayList<>();
         for (OperatorServicesEntity entity : entities) {
             services.add(entity.getServiceName());

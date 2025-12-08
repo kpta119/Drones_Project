@@ -3,6 +3,7 @@ package com.example.drones.operators;
 import com.example.drones.common.config.JwtService;
 import com.example.drones.operators.dto.CreateOperatorProfileDto;
 import com.example.drones.operators.dto.CreatePortfolioDto;
+import com.example.drones.operators.dto.OperatorPortfolioDto;
 import com.example.drones.operators.dto.OperatorProfileDto;
 import com.example.drones.services.OperatorServicesRepository;
 import com.example.drones.services.ServicesEntity;
@@ -11,7 +12,7 @@ import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
 import com.example.drones.user.UserRole;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.AfterEach;
+import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
+@Transactional
 public class OperatorsIntegrationTests {
 
     @Container
@@ -83,14 +85,6 @@ public class OperatorsIntegrationTests {
         testUser = userRepository.save(testUser);
 
         jwtToken = jwtService.generateToken(testUser.getId());
-    }
-
-    @AfterEach
-    void tearDown() {
-        portfolioRepository.deleteAll();
-        operatorServicesRepository.deleteAll();
-        userRepository.deleteAll();
-        servicesRepository.deleteAll();
     }
 
     private void createService(String serviceName) {
@@ -173,11 +167,11 @@ public class OperatorsIntegrationTests {
 
         OperatorProfileDto operatorDto =
                 OperatorProfileDto.builder()
-                .coordinates("52.2297,21.0122")
-                .radius(100)
-                .certificates(List.of("Advanced License"))
-                .services(List.of("Delivery", "Inspection"))
-                .build();
+                        .coordinates("52.2297,21.0122")
+                        .radius(100)
+                        .certificates(List.of("Advanced License"))
+                        .services(List.of("Delivery", "Inspection"))
+                        .build();
 
         mockMvc.perform(patch("/api/operators/editOperatorProfile")
                         .header("X-USER-TOKEN", "Bearer " + jwtToken)
@@ -193,7 +187,7 @@ public class OperatorsIntegrationTests {
         assertThat(updatedUser.getCoordinates()).isEqualTo("52.2297,21.0122");
         assertThat(updatedUser.getRadius()).isEqualTo(100);
 
-        var operatorServices = operatorServicesRepository.findAllByOperator(updatedUser);
+        var operatorServices = operatorServicesRepository.findAllByOperatorId(updatedUser.getId());
         assertThat(operatorServices).hasSize(2);
     }
 
@@ -204,11 +198,11 @@ public class OperatorsIntegrationTests {
 
         OperatorProfileDto operatorDto =
                 OperatorProfileDto.builder()
-                .coordinates("52.2297,21.0122")
-                .radius(100)
-                .certificates(List.of("Advanced License"))
-                .services(List.of("Aerial Photography"))
-                .build();
+                        .coordinates("52.2297,21.0122")
+                        .radius(100)
+                        .certificates(List.of("Advanced License"))
+                        .services(List.of("Aerial Photography"))
+                        .build();
 
         mockMvc.perform(patch("/api/operators/editOperatorProfile")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -223,11 +217,11 @@ public class OperatorsIntegrationTests {
 
         OperatorProfileDto operatorDto =
                 OperatorProfileDto.builder()
-                .coordinates("52.2297,21.0122")
-                .radius(100)
-                .certificates(List.of("Advanced License"))
-                .services(List.of("Aerial Photography"))
-                .build();
+                        .coordinates("52.2297,21.0122")
+                        .radius(100)
+                        .certificates(List.of("Advanced License"))
+                        .services(List.of("Aerial Photography"))
+                        .build();
 
         mockMvc.perform(patch("/api/operators/editOperatorProfile")
                         .header("X-USER-TOKEN", "Bearer invalid.token.here")
@@ -299,5 +293,130 @@ public class OperatorsIntegrationTests {
 
         var portfolios = portfolioRepository.findAll();
         assertThat(portfolios).isEmpty();
+    }
+
+    @Test
+    void givenValidPortfolioDto_whenEditPortfolio_thenReturnsAcceptedAndPersistsToDatabase() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        userRepository.save(testUser);
+
+        PortfolioEntity portfolio = PortfolioEntity.builder()
+                .operator(testUser)
+                .title("Original Portfolio Title")
+                .description("Original description")
+                .build();
+        portfolioRepository.save(portfolio);
+
+        OperatorPortfolioDto updateDto = OperatorPortfolioDto.builder()
+                .title("Updated Portfolio Title")
+                .description("Updated description with more details")
+                .photos(List.of())
+                .build();
+
+        mockMvc.perform(patch("/api/operators/editPortfolio")
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateDto)))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.title").value("Updated Portfolio Title"))
+                .andExpect(jsonPath("$.description").value("Updated description with more details"))
+                .andExpect(jsonPath("$.photos").isArray());
+
+        var portfolios = portfolioRepository.findAll();
+        assertThat(portfolios).hasSize(1);
+        assertThat(portfolios.getFirst().getTitle()).isEqualTo("Updated Portfolio Title");
+        assertThat(portfolios.getFirst().getDescription()).isEqualTo("Updated description with more details");
+        assertThat(portfolios.getFirst().getOperator().getId()).isEqualTo(testUser.getId());
+    }
+
+    @Test
+    void givenPartialUpdate_whenEditPortfolio_thenUpdatesOnlyProvidedFields() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        userRepository.save(testUser);
+
+        PortfolioEntity portfolio = PortfolioEntity.builder()
+                .operator(testUser)
+                .title("Original Portfolio Title")
+                .description("Original description")
+                .build();
+        portfolioRepository.save(portfolio);
+
+        OperatorPortfolioDto updateDto = OperatorPortfolioDto.builder()
+                .title("New Title Only")
+                .description(null)
+                .photos(List.of())
+                .build();
+
+        mockMvc.perform(patch("/api/operators/editPortfolio")
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateDto)))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.title").value("New Title Only"))
+                .andExpect(jsonPath("$.description").value("Original description"));
+
+        var portfolios = portfolioRepository.findAll();
+        assertThat(portfolios).hasSize(1);
+        assertThat(portfolios.getFirst().getTitle()).isEqualTo("New Title Only");
+        assertThat(portfolios.getFirst().getDescription()).isEqualTo("Original description");
+    }
+
+    @Test
+    void givenNoAuthToken_whenEditPortfolio_thenReturnsForbidden() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        userRepository.save(testUser);
+
+        PortfolioEntity portfolio = PortfolioEntity.builder()
+                .operator(testUser)
+                .title("Original Portfolio Title")
+                .description("Original description")
+                .build();
+        portfolioRepository.save(portfolio);
+
+        OperatorPortfolioDto updateDto = OperatorPortfolioDto.builder()
+                .title("Updated Title")
+                .description("Updated description")
+                .photos(List.of())
+                .build();
+
+        mockMvc.perform(patch("/api/operators/editPortfolio")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateDto)))
+                .andExpect(status().isForbidden());
+
+        var portfolios = portfolioRepository.findAll();
+        assertThat(portfolios).hasSize(1);
+        assertThat(portfolios.getFirst().getTitle()).isEqualTo("Original Portfolio Title");
+        assertThat(portfolios.getFirst().getDescription()).isEqualTo("Original description");
+    }
+
+    @Test
+    void givenInvalidToken_whenEditPortfolio_thenReturnsUnauthorized() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        userRepository.save(testUser);
+
+        PortfolioEntity portfolio = PortfolioEntity.builder()
+                .operator(testUser)
+                .title("Original Portfolio Title")
+                .description("Original description")
+                .build();
+        portfolioRepository.save(portfolio);
+
+        OperatorPortfolioDto updateDto = OperatorPortfolioDto.builder()
+                .title("Updated Title")
+                .description("Updated description")
+                .photos(List.of())
+                .build();
+
+        mockMvc.perform(patch("/api/operators/editPortfolio")
+                        .header("X-USER-TOKEN", "Bearer invalid.token.here")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateDto)))
+                .andExpect(status().isUnauthorized());
+
+        var portfolios = portfolioRepository.findAll();
+        assertThat(portfolios).hasSize(1);
+        assertThat(portfolios.getFirst().getTitle()).isEqualTo("Original Portfolio Title");
+        assertThat(portfolios.getFirst().getDescription()).isEqualTo("Original description");
     }
 }

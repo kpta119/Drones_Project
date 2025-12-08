@@ -7,6 +7,7 @@ import com.example.drones.operators.dto.CreatePortfolioDto;
 import com.example.drones.operators.dto.OperatorPortfolioDto;
 import com.example.drones.operators.dto.OperatorProfileDto;
 import com.example.drones.operators.exceptions.NoSuchOperatorException;
+import com.example.drones.operators.exceptions.NoSuchPortfolioException;
 import com.example.drones.operators.exceptions.OperatorAlreadyExistsException;
 import com.example.drones.services.OperatorServicesService;
 import com.example.drones.user.UserEntity;
@@ -95,6 +96,29 @@ public class OperatorsService {
         portfolio.setOperator(user);
         portfolio.setTitle(portfolioDto.title());
         portfolio.setDescription(portfolioDto.description());
+        PortfolioEntity savedPortfolio = portfolioRepository.save(portfolio);
+
+        return portfolioMapper.toOperatorPortfolioDto(savedPortfolio);
+    }
+
+    @Transactional
+    public OperatorPortfolioDto editPortfolio(OperatorPortfolioDto portfolioDto) {
+        UUID userId = jwtService.extractUserId();
+
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+        if (user.getRole() != UserRole.OPERATOR) {
+            throw new NoSuchOperatorException();
+        }
+        PortfolioEntity portfolio = portfolioRepository.findByOperatorId(user.getId())
+                .orElseThrow(NoSuchPortfolioException::new);
+
+        if (portfolioDto.title() != null) {
+            portfolio.setTitle(portfolioDto.title());
+        }
+        if (portfolioDto.description() != null) {
+            portfolio.setDescription(portfolioDto.description());
+        }
         PortfolioEntity savedPortfolio = portfolioRepository.save(portfolio);
 
         return portfolioMapper.toOperatorPortfolioDto(savedPortfolio);

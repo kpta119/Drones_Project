@@ -104,23 +104,23 @@ public class OperatorServicesServiceUnitTests {
         OperatorServicesEntity entity3 = createOperatorServiceEntity(3, "Inspection", operator);
         List<OperatorServicesEntity> entities = List.of(entity1, entity2, entity3);
 
-        when(operatorServicesRepository.findAllByOperator(operator)).thenReturn(entities);
+        when(operatorServicesRepository.findAllByOperatorId(operator.getId())).thenReturn(entities);
 
         List<String> result = operatorServicesService.getOperatorServices(operator);
 
         assertThat(result).hasSize(3);
         assertThat(result).containsExactly("Delivery", "Surveillance", "Inspection");
-        verify(operatorServicesRepository).findAllByOperator(operator);
+        verify(operatorServicesRepository).findAllByOperatorId(operator.getId());
     }
 
     @Test
     public void givenOperatorWithNoServices_whenGetOperatorServices_thenReturnsEmptyList() {
-        when(operatorServicesRepository.findAllByOperator(operator)).thenReturn(List.of());
+        when(operatorServicesRepository.findAllByOperatorId(operator.getId())).thenReturn(List.of());
 
         List<String> result = operatorServicesService.getOperatorServices(operator);
 
         assertThat(result).isEmpty();
-        verify(operatorServicesRepository).findAllByOperator(operator);
+        verify(operatorServicesRepository).findAllByOperatorId(operator.getId());
     }
 
     private OperatorServicesEntity createOperatorServiceEntity(Integer id, String serviceName, UserEntity operator) {

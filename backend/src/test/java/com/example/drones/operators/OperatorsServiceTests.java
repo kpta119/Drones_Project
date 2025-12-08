@@ -7,6 +7,7 @@ import com.example.drones.operators.dto.CreatePortfolioDto;
 import com.example.drones.operators.dto.OperatorPortfolioDto;
 import com.example.drones.operators.dto.OperatorProfileDto;
 import com.example.drones.operators.exceptions.NoSuchOperatorException;
+import com.example.drones.operators.exceptions.NoSuchPortfolioException;
 import com.example.drones.operators.exceptions.OperatorAlreadyExistsException;
 import com.example.drones.services.OperatorServicesService;
 import com.example.drones.user.UserEntity;
@@ -474,6 +475,210 @@ public class OperatorsServiceTests {
 
         verify(jwtService).extractUserId();
         verify(userRepository).findById(userId);
+        verify(portfolioRepository, never()).save(any());
+        verify(portfolioMapper, never()).toOperatorPortfolioDto(any());
+    }
+
+    @Test
+    public void givenValidPortfolioDto_whenEditPortfolio_thenPortfolioUpdatedAndReturnsDto() {
+        UUID userId = UUID.randomUUID();
+        OperatorPortfolioDto portfolioDto = OperatorPortfolioDto.builder()
+                .title("Updated Portfolio Title")
+                .description("Updated description")
+                .photos(List.of())
+                .build();
+        UserEntity user = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.OPERATOR)
+                .build();
+        PortfolioEntity existingPortfolio = PortfolioEntity.builder()
+                .id(1)
+                .operator(user)
+                .title("Old Title")
+                .description("Old description")
+                .build();
+        PortfolioEntity savedPortfolio = PortfolioEntity.builder()
+                .id(1)
+                .operator(user)
+                .title(portfolioDto.title())
+                .description(portfolioDto.description())
+                .build();
+        OperatorPortfolioDto expectedDto = OperatorPortfolioDto.builder()
+                .title(portfolioDto.title())
+                .description(portfolioDto.description())
+                .photos(List.of())
+                .build();
+
+        when(jwtService.extractUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(portfolioRepository.findByOperatorId(userId)).thenReturn(Optional.of(existingPortfolio));
+        when(portfolioRepository.save(any(PortfolioEntity.class))).thenReturn(savedPortfolio);
+        when(portfolioMapper.toOperatorPortfolioDto(any(PortfolioEntity.class))).thenReturn(expectedDto);
+
+        OperatorPortfolioDto result = service.editPortfolio(portfolioDto);
+
+        assertThat(existingPortfolio.getTitle()).isEqualTo("Updated Portfolio Title");
+        assertThat(existingPortfolio.getDescription()).isEqualTo("Updated description");
+        assertThat(result).isEqualTo(expectedDto);
+        verify(jwtService).extractUserId();
+        verify(userRepository).findById(userId);
+        verify(portfolioRepository).findByOperatorId(userId);
+        verify(portfolioRepository).save(existingPortfolio);
+        verify(portfolioMapper).toOperatorPortfolioDto(savedPortfolio);
+    }
+
+    @Test
+    public void givenPartialPortfolioDto_whenEditPortfolio_thenOnlyProvidedFieldsUpdated() {
+        UUID userId = UUID.randomUUID();
+        OperatorPortfolioDto portfolioDto = OperatorPortfolioDto.builder()
+                .title("Updated Title Only")
+                .description(null)
+                .photos(List.of())
+                .build();
+        UserEntity user = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.OPERATOR)
+                .build();
+        PortfolioEntity existingPortfolio = PortfolioEntity.builder()
+                .id(1)
+                .operator(user)
+                .title("Old Title")
+                .description("Old description")
+                .build();
+        OperatorPortfolioDto expectedDto = OperatorPortfolioDto.builder()
+                .title("Updated Title Only")
+                .description("Old description")
+                .photos(List.of())
+                .build();
+
+        when(jwtService.extractUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(portfolioRepository.findByOperatorId(userId)).thenReturn(Optional.of(existingPortfolio));
+        when(portfolioRepository.save(any(PortfolioEntity.class))).thenReturn(existingPortfolio);
+        when(portfolioMapper.toOperatorPortfolioDto(any(PortfolioEntity.class))).thenReturn(expectedDto);
+
+        OperatorPortfolioDto result = service.editPortfolio(portfolioDto);
+
+        assertThat(existingPortfolio.getTitle()).isEqualTo("Updated Title Only");
+        assertThat(existingPortfolio.getDescription()).isEqualTo("Old description");
+        assertThat(result).isEqualTo(expectedDto);
+        verify(portfolioRepository).save(existingPortfolio);
+        verify(portfolioMapper).toOperatorPortfolioDto(existingPortfolio);
+    }
+
+    @Test
+    public void givenPortfolioDtoWithOnlyDescription_whenEditPortfolio_thenOnlyDescriptionUpdated() {
+        UUID userId = UUID.randomUUID();
+        OperatorPortfolioDto portfolioDto = OperatorPortfolioDto.builder()
+                .title(null)
+                .description("Updated description only")
+                .photos(List.of())
+                .build();
+        UserEntity user = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.OPERATOR)
+                .build();
+        PortfolioEntity existingPortfolio = PortfolioEntity.builder()
+                .id(1)
+                .operator(user)
+                .title("Old Title")
+                .description("Old description")
+                .build();
+        OperatorPortfolioDto expectedDto = OperatorPortfolioDto.builder()
+                .title("Old Title")
+                .description("Updated description only")
+                .photos(List.of())
+                .build();
+
+        when(jwtService.extractUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(portfolioRepository.findByOperatorId(userId)).thenReturn(Optional.of(existingPortfolio));
+        when(portfolioRepository.save(any(PortfolioEntity.class))).thenReturn(existingPortfolio);
+        when(portfolioMapper.toOperatorPortfolioDto(any(PortfolioEntity.class))).thenReturn(expectedDto);
+
+        OperatorPortfolioDto result = service.editPortfolio(portfolioDto);
+
+        assertThat(existingPortfolio.getTitle()).isEqualTo("Old Title");
+        assertThat(existingPortfolio.getDescription()).isEqualTo("Updated description only");
+        assertThat(result).isEqualTo(expectedDto);
+        verify(portfolioRepository).save(existingPortfolio);
+        verify(portfolioMapper).toOperatorPortfolioDto(existingPortfolio);
+    }
+
+    @Test
+    public void givenUserNotFound_whenEditPortfolio_thenThrowsUserNotFoundException() {
+        UUID userId = UUID.randomUUID();
+        OperatorPortfolioDto portfolioDto = OperatorPortfolioDto.builder()
+                .title("Updated Title")
+                .description("Updated description")
+                .photos(List.of())
+                .build();
+
+        when(jwtService.extractUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.editPortfolio(portfolioDto))
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessage("User not found");
+
+        verify(jwtService).extractUserId();
+        verify(userRepository).findById(userId);
+        verify(portfolioRepository, never()).findByOperatorId(any());
+        verify(portfolioRepository, never()).save(any());
+        verify(portfolioMapper, never()).toOperatorPortfolioDto(any());
+    }
+
+    @Test
+    public void givenUserNotOperator_whenEditPortfolio_thenThrowsNoSuchOperatorException() {
+        UUID userId = UUID.randomUUID();
+        OperatorPortfolioDto portfolioDto = OperatorPortfolioDto.builder()
+                .title("Updated Title")
+                .description("Updated description")
+                .photos(List.of())
+                .build();
+        UserEntity user = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.CLIENT)
+                .build();
+
+        when(jwtService.extractUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> service.editPortfolio(portfolioDto))
+                .isInstanceOf(NoSuchOperatorException.class)
+                .hasMessage("No operator profile found for this user.");
+
+        verify(jwtService).extractUserId();
+        verify(userRepository).findById(userId);
+        verify(portfolioRepository, never()).findByOperatorId(any());
+        verify(portfolioRepository, never()).save(any());
+        verify(portfolioMapper, never()).toOperatorPortfolioDto(any());
+    }
+
+    @Test
+    public void givenNoPortfolioExists_whenEditPortfolio_thenThrowsNoSuchPortfolioException() {
+        UUID userId = UUID.randomUUID();
+        OperatorPortfolioDto portfolioDto = OperatorPortfolioDto.builder()
+                .title("Updated Title")
+                .description("Updated description")
+                .photos(List.of())
+                .build();
+        UserEntity user = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.OPERATOR)
+                .build();
+
+        when(jwtService.extractUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(portfolioRepository.findByOperatorId(userId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.editPortfolio(portfolioDto))
+                .isInstanceOf(NoSuchPortfolioException.class)
+                .hasMessage("Operator portfolio not found");
+
+        verify(jwtService).extractUserId();
+        verify(userRepository).findById(userId);
+        verify(portfolioRepository).findByOperatorId(userId);
         verify(portfolioRepository, never()).save(any());
         verify(portfolioMapper, never()).toOperatorPortfolioDto(any());
     }

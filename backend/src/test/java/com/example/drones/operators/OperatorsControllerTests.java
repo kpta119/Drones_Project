@@ -6,6 +6,7 @@ import com.example.drones.operators.dto.CreatePortfolioDto;
 import com.example.drones.operators.dto.OperatorPortfolioDto;
 import com.example.drones.operators.dto.OperatorProfileDto;
 import com.example.drones.operators.exceptions.NoSuchOperatorException;
+import com.example.drones.operators.exceptions.NoSuchPortfolioException;
 import com.example.drones.operators.exceptions.OperatorAlreadyExistsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -172,5 +173,55 @@ public class OperatorsControllerTests {
                 .isInstanceOf(NoSuchOperatorException.class)
                 .hasMessage("No operator profile found for this user.");
         verify(operatorsService).createPortfolio(request);
+    }
+
+    @Test
+    public void givenValidPortfolioDto_whenEditPortfolio_thenReturnsAccepted() {
+        OperatorPortfolioDto request = operatorPortfolioDto;
+        OperatorPortfolioDto updatedResponse = OperatorPortfolioDto.builder()
+                .title("Updated Portfolio Title")
+                .description("Updated description")
+                .photos(List.of())
+                .build();
+        when(operatorsService.editPortfolio(request)).thenReturn(updatedResponse);
+
+        ResponseEntity<OperatorPortfolioDto> result = operatorsController.editPortfolio(request);
+
+        assertThat(result.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
+        assertThat(result.getBody()).isEqualTo(updatedResponse);
+        verify(operatorsService).editPortfolio(request);
+    }
+
+    @Test
+    public void givenUserNotFound_whenEditPortfolio_thenThrowsUserNotFoundException() {
+        OperatorPortfolioDto request = operatorPortfolioDto;
+        when(operatorsService.editPortfolio(request)).thenThrow(new UserNotFoundException());
+
+        assertThatThrownBy(() -> operatorsController.editPortfolio(request))
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessage("User not found");
+        verify(operatorsService).editPortfolio(request);
+    }
+
+    @Test
+    public void givenUserNotOperator_whenEditPortfolio_thenThrowsNoSuchOperatorException() {
+        OperatorPortfolioDto request = operatorPortfolioDto;
+        when(operatorsService.editPortfolio(request)).thenThrow(new NoSuchOperatorException());
+
+        assertThatThrownBy(() -> operatorsController.editPortfolio(request))
+                .isInstanceOf(NoSuchOperatorException.class)
+                .hasMessage("No operator profile found for this user.");
+        verify(operatorsService).editPortfolio(request);
+    }
+
+    @Test
+    public void givenNoPortfolioExists_whenEditPortfolio_thenThrowsNoSuchPortfolioException() {
+        OperatorPortfolioDto request = operatorPortfolioDto;
+        when(operatorsService.editPortfolio(request)).thenThrow(new NoSuchPortfolioException());
+
+        assertThatThrownBy(() -> operatorsController.editPortfolio(request))
+                .isInstanceOf(NoSuchPortfolioException.class)
+                .hasMessage("Operator portfolio not found");
+        verify(operatorsService).editPortfolio(request);
     }
 }

@@ -36,4 +36,9 @@ public class OperatorsController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PatchMapping("/editPortfolio")
+    public ResponseEntity<OperatorPortfolioDto> editPortfolio(@RequestBody @Valid OperatorPortfolioDto portfolioDto) {
+        OperatorPortfolioDto response = operatorsService.editPortfolio(portfolioDto);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+    }
 }
