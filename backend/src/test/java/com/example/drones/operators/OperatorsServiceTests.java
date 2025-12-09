@@ -483,10 +483,9 @@ public class OperatorsServiceTests {
     @Test
     public void givenValidPortfolioDto_whenEditPortfolio_thenPortfolioUpdatedAndReturnsDto() {
         UUID userId = UUID.randomUUID();
-        OperatorPortfolioDto portfolioDto = OperatorPortfolioDto.builder()
+        UpdatePortfolioDto portfolioDto = UpdatePortfolioDto.builder()
                 .title("Updated Portfolio Title")
                 .description("Updated description")
-                .photos(List.of())
                 .build();
         UserEntity user = UserEntity.builder()
                 .id(userId)
@@ -529,10 +528,9 @@ public class OperatorsServiceTests {
     @Test
     public void givenPartialPortfolioDto_whenEditPortfolio_thenOnlyProvidedFieldsUpdated() {
         UUID userId = UUID.randomUUID();
-        OperatorPortfolioDto portfolioDto = OperatorPortfolioDto.builder()
+        UpdatePortfolioDto portfolioDto = UpdatePortfolioDto.builder()
                 .title("Updated Title Only")
                 .description(null)
-                .photos(List.of())
                 .build();
         UserEntity user = UserEntity.builder()
                 .id(userId)
@@ -567,10 +565,9 @@ public class OperatorsServiceTests {
     @Test
     public void givenPortfolioDtoWithOnlyDescription_whenEditPortfolio_thenOnlyDescriptionUpdated() {
         UUID userId = UUID.randomUUID();
-        OperatorPortfolioDto portfolioDto = OperatorPortfolioDto.builder()
+        UpdatePortfolioDto portfolioDto = UpdatePortfolioDto.builder()
                 .title(null)
                 .description("Updated description only")
-                .photos(List.of())
                 .build();
         UserEntity user = UserEntity.builder()
                 .id(userId)
@@ -605,10 +602,9 @@ public class OperatorsServiceTests {
     @Test
     public void givenUserNotFound_whenEditPortfolio_thenThrowsUserNotFoundException() {
         UUID userId = UUID.randomUUID();
-        OperatorPortfolioDto portfolioDto = OperatorPortfolioDto.builder()
+        UpdatePortfolioDto portfolioDto = UpdatePortfolioDto.builder()
                 .title("Updated Title")
                 .description("Updated description")
-                .photos(List.of())
                 .build();
 
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
@@ -626,10 +622,9 @@ public class OperatorsServiceTests {
     @Test
     public void givenUserNotOperator_whenEditPortfolio_thenThrowsNoSuchOperatorException() {
         UUID userId = UUID.randomUUID();
-        OperatorPortfolioDto portfolioDto = OperatorPortfolioDto.builder()
+        UpdatePortfolioDto portfolioDto = UpdatePortfolioDto.builder()
                 .title("Updated Title")
                 .description("Updated description")
-                .photos(List.of())
                 .build();
         UserEntity user = UserEntity.builder()
                 .id(userId)
@@ -651,10 +646,9 @@ public class OperatorsServiceTests {
     @Test
     public void givenNoPortfolioExists_whenEditPortfolio_thenThrowsNoSuchPortfolioException() {
         UUID userId = UUID.randomUUID();
-        OperatorPortfolioDto portfolioDto = OperatorPortfolioDto.builder()
+        UpdatePortfolioDto portfolioDto = UpdatePortfolioDto.builder()
                 .title("Updated Title")
                 .description("Updated description")
-                .photos(List.of())
                 .build();
         UserEntity user = UserEntity.builder()
                 .id(userId)

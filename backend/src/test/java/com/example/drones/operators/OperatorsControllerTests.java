@@ -41,6 +41,7 @@ public class OperatorsControllerTests {
     private OperatorProfileDto operatorProfileDto;
     private CreatePortfolioDto validCreatePortfolioDto;
     private OperatorPortfolioDto operatorPortfolioDto;
+    private UpdatePortfolioDto updatePortfolioDto;
 
     @BeforeEach
     public void setUp() {
@@ -48,6 +49,7 @@ public class OperatorsControllerTests {
         operatorProfileDto = buildOperatorProfileDto();
         validCreatePortfolioDto = buildValidCreatePortfolioDto();
         operatorPortfolioDto = buildOperatorPortfolioDto();
+        updatePortfolioDto = buildValidUpdatePortfolioDto();
     }
 
     private CreateOperatorProfileDto buildValidCreateOperatorDto() {
@@ -80,6 +82,13 @@ public class OperatorsControllerTests {
                 .title("Aerial Photography Portfolio")
                 .description("Collection of my best aerial photography work")
                 .photos(List.of())
+                .build();
+    }
+
+    private UpdatePortfolioDto buildValidUpdatePortfolioDto() {
+        return UpdatePortfolioDto.builder()
+                .title("Updated Portfolio Title")
+                .description("Updated description")
                 .build();
     }
 
@@ -215,25 +224,26 @@ public class OperatorsControllerTests {
 
     @Test
     public void givenValidPortfolioDto_whenEditPortfolio_thenReturnsAccepted() {
-        OperatorPortfolioDto request = operatorPortfolioDto;
-        OperatorPortfolioDto updatedResponse = OperatorPortfolioDto.builder()
+        UpdatePortfolioDto request = updatePortfolioDto;
+        OperatorPortfolioDto expectedDto = OperatorPortfolioDto.builder()
                 .title("Updated Portfolio Title")
                 .description("Updated description")
                 .photos(List.of())
                 .build();
+
         when(jwtService.extractUserId()).thenReturn(UUID.randomUUID());
-        when(operatorsService.editPortfolio(any(UUID.class), eq(request))).thenReturn(updatedResponse);
+        when(operatorsService.editPortfolio(any(UUID.class), eq(request))).thenReturn(expectedDto);
 
         ResponseEntity<OperatorPortfolioDto> result = operatorsController.editPortfolio(request);
 
         assertThat(result.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
-        assertThat(result.getBody()).isEqualTo(updatedResponse);
+        assertThat(result.getBody()).isEqualTo(expectedDto);
         verify(operatorsService).editPortfolio(any(UUID.class), eq(request));
     }
 
     @Test
     public void givenUserNotFound_whenEditPortfolio_thenThrowsUserNotFoundException() {
-        OperatorPortfolioDto request = operatorPortfolioDto;
+        UpdatePortfolioDto request = updatePortfolioDto;
         when(jwtService.extractUserId()).thenReturn(UUID.randomUUID());
         when(operatorsService.editPortfolio(any(UUID.class), eq(request))).thenThrow(new UserNotFoundException());
 
@@ -245,7 +255,7 @@ public class OperatorsControllerTests {
 
     @Test
     public void givenUserNotOperator_whenEditPortfolio_thenThrowsNoSuchOperatorException() {
-        OperatorPortfolioDto request = operatorPortfolioDto;
+        UpdatePortfolioDto request = updatePortfolioDto;
         when(jwtService.extractUserId()).thenReturn(UUID.randomUUID());
         when(operatorsService.editPortfolio(any(UUID.class), eq(request))).thenThrow(new NoSuchOperatorException());
 
@@ -257,7 +267,7 @@ public class OperatorsControllerTests {
 
     @Test
     public void givenNoPortfolioExists_whenEditPortfolio_thenThrowsNoSuchPortfolioException() {
-        OperatorPortfolioDto request = operatorPortfolioDto;
+        UpdatePortfolioDto request = updatePortfolioDto;
         when(jwtService.extractUserId()).thenReturn(UUID.randomUUID());
         when(operatorsService.editPortfolio(any(UUID.class), eq(request))).thenThrow(new NoSuchPortfolioException());
 

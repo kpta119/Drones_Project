@@ -101,7 +101,7 @@ public class OperatorsService {
 
     @CacheEvict(value = "operators", key = "#userId")
     @Transactional
-    public OperatorPortfolioDto editPortfolio(UUID userId, OperatorPortfolioDto portfolioDto) {
+    public OperatorPortfolioDto editPortfolio(UUID userId, UpdatePortfolioDto portfolioDto) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
         if (user.getRole() != UserRole.OPERATOR) {

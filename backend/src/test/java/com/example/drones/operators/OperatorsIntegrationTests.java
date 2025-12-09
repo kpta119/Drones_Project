@@ -3,8 +3,9 @@ package com.example.drones.operators;
 import com.example.drones.common.config.JwtService;
 import com.example.drones.operators.dto.CreateOperatorProfileDto;
 import com.example.drones.operators.dto.CreatePortfolioDto;
-import com.example.drones.operators.dto.OperatorPortfolioDto;
 import com.example.drones.operators.dto.OperatorProfileDto;
+import com.example.drones.operators.dto.UpdatePortfolioDto;
+import com.example.drones.photos.PhotoEntity;
 import com.example.drones.services.OperatorServicesEntity;
 import com.example.drones.services.OperatorServicesRepository;
 import com.example.drones.services.ServicesEntity;
@@ -314,11 +315,17 @@ public class OperatorsIntegrationTests {
                 .description("Original description")
                 .build();
         portfolioRepository.save(portfolio);
+        PhotoEntity photo = PhotoEntity.builder()
+                .name("photo name")
+                .url("https://example.com/photo.jpg")
+                .portfolio(portfolio)
+                .build();
 
-        OperatorPortfolioDto updateDto = OperatorPortfolioDto.builder()
+        portfolio.addPhoto(photo);
+
+        UpdatePortfolioDto updateDto = UpdatePortfolioDto.builder()
                 .title("Updated Portfolio Title")
                 .description("Updated description with more details")
-                .photos(List.of())
                 .build();
 
         mockMvc.perform(patch("/api/operators/editPortfolio")
@@ -328,7 +335,9 @@ public class OperatorsIntegrationTests {
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.title").value("Updated Portfolio Title"))
                 .andExpect(jsonPath("$.description").value("Updated description with more details"))
-                .andExpect(jsonPath("$.photos").isArray());
+                .andExpect(jsonPath("$.photos").isArray())
+                .andExpect(jsonPath("$.photos[0].name").value("photo name"))
+                .andExpect(jsonPath("$.photos[0].url").value("https://example.com/photo.jpg"));
 
         var portfolios = portfolioRepository.findAll();
         assertThat(portfolios).hasSize(1);
@@ -348,11 +357,17 @@ public class OperatorsIntegrationTests {
                 .description("Original description")
                 .build();
         portfolioRepository.save(portfolio);
+        PhotoEntity photo = PhotoEntity.builder()
+                .name("photo name")
+                .url("https://example.com/photo.jpg")
+                .portfolio(portfolio)
+                .build();
 
-        OperatorPortfolioDto updateDto = OperatorPortfolioDto.builder()
+        portfolio.addPhoto(photo);
+
+        UpdatePortfolioDto updateDto = UpdatePortfolioDto.builder()
                 .title("New Title Only")
                 .description(null)
-                .photos(List.of())
                 .build();
 
         mockMvc.perform(patch("/api/operators/editPortfolio")
@@ -361,7 +376,9 @@ public class OperatorsIntegrationTests {
                         .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.title").value("New Title Only"))
-                .andExpect(jsonPath("$.description").value("Original description"));
+                .andExpect(jsonPath("$.description").value("Original description"))
+                .andExpect(jsonPath("$.photos[0].name").value("photo name"))
+                .andExpect(jsonPath("$.photos[0].url").value("https://example.com/photo.jpg"));
 
         var portfolios = portfolioRepository.findAll();
         assertThat(portfolios).hasSize(1);
@@ -381,10 +398,9 @@ public class OperatorsIntegrationTests {
                 .build();
         portfolioRepository.save(portfolio);
 
-        OperatorPortfolioDto updateDto = OperatorPortfolioDto.builder()
+        UpdatePortfolioDto updateDto = UpdatePortfolioDto.builder()
                 .title("Updated Title")
                 .description("Updated description")
-                .photos(List.of())
                 .build();
 
         mockMvc.perform(patch("/api/operators/editPortfolio")
@@ -410,10 +426,9 @@ public class OperatorsIntegrationTests {
                 .build();
         portfolioRepository.save(portfolio);
 
-        OperatorPortfolioDto updateDto = OperatorPortfolioDto.builder()
+        UpdatePortfolioDto updateDto = UpdatePortfolioDto.builder()
                 .title("Updated Title")
                 .description("Updated description")
-                .photos(List.of())
                 .build();
 
         mockMvc.perform(patch("/api/operators/editPortfolio")

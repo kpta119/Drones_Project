@@ -41,7 +41,7 @@ public class OperatorsController {
     }
 
     @PatchMapping("/editPortfolio")
-    public ResponseEntity<OperatorPortfolioDto> editPortfolio(@RequestBody @Valid OperatorPortfolioDto portfolioDto) {
+    public ResponseEntity<OperatorPortfolioDto> editPortfolio(@RequestBody @Valid UpdatePortfolioDto portfolioDto) {
         UUID userId = jwtService.extractUserId();
         OperatorPortfolioDto response = operatorsService.editPortfolio(userId, portfolioDto);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);

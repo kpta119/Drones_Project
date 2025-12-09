@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,7 +37,18 @@ public class PortfolioEntity {
     @JoinColumn(name = "operator_id", referencedColumnName = "id", nullable = false)
     private UserEntity operator;
 
-    @OneToMany(mappedBy = "portfolio")
+    @OneToMany(mappedBy = "portfolio", cascade = CascadeType.ALL)
     private List<PhotoEntity> photos;
+
+    public void addPhoto(PhotoEntity photo) {
+        if (photo == null) {
+            return;
+        }
+        if (photos == null) {
+            photos = new ArrayList<>();
+        }
+        photos.add(photo);
+        photo.setPortfolio(this);
+    }
 
 }

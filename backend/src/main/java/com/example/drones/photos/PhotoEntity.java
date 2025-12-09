@@ -2,6 +2,8 @@ package com.example.drones.photos;
 
 import com.example.drones.operators.PortfolioEntity;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -9,6 +11,8 @@ import lombok.NoArgsConstructor;
 @Table(name = "photos")
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class PhotoEntity {
 
     @Id

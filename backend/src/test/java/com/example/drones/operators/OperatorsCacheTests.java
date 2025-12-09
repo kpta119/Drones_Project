@@ -3,6 +3,7 @@ package com.example.drones.operators;
 import com.example.drones.operators.dto.OperatorDto;
 import com.example.drones.operators.dto.OperatorPortfolioDto;
 import com.example.drones.operators.dto.OperatorProfileDto;
+import com.example.drones.operators.dto.UpdatePortfolioDto;
 import com.example.drones.services.OperatorServicesService;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserMapper;
@@ -167,15 +168,20 @@ public class OperatorsCacheTests {
 
         service.getOperatorProfile(userId);
 
-        OperatorPortfolioDto editPortfolioDto = OperatorPortfolioDto.builder()
+        UpdatePortfolioDto editPortfolioDto = UpdatePortfolioDto.builder()
                 .title("Updated Portfolio")
                 .description("Updated description")
+                .build();
+        OperatorPortfolioDto expectedPortfolioDto = OperatorPortfolioDto.builder()
+                .title("Updated Portfolio")
+                .description("Updated description")
+                .photos(List.of())
                 .build();
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(operatorUser));
         when(portfolioRepository.findByOperatorId(userId)).thenReturn(Optional.of(portfolio));
         when(portfolioRepository.save(any(PortfolioEntity.class))).thenReturn(portfolio);
-        when(portfolioMapper.toOperatorPortfolioDto(portfolio)).thenReturn(editPortfolioDto);
+        when(portfolioMapper.toOperatorPortfolioDto(portfolio)).thenReturn(expectedPortfolioDto);
 
         service.editPortfolio(userId, editPortfolioDto);
         service.getOperatorProfile(userId);
