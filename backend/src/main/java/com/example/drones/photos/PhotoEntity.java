@@ -2,10 +2,7 @@ package com.example.drones.photos;
 
 import com.example.drones.operators.PortfolioEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Table(name = "photos")
@@ -30,6 +27,8 @@ public class PhotoEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "portfolio_id", nullable = false)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private PortfolioEntity portfolio;
 
 }

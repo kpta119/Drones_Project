@@ -3,10 +3,7 @@ package com.example.drones.operators;
 import com.example.drones.photos.PhotoEntity;
 import com.example.drones.user.UserEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +32,8 @@ public class PortfolioEntity {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "operator_id", referencedColumnName = "id", nullable = false)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private UserEntity operator;
 
     @OneToMany(mappedBy = "portfolio", cascade = CascadeType.ALL)

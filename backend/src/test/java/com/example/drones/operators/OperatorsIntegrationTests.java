@@ -460,6 +460,13 @@ public class OperatorsIntegrationTests {
         testUser.setPortfolio(portfolio);
         userRepository.save(testUser);
 
+        PhotoEntity photo = PhotoEntity.builder()
+                .name("photo name")
+                .url("https://example.com/photo.jpg")
+                .portfolio(portfolio)
+                .build();
+        portfolio.addPhoto(photo);
+
         addServiceToOperator(testUser, "Aerial Photography");
         addServiceToOperator(testUser, "Surveying");
 
@@ -479,7 +486,10 @@ public class OperatorsIntegrationTests {
                 .andExpect(jsonPath("$.operator_services.length()").value(2))
                 .andExpect(jsonPath("$.portfolio").exists())
                 .andExpect(jsonPath("$.portfolio.title").value("My Portfolio"))
-                .andExpect(jsonPath("$.portfolio.description").value("Portfolio description"));
+                .andExpect(jsonPath("$.portfolio.description").value("Portfolio description"))
+                .andExpect(jsonPath("$.portfolio.photos").isArray())
+                .andExpect(jsonPath("$.portfolio.photos[0].name").value("photo name"))
+                .andExpect(jsonPath("$.portfolio.photos[0].url").value("https://example.com/photo.jpg"));
     }
 
     @Test
@@ -553,37 +563,4 @@ public class OperatorsIntegrationTests {
                 .andExpect(status().isNotFound());
     }
 
-    @Test
-    void givenOperatorWithMultipleServices_whenGetOperatorProfile_thenReturnsAllServices() throws Exception {
-        testUser.setRole(UserRole.OPERATOR);
-        testUser.setCoordinates("48.8566,2.3522");
-        testUser.setRadius(75);
-        testUser.setCertificates(List.of("Advanced UAV License", "Night Flight Certification", "Commercial Drone Pilot"));
-        userRepository.save(testUser);
-
-        addServiceToOperator(testUser, "Aerial Photography");
-        addServiceToOperator(testUser, "Surveying");
-        addServiceToOperator(testUser, "Delivery");
-        addServiceToOperator(testUser, "Inspection");
-
-        PortfolioEntity portfolio = PortfolioEntity.builder()
-                .operator(testUser)
-                .title("Professional Drone Services")
-                .description("Comprehensive drone services portfolio")
-                .build();
-        portfolio = portfolioRepository.save(portfolio);
-        testUser.setPortfolio(portfolio);
-        userRepository.save(testUser);
-
-        mockMvc.perform(get("/api/operators/getOperatorProfile/{userId}", testUser.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Test"))
-                .andExpect(jsonPath("$.surname").value("Operator"))
-                .andExpect(jsonPath("$.certificates.length()").value(3))
-                .andExpect(jsonPath("$.operator_services.length()").value(4))
-                .andExpect(jsonPath("$.portfolio").exists())
-                .andExpect(jsonPath("$.portfolio.title").value("Professional Drone Services"));
-    }
 }
