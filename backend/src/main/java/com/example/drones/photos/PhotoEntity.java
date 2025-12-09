@@ -1,0 +1,31 @@
+package com.example.drones.photos;
+
+import com.example.drones.operators.PortfolioEntity;
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Table(name = "photos")
+@Data
+@NoArgsConstructor
+public class PhotoEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(name = "portfolio_id", insertable = false, updatable = false)
+    private Integer portfolioId;
+
+    @Column(name = "name", nullable = false)
+    private String name;
+
+    @Column(name = "url", nullable = false)
+    private String url;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "portfolio_id", nullable = false)
+    private PortfolioEntity portfolio;
+
+}
