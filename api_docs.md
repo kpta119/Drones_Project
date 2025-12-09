@@ -345,10 +345,12 @@ Base URL: `/api/operators`.
             {
               "id": 1,
               "name": "Zdjęcie skanu",
+              "url": "htps:/34675745"
             },
             {
               "id": 2,
               "name": "Zdjęcie skanu v2",
+              "url": "htps:/34675745"
             }
            ]
         }
@@ -644,48 +646,56 @@ Base URL: `/api/admins`.
 
 Base URL: `/api/photos`.
 
-### Pobierz zdjęcie
+### Dodaj zdjęcia do portfolio
 
-**GET** `/photos/getPhoto/:photoId`
-
-* **Response:** Obraz w formacie binarnym (`Content-Type: image/jpeg`).
-
-### Dodaj zdjęcie do portfolio
-
-**POST** `/photos/addPortfolioPhoto/:photoName`
+**POST** `/photos/addPortfolioPhotos`
 
 * **Wymagania:** Request typu `multipart/form-data`.
-* **Parametry:** `photo` (plik).
-* **Response (201 Created) - Zaktualizowane Portfolio:**
+* **Parametry:**
+  * `images` (pliki) - wiele plików w tym samym polu
+  * `names` (string) - tablica JSON z nazwami zdjęć, np. `["Nazwa 1", "Nazwa 2"]
+* **Response (201 Created) - Wszystkie zdjęcia zaktualizowane o te nowo dodane:**
 
     ```json
     {
       "photos": [
         {
           "id": 1,
-          "name": "Zdjęcie skanu",
+          "name": "stare zdjęcie",
+          "url": "https:/3536464"
         },
         {
           "id": 2,
-          "name": "Zdjęcie skanu v2",
+          "name": "nowe zdjęcie",
+          "url": "https:/3536464"
         }
       ]
     }
     ```
 
-### Usuń zdjęcie
+### Usuń zdjęcia
 
-**DELETE** `/photos/deletePhoto/:photoId`
+**DELETE** `/photos/deletePhotos`
+* **Wymagania:** Request typu `application/json`.
+* 
+* **Request:**
 
-* **Response:** `204 No Content`
+    ```json
+    {
+       "photoIds": [1, 2, 3]
+    }
+    ```
+
+* **Response:** `204 No Content` Pozostałe zdjęcia
 
     ```json
     {
       "photos": [
         {
-          "id": 1,
-          "name": "Zdjęcie skanu",
-        },
+          "id": 2,
+          "name": "nowe zdjęcie",
+          "url": "https:/3536464"
+        }
       ]
     }
     ```
