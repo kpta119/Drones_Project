@@ -57,7 +57,9 @@ public class AuthService {
         }
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String jwtToken = jwtService.generateToken(UUID.fromString(userDetails.getUsername()));
-        return new LoginResponse(jwtToken);
+        UserEntity user = userRepository.findById(UUID.fromString(userDetails.getUsername()))
+            .orElseThrow(InvalidCredentialsException::new);
+        return userMapper.toLoginResponse(user, jwtToken);
 
     }
 }
