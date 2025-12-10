@@ -4,6 +4,10 @@ import com.example.drones.operators.dto.OperatorDto;
 import com.example.drones.operators.dto.OperatorPortfolioDto;
 import com.example.drones.operators.dto.OperatorProfileDto;
 import com.example.drones.operators.dto.UpdatePortfolioDto;
+import com.example.drones.photos.PhotosMapper;
+import com.example.drones.photos.PhotosRepository;
+import com.example.drones.photos.PhotosService;
+import com.example.drones.photos.storage.FileStorage;
 import com.example.drones.services.OperatorServicesService;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserMapper;
@@ -15,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.cache.CacheManager;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +27,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -52,10 +58,17 @@ public class OperatorsCacheTests {
     private UserMapper operatorMapper;
     @MockitoBean
     private PortfolioMapper portfolioMapper;
+    @MockitoBean
+    private FileStorage fileStorage;
+    @MockitoBean
+    private PhotosMapper photosMapper;
+    @MockitoBean
+    private PhotosRepository photosRepository;
 
     @Autowired
+    private PhotosService photosService;
+    @Autowired
     private OperatorsService service;
-
     @Autowired
     private CacheManager cacheManager;
 
@@ -242,6 +255,32 @@ public class OperatorsCacheTests {
 
         verify(userRepository, times(1)).findByIdWithPortfolio(userId);
         verify(userRepository, times(1)).findByIdWithPortfolio(userId2);
+    }
+
+    @Test
+    public void givenCachedOperatorProfile_whenAddPhotos_thenCacheIsEvicted() throws IOException {
+        when(userRepository.findByIdWithPortfolio(userId)).thenReturn(Optional.of(operatorUser));
+        when(operatorServicesService.getOperatorServices(operatorUser))
+                .thenReturn(List.of("Aerial Photography", "Surveying"));
+        when(portfolioMapper.toOperatorPortfolioDto(portfolio))
+                .thenReturn(operatorDto.portfolio());
+        when(operatorMapper.toOperatorDto(any(UserEntity.class), anyList(), any()))
+                .thenReturn(operatorDto);
+
+        service.getOperatorProfile(userId);
+
+        when(portfolioRepository.findByOperatorId(userId)).thenReturn(Optional.of(portfolio));
+        when(fileStorage.uploadFiles(anyList(), eq(userId.toString()))).thenReturn(List.of("url"));
+        when(photosMapper.toDto(anyList())).thenReturn(List.of());
+        when(photosRepository.saveAll(anyList())).thenReturn(List.of());
+        when(photosRepository.findAllByPortfolio(any(PortfolioEntity.class))).thenReturn(List.of());
+
+        MockMultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "test".getBytes());
+        photosService.addPhotos(userId, List.of(file), List.of("Photo1"));
+
+        service.getOperatorProfile(userId);
+
+        verify(userRepository, times(2)).findByIdWithPortfolio(userId);
     }
 
 }

@@ -1,4 +1,4 @@
-package com.example.drones.common.config;
+package com.example.drones.common.config.auth;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
