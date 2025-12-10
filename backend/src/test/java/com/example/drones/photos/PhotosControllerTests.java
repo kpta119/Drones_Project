@@ -158,4 +158,36 @@ public class PhotosControllerTests {
         verify(jwtService).extractUserId();
         verify(photosService).addPhotos(eq(testUserId), eq(emptyImages), eq(emptyNames));
     }
+
+    @Test
+    public void givenValidPhotoIds_whenDeletePhotos_thenReturnsNoContent() {
+        List<Integer> photoIds = List.of(1, 2, 3);
+
+        when(jwtService.extractUserId()).thenReturn(testUserId);
+        doNothing().when(photosService).deletePhotos(eq(testUserId), eq(photoIds));
+        ResponseEntity<Void> response = photosController.deletePhotos(photoIds);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(response.getBody()).isNull();
+
+        verify(jwtService).extractUserId();
+        verify(photosService).deletePhotos(eq(testUserId), eq(photoIds));
+    }
+
+    @Test
+    public void givenEmptyPhotoIdsList_whenDeletePhotos_thenReturnsNoContent() {
+        List<Integer> emptyPhotoIds = List.of();
+
+        when(jwtService.extractUserId()).thenReturn(testUserId);
+        doNothing().when(photosService).deletePhotos(eq(testUserId), eq(emptyPhotoIds));
+
+        ResponseEntity<Void> response = photosController.deletePhotos(emptyPhotoIds);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(response.getBody()).isNull();
+
+        verify(jwtService).extractUserId();
+        verify(photosService).deletePhotos(eq(testUserId), eq(emptyPhotoIds));
+    }
+
 }

@@ -3,6 +3,7 @@ package com.example.drones.photos;
 import com.example.drones.common.config.BucketConfiguration;
 import com.example.drones.photos.storage.GcsService;
 import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -58,25 +61,28 @@ public class GcsServiceTests {
 
     @Test
     public void givenValidFile_whenUploadFile_thenReturnsMediaLink() throws IOException {
+        UUID fixedUuid = UUID.fromString("00000000-0000-0000-0000-000000000000");
         String originalFilename = "test-image.jpg";
         String contentType = "image/jpeg";
-        String expectedMediaLink = "https://storage.googleapis.com/test-bucket/photos/user-123/test-image.jpg";
+        String expectedMediaLink = "https://storage.googleapis.com/test-bucket/photos/user-123/00000000-0000-0000-0000-000000000000-test-image.jpg";
         InputStream inputStream = new ByteArrayInputStream("test content".getBytes());
 
         when(mockFile.getOriginalFilename()).thenReturn(originalFilename);
         when(mockFile.getContentType()).thenReturn(contentType);
         when(mockFile.getInputStream()).thenReturn(inputStream);
-        when(mockBlob.getMediaLink()).thenReturn(expectedMediaLink);
         when(storage.createFrom(any(BlobInfo.class), any(InputStream.class))).thenReturn(mockBlob);
 
-        String result = gcsService.uploadFile(mockFile, testUserSubdirectory);
+        String result;
+        try (MockedStatic<UUID> uuidMock = mockStatic(UUID.class)) {
+            uuidMock.when(UUID::randomUUID).thenReturn(fixedUuid);
+            result = gcsService.uploadFile(mockFile, testUserSubdirectory);
+        }
 
         assertThat(result).isEqualTo(expectedMediaLink);
         verify(storage).createFrom(any(BlobInfo.class), eq(inputStream));
         verify(mockFile).getOriginalFilename();
         verify(mockFile).getContentType();
         verify(mockFile).getInputStream();
-        verify(mockBlob).getMediaLink();
     }
 
     @Test
@@ -89,7 +95,6 @@ public class GcsServiceTests {
         when(mockFile.getOriginalFilename()).thenReturn(originalFilename);
         when(mockFile.getContentType()).thenReturn(contentType);
         when(mockFile.getInputStream()).thenReturn(inputStream);
-        when(mockBlob.getMediaLink()).thenReturn("https://example.com/file");
         when(storage.createFrom(any(BlobInfo.class), any(InputStream.class))).thenReturn(mockBlob);
 
         gcsService.uploadFile(mockFile, testUserSubdirectory);
@@ -133,6 +138,7 @@ public class GcsServiceTests {
 
     @Test
     public void givenMultipleFiles_whenUploadFiles_thenReturnsAllMediaLinks() throws IOException {
+        UUID fixedUuid = UUID.fromString("00000000-0000-0000-0000-000000000000");
         MultipartFile file1 = mock(MultipartFile.class);
         MultipartFile file2 = mock(MultipartFile.class);
         MultipartFile file3 = mock(MultipartFile.class);
@@ -157,21 +163,21 @@ public class GcsServiceTests {
         Blob blob2 = mock(Blob.class);
         Blob blob3 = mock(Blob.class);
 
-        when(blob1.getMediaLink()).thenReturn("https://storage.googleapis.com/bucket/image1.jpg");
-        when(blob2.getMediaLink()).thenReturn("https://storage.googleapis.com/bucket/image2.png");
-        when(blob3.getMediaLink()).thenReturn("https://storage.googleapis.com/bucket/image3.gif");
-
         when(storage.createFrom(any(BlobInfo.class), any(InputStream.class)))
                 .thenReturn(blob1, blob2, blob3);
 
         List<MultipartFile> files = List.of(file1, file2, file3);
 
-        List<String> result = gcsService.uploadFiles(files, testUserSubdirectory);
+        List<String> results;
+        try (MockedStatic<UUID> uuidMock = mockStatic(UUID.class)) {
+            uuidMock.when(UUID::randomUUID).thenReturn(fixedUuid);
+            results = gcsService.uploadFiles(files, testUserSubdirectory);
+        }
 
-        assertThat(result).hasSize(3);
-        assertThat(result.get(0)).isEqualTo("https://storage.googleapis.com/bucket/image1.jpg");
-        assertThat(result.get(1)).isEqualTo("https://storage.googleapis.com/bucket/image2.png");
-        assertThat(result.get(2)).isEqualTo("https://storage.googleapis.com/bucket/image3.gif");
+        assertThat(results).hasSize(3);
+        assertThat(results.get(0)).isEqualTo("https://storage.googleapis.com/test-bucket/photos/user-123/00000000-0000-0000-0000-000000000000-image1.jpg");
+        assertThat(results.get(1)).isEqualTo("https://storage.googleapis.com/test-bucket/photos/user-123/00000000-0000-0000-0000-000000000000-image2.png");
+        assertThat(results.get(2)).isEqualTo("https://storage.googleapis.com/test-bucket/photos/user-123/00000000-0000-0000-0000-000000000000-image3.gif");
 
         verify(storage, times(3)).createFrom(any(BlobInfo.class), any(InputStream.class));
     }
@@ -185,4 +191,22 @@ public class GcsServiceTests {
         assertThat(result).isEmpty();
         verify(storage, never()).createFrom(any(BlobInfo.class), any(InputStream.class));
     }
+
+    @Test
+    public void givenValidUrl_whenDeleteFile_thenDeletesBlobFromStorage() {
+        String fileUrl = "https://storage.googleapis.com/test-bucket/photos/user-123/test-photo.jpg";
+        String expectedPath = "photos/user-123/test-photo.jpg";
+
+        when(storage.delete(any(BlobId.class))).thenReturn(true);
+
+        gcsService.deleteFile(fileUrl);
+
+        ArgumentCaptor<BlobId> blobIdCaptor = ArgumentCaptor.forClass(BlobId.class);
+        verify(storage).delete(blobIdCaptor.capture());
+
+        BlobId capturedBlobId = blobIdCaptor.getValue();
+        assertThat(capturedBlobId.getBucket()).isEqualTo(testBucketName);
+        assertThat(capturedBlobId.getName()).isEqualTo(expectedPath);
+    }
+
 }

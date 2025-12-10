@@ -26,6 +26,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -262,6 +263,249 @@ public class PhotosIntegrationTests {
         assertThat(allPhotos.get(4).getName()).isEqualTo("Second Photo 3");
 
         assertThat(allPhotos).allMatch(photo -> photo.getPortfolio().getId().equals(testPortfolio.getId()));
+    }
+
+    @Test
+    void givenValidPhotoIds_whenDeletePhotos_thenReturnsNoContentAndDeletesPhotos() throws Exception {
+        PhotoEntity photo1 = PhotoEntity.builder()
+                .name("Photo 1")
+                .url("https://fakeStorage.com/photo1.jpg")
+                .portfolio(testPortfolio)
+                .build();
+        PhotoEntity photo2 = PhotoEntity.builder()
+                .name("Photo 2")
+                .url("https://fakeStorage.com/photo2.jpg")
+                .portfolio(testPortfolio)
+                .build();
+        PhotoEntity photo3 = PhotoEntity.builder()
+                .name("Photo 3")
+                .url("https://fakeStorage.com/photo3.jpg")
+                .portfolio(testPortfolio)
+                .build();
+        photo1 = photosRepository.save(photo1);
+        photo2 = photosRepository.save(photo2);
+        photo3 = photosRepository.save(photo3);
+
+        List<Integer> photoIdsToDelete = List.of(photo1.getId(), photo3.getId());
+
+        mockMvc.perform(delete("/api/photos/deletePhotos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(photoIdsToDelete.toString())
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isNoContent());
+
+        List<PhotoEntity> remainingPhotos = photosRepository.findAll();
+        assertThat(remainingPhotos).hasSize(1);
+        assertThat(remainingPhotos.getFirst().getId()).isEqualTo(photo2.getId());
+        assertThat(remainingPhotos.getFirst().getName()).isEqualTo("Photo 2");
+    }
+
+
+    @Test
+    void givenAllPhotoIds_whenDeletePhotos_thenDeletesAllPhotos() throws Exception {
+        PhotoEntity photo1 = PhotoEntity.builder()
+                .name("Photo 1")
+                .url("https://fakeStorage.com/photo1.jpg")
+                .portfolio(testPortfolio)
+                .build();
+        PhotoEntity photo2 = PhotoEntity.builder()
+                .name("Photo 2")
+                .url("https://fakeStorage.com/photo2.jpg")
+                .portfolio(testPortfolio)
+                .build();
+        photo1 = photosRepository.save(photo1);
+        photo2 = photosRepository.save(photo2);
+        List<Integer> photoIdsToDelete = List.of(photo1.getId(), photo2.getId());
+
+        mockMvc.perform(delete("/api/photos/deletePhotos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(photoIdsToDelete.toString())
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isNoContent());
+
+        List<PhotoEntity> remainingPhotos = photosRepository.findAll();
+        assertThat(remainingPhotos).isEmpty();
+    }
+
+    @Test
+    void givenNoAuthToken_whenDeletePhotos_thenReturnsForbidden() throws Exception {
+        PhotoEntity photo = PhotoEntity.builder()
+                .name("Photo 1")
+                .url("https://fakeStorage.com/photo1.jpg")
+                .portfolio(testPortfolio)
+                .build();
+        photo = photosRepository.save(photo);
+
+        mockMvc.perform(delete("/api/photos/deletePhotos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[" + photo.getId() + "]"))
+                .andExpect(status().isForbidden());
+
+        List<PhotoEntity> remainingPhotos = photosRepository.findAll();
+        assertThat(remainingPhotos).hasSize(1);
+    }
+
+    @Test
+    void givenInvalidToken_whenDeletePhotos_thenReturnsUnauthorized() throws Exception {
+        PhotoEntity photo = PhotoEntity.builder()
+                .name("Photo 1")
+                .url("https://fakeStorage.com/photo1.jpg")
+                .portfolio(testPortfolio)
+                .build();
+        photo = photosRepository.save(photo);
+
+        mockMvc.perform(delete("/api/photos/deletePhotos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[" + photo.getId() + "]")
+                        .header("X-USER-TOKEN", "Bearer invalid.token.here"))
+                .andExpect(status().isUnauthorized());
+
+        List<PhotoEntity> remainingPhotos = photosRepository.findAll();
+        assertThat(remainingPhotos).hasSize(1);
+    }
+
+    @Test
+    void givenOtherUserPhotos_whenDeletePhotos_thenDoesNotDeleteThosePhotos() throws Exception {
+        UserEntity otherOperator = UserEntity.builder()
+                .displayName("otherOperator")
+                .name("Other")
+                .surname("Operator")
+                .email("other@test.com")
+                .password(passwordEncoder.encode("password123"))
+                .phoneNumber("987654321")
+                .role(UserRole.OPERATOR)
+                .coordinates("52.2297,21.0122")
+                .radius(50)
+                .certificates(List.of("UAV License"))
+                .build();
+        otherOperator = userRepository.save(otherOperator);
+
+        PortfolioEntity otherPortfolio = PortfolioEntity.builder()
+                .operator(otherOperator)
+                .operatorId(otherOperator.getId())
+                .title("Other Portfolio")
+                .description("Other portfolio description")
+                .build();
+        otherPortfolio = portfolioRepository.save(otherPortfolio);
+
+        PhotoEntity myPhoto = PhotoEntity.builder()
+                .name("My Photo")
+                .url("https://fakeStorage.com/my.jpg")
+                .portfolio(testPortfolio)
+                .build();
+        PhotoEntity otherPhoto = PhotoEntity.builder()
+                .name("Other Photo")
+                .url("https://fakeStorage.com/other.jpg")
+                .portfolio(otherPortfolio)
+                .build();
+        PhotoEntity savedMyPhoto = photosRepository.save(myPhoto);
+        PhotoEntity savedOtherPhoto = photosRepository.save(otherPhoto);
+
+        mockMvc.perform(delete("/api/photos/deletePhotos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[" + savedOtherPhoto.getId() + "]")
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isNoContent());
+
+        List<PhotoEntity> allPhotos = photosRepository.findAll();
+        assertThat(allPhotos).hasSize(2);
+        assertThat(allPhotos).anyMatch(p -> p.getId().equals(savedMyPhoto.getId()));
+        assertThat(allPhotos).anyMatch(p -> p.getId().equals(savedOtherPhoto.getId()));
+    }
+
+    @Test
+    void givenMixedPhotoIds_whenDeletePhotos_thenDeletesOnlyOwnPhotos() throws Exception {
+        UserEntity otherOperator = UserEntity.builder()
+                .displayName("anotherOperator")
+                .name("Another")
+                .surname("Operator")
+                .email("another@test.com")
+                .password(passwordEncoder.encode("password123"))
+                .phoneNumber("987654321")
+                .role(UserRole.OPERATOR)
+                .coordinates("52.2297,21.0122")
+                .radius(50)
+                .certificates(List.of("UAV License"))
+                .build();
+        otherOperator = userRepository.save(otherOperator);
+
+        PortfolioEntity otherPortfolio = PortfolioEntity.builder()
+                .operator(otherOperator)
+                .operatorId(otherOperator.getId())
+                .title("Another Portfolio")
+                .description("Another portfolio description")
+                .build();
+        otherPortfolio = portfolioRepository.save(otherPortfolio);
+
+        PhotoEntity myPhoto1 = PhotoEntity.builder()
+                .name("My Photo 1")
+                .url("https://fakeStorage.com/my1.jpg")
+                .portfolio(testPortfolio)
+                .build();
+        PhotoEntity myPhoto2 = PhotoEntity.builder()
+                .name("My Photo 2")
+                .url("https://fakeStorage.com/my2.jpg")
+                .portfolio(testPortfolio)
+                .build();
+        PhotoEntity otherPhoto = PhotoEntity.builder()
+                .name("Other Photo")
+                .url("https://fakeStorage.com/other.jpg")
+                .portfolio(otherPortfolio)
+                .build();
+        PhotoEntity savedMyPhoto1 = photosRepository.save(myPhoto1);
+        PhotoEntity savedMyPhoto2 = photosRepository.save(myPhoto2);
+        PhotoEntity savedOtherPhoto = photosRepository.save(otherPhoto);
+        List<Integer> photoIdsToDelete = List.of(savedMyPhoto1.getId(), savedOtherPhoto.getId());
+
+        mockMvc.perform(delete("/api/photos/deletePhotos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(photoIdsToDelete.toString())
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isNoContent());
+
+        List<PhotoEntity> allPhotos = photosRepository.findAll();
+        assertThat(allPhotos).hasSize(2);
+        assertThat(allPhotos).anyMatch(p -> p.getId().equals(savedMyPhoto2.getId()));
+        assertThat(allPhotos).anyMatch(p -> p.getId().equals(savedOtherPhoto.getId()));
+        assertThat(allPhotos).noneMatch(p -> p.getId().equals(savedMyPhoto1.getId()));
+    }
+
+    @Test
+    void givenEmptyPhotoIdsList_whenDeletePhotos_thenDoesNotDeleteAnyPhotos() throws Exception {
+        PhotoEntity photo = PhotoEntity.builder()
+                .name("Photo 1")
+                .url("https://fakeStorage.com/photo1.jpg")
+                .portfolio(testPortfolio)
+                .build();
+        photosRepository.save(photo);
+
+        mockMvc.perform(delete("/api/photos/deletePhotos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[]")
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isNoContent());
+
+        List<PhotoEntity> remainingPhotos = photosRepository.findAll();
+        assertThat(remainingPhotos).hasSize(1);
+    }
+
+    @Test
+    void givenNonExistentPhotoIds_whenDeletePhotos_thenReturnsNoContentWithoutError() throws Exception {
+        PhotoEntity photo = PhotoEntity.builder()
+                .name("Photo 1")
+                .url("https://fakeStorage.com/photo1.jpg")
+                .portfolio(testPortfolio)
+                .build();
+        photosRepository.save(photo);
+
+        mockMvc.perform(delete("/api/photos/deletePhotos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[99999, 88888]")
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isNoContent());
+
+        List<PhotoEntity> remainingPhotos = photosRepository.findAll();
+        assertThat(remainingPhotos).hasSize(1);
     }
 
 

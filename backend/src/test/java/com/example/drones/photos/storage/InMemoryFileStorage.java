@@ -23,4 +23,9 @@ public class InMemoryFileStorage implements FileStorage {
         }
         return fakeUrl;
     }
+
+    @Override
+    public void deleteFile(String filename) {
+        storage.remove(filename);
+    }
 }

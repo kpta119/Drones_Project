@@ -8,6 +8,8 @@ import java.util.List;
 public interface FileStorage {
     String uploadFile(MultipartFile file, String userSubdirectory) throws IOException;
 
+    void deleteFile(String key);
+
     default List<String> uploadFiles(List<MultipartFile> files, String userSubdirectory) throws IOException {
         List<String> urls = new java.util.ArrayList<>();
         for (MultipartFile file : files) {

@@ -1,9 +1,6 @@
 package com.example.drones.operators;
 
-import com.example.drones.operators.dto.OperatorDto;
-import com.example.drones.operators.dto.OperatorPortfolioDto;
-import com.example.drones.operators.dto.OperatorProfileDto;
-import com.example.drones.operators.dto.UpdatePortfolioDto;
+import com.example.drones.operators.dto.*;
 import com.example.drones.photos.PhotosMapper;
 import com.example.drones.photos.PhotosRepository;
 import com.example.drones.photos.PhotosService;
@@ -167,6 +164,42 @@ public class OperatorsCacheTests {
         service.getOperatorProfile(userId);
 
         verify(userRepository, times(2)).findByIdWithPortfolio(userId);
+    }
+
+    @Test
+    public void givenCachedOperatorProfile_whenAddPortfolio_thenCacheIsEvicted() {
+        operatorUser.setPortfolio(null);
+        when(userRepository.findByIdWithPortfolio(userId)).thenReturn(Optional.of(operatorUser));
+        when(operatorServicesService.getOperatorServices(operatorUser))
+                .thenReturn(List.of("Aerial Photography", "Surveying"));
+        when(portfolioMapper.toOperatorPortfolioDto(portfolio))
+                .thenReturn(operatorDto.portfolio());
+        when(operatorMapper.toOperatorDto(any(UserEntity.class), anyList(), any()))
+                .thenReturn(operatorDto);
+
+        service.getOperatorProfile(userId);
+
+        CreatePortfolioDto createPortfolioDto = CreatePortfolioDto.builder()
+                .title("Updated Portfolio")
+                .description("Updated description")
+                .build();
+
+        OperatorPortfolioDto expectedPortfolioDto = OperatorPortfolioDto.builder()
+                .title("Updated Portfolio")
+                .description("Updated description")
+                .photos(List.of())
+                .build();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(operatorUser));
+        when(portfolioRepository.findByOperatorId(userId)).thenReturn(Optional.empty());
+        when(portfolioRepository.save(any(PortfolioEntity.class))).thenReturn(portfolio);
+        when(portfolioMapper.toOperatorPortfolioDto(portfolio)).thenReturn(expectedPortfolioDto);
+
+        service.createPortfolio(userId, createPortfolioDto);
+        service.getOperatorProfile(userId);
+
+        verify(userRepository, times(2)).findByIdWithPortfolio(userId);
+
     }
 
     @Test

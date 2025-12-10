@@ -36,6 +36,8 @@ public class PhotosService {
         if (images.isEmpty()) {
             return new PhotosDto(List.of());
         }
+        PortfolioEntity portfolio = portfolioRepository.findByOperatorId(userId)
+                .orElseThrow(NoSuchPortfolioException::new);
 
         List<String> urls;
         try {
@@ -43,8 +45,6 @@ public class PhotosService {
         } catch (Exception e) {
             throw new PhotosUploadException(e.getMessage());
         }
-        PortfolioEntity portfolio = portfolioRepository.findByOperatorId(userId)
-                .orElseThrow(NoSuchPortfolioException::new);
         List<PhotoEntity> photos = new ArrayList<>();
         for (int i = 0; i < images.size(); i++) {
             PhotoEntity photo = PhotoEntity.builder()
@@ -58,5 +58,15 @@ public class PhotosService {
         List<PhotoEntity> allPhotos = photosRepository.findAllByPortfolio(portfolio);
 
         return new PhotosDto(photosMapper.toDto(allPhotos));
+    }
+
+    @Transactional
+    @CacheEvict(value = "operators", key = "#userId")
+    public void deletePhotos(UUID userId, List<Integer> photoIds) {
+        List<PhotoEntity> photosToDelete = photosRepository.findMyPhotos(photoIds, userId);
+        for (PhotoEntity photo : photosToDelete) {
+            fileStorage.deleteFile(photo.getUrl());
+        }
+        photosRepository.deleteAll(photosToDelete);
     }
 }

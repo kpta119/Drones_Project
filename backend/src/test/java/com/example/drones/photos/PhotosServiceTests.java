@@ -160,27 +160,31 @@ public class PhotosServiceTests {
         MultipartFile file = mock(MultipartFile.class);
         List<MultipartFile> images = List.of(file);
         List<String> names = List.of("Photo");
-        List<String> urls = List.of("https://storage.example.com/photo.jpg");
 
-        when(fileStorage.uploadFiles(images, userId.toString())).thenReturn(urls);
         when(portfolioRepository.findByOperatorId(userId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> photosService.addPhotos(userId, images, names))
                 .isInstanceOf(NoSuchPortfolioException.class)
                 .hasMessageContaining("Operator portfolio not found");
 
-        verify(fileStorage).uploadFiles(images, userId.toString());
         verify(portfolioRepository).findByOperatorId(userId);
+        verify(fileStorage, never()).uploadFiles(anyList(), anyString());
         verify(photosRepository, never()).saveAll(anyList());
     }
 
     @Test
-    public void givenfileStorageThrowsIOException_whenAddPhotos_thenThrowsPhotosUploadException() throws Exception {
+    public void givenFileStorageThrowsIOException_whenAddPhotos_thenThrowsPhotosUploadException() throws Exception {
         UUID userId = UUID.randomUUID();
         MultipartFile file = mock(MultipartFile.class);
         List<MultipartFile> images = List.of(file);
         List<String> names = List.of("Photo");
 
+        PortfolioEntity portfolio = PortfolioEntity.builder()
+                .id(1)
+                .operatorId(userId)
+                .build();
+
+        when(portfolioRepository.findByOperatorId(userId)).thenReturn(Optional.of(portfolio));
         when(fileStorage.uploadFiles(images, userId.toString()))
                 .thenThrow(new IOException("Network error"));
 
@@ -189,8 +193,8 @@ public class PhotosServiceTests {
                 .hasMessageContaining("Photos upload failed")
                 .hasMessageContaining("Network error");
 
+        verify(portfolioRepository).findByOperatorId(userId);
         verify(fileStorage).uploadFiles(images, userId.toString());
-        verify(portfolioRepository, never()).findByOperatorId(any());
         verify(photosRepository, never()).saveAll(anyList());
     }
 
@@ -268,5 +272,82 @@ public class PhotosServiceTests {
         verify(portfolioRepository, never()).findByOperatorId(any());
         verify(photosRepository, never()).saveAll(anyList());
     }
+
+    @Test
+    public void givenValidPhotoIds_whenDeletePhotos_thenPhotosDeletedFromStorageAndDatabase() {
+        UUID userId = UUID.randomUUID();
+        List<Integer> photoIds = List.of(1, 2, 3);
+
+        PortfolioEntity portfolio = PortfolioEntity.builder()
+                .id(1)
+                .operatorId(userId)
+                .build();
+
+        PhotoEntity photo1 = PhotoEntity.builder()
+                .id(1)
+                .name("Photo 1")
+                .url("https://storage.googleapis.com/bucket/photo1.jpg")
+                .portfolio(portfolio)
+                .build();
+
+        PhotoEntity photo2 = PhotoEntity.builder()
+                .id(2)
+                .name("Photo 2")
+                .url("https://storage.googleapis.com/bucket/photo2.jpg")
+                .portfolio(portfolio)
+                .build();
+
+        PhotoEntity photo3 = PhotoEntity.builder()
+                .id(3)
+                .name("Photo 3")
+                .url("https://storage.googleapis.com/bucket/photo3.jpg")
+                .portfolio(portfolio)
+                .build();
+
+        List<PhotoEntity> photosToDelete = List.of(photo1, photo2, photo3);
+
+        when(photosRepository.findMyPhotos(photoIds, userId)).thenReturn(photosToDelete);
+        doNothing().when(fileStorage).deleteFile(anyString());
+        doNothing().when(photosRepository).deleteAll(anyList());
+
+        photosService.deletePhotos(userId, photoIds);
+
+        verify(photosRepository).findMyPhotos(photoIds, userId);
+        verify(fileStorage).deleteFile("https://storage.googleapis.com/bucket/photo1.jpg");
+        verify(fileStorage).deleteFile("https://storage.googleapis.com/bucket/photo2.jpg");
+        verify(fileStorage).deleteFile("https://storage.googleapis.com/bucket/photo3.jpg");
+        verify(photosRepository).deleteAll(photosToDelete);
+    }
+
+    @Test
+    public void givenEmptyPhotoIdsList_whenDeletePhotos_thenNoPhotosDeleted() {
+        UUID userId = UUID.randomUUID();
+        List<Integer> emptyPhotoIds = List.of();
+        List<PhotoEntity> emptyPhotos = List.of();
+
+        when(photosRepository.findMyPhotos(emptyPhotoIds, userId)).thenReturn(emptyPhotos);
+
+        photosService.deletePhotos(userId, emptyPhotoIds);
+
+        verify(photosRepository).findMyPhotos(emptyPhotoIds, userId);
+        verify(fileStorage, never()).deleteFile(anyString());
+        verify(photosRepository).deleteAll(emptyPhotos);
+    }
+
+    @Test
+    public void givenPhotoIdsNotBelongingToUser_whenDeletePhotos_thenNoPhotosDeleted() {
+        UUID userId = UUID.randomUUID();
+        List<Integer> photoIds = List.of(1, 2, 3);
+        List<PhotoEntity> emptyPhotos = List.of(); // findMyPhotos returns empty because photos don't belong to user
+
+        when(photosRepository.findMyPhotos(photoIds, userId)).thenReturn(emptyPhotos);
+
+        photosService.deletePhotos(userId, photoIds);
+
+        verify(photosRepository).findMyPhotos(photoIds, userId);
+        verify(fileStorage, never()).deleteFile(anyString());
+        verify(photosRepository).deleteAll(emptyPhotos);
+    }
+
 
 }

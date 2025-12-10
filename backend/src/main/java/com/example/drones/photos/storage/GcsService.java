@@ -1,7 +1,6 @@
 package com.example.drones.photos.storage;
 
 import com.example.drones.common.config.BucketConfiguration;
-import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
@@ -20,6 +19,7 @@ public class GcsService implements FileStorage {
 
     private final Storage storage;
     private final BucketConfiguration bucketConfig;
+    private final String publicUrlPrefix = "https://storage.googleapis.com/";
 
     @Override
     public String uploadFile(MultipartFile file, String userSubdirectory) throws IOException {
@@ -29,8 +29,15 @@ public class GcsService implements FileStorage {
         BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
                 .setContentType(file.getContentType())
                 .build();
-        Blob blob = storage.createFrom(blobInfo, file.getInputStream());
-        return blob.getMediaLink();
+        storage.createFrom(blobInfo, file.getInputStream());
+        return publicUrlPrefix + bucketConfig.getBucketName() + "/" + path;
+    }
+
+    @Override
+    public void deleteFile(String url) {
+        String path = url.substring(publicUrlPrefix.length() + bucketConfig.getBucketName().length() + 1);
+        BlobId blobId = BlobId.of(bucketConfig.getBucketName(), path);
+        storage.delete(blobId);
     }
 
 }
