@@ -684,16 +684,4 @@ Base URL: `/api/photos`.
     [ 1, 2, 3 ]
     ```
 
-* **Response:** `204 No Content` Pozostałe zdjęcia
-
-    ```json
-    {
-      "photos": [
-        {
-          "id": 2,
-          "name": "nowe zdjęcie",
-          "url": "https:/3536464"
-        }
-      ]
-    }
-    ```
+* **Response:** `204 No Content`
