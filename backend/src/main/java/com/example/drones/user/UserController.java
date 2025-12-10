@@ -1,12 +1,11 @@
 package com.example.drones.user;
 
 import com.example.drones.user.dto.UserResponse;
+import com.example.drones.user.dto.UserUpdateRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -23,5 +22,11 @@ public class UserController {
             ){
         UserResponse response = userService.getUserData(userId);
         return  ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/editUserData")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public UserResponse editUserData(@RequestBody UserUpdateRequest request){
+        return userService.editUserData(request);
     }
 }

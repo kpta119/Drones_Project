@@ -1,6 +1,8 @@
 package com.example.drones.user;
 
 import com.example.drones.user.dto.UserResponse;
+import com.example.drones.user.dto.UserUpdateRequest;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,5 +26,19 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("Logged in user not found in database"));
 
         return userMapper.toResponse(userEntity);
+    }
+
+    @Transactional
+    public UserResponse editUserData(UserUpdateRequest request){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UUID userId = UUID.fromString(authentication.getName());
+
+        UserEntity userEntity = userRepository.findById(userId)
+                .orElseThrow(()-> new RuntimeException("User not found"));
+
+        userMapper.updateEntityFromRequest(request, userEntity);
+        UserEntity savedUser = userRepository.save(userEntity);
+
+        return userMapper.toResponse(savedUser);
     }
 }
