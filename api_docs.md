@@ -681,9 +681,7 @@ Base URL: `/api/photos`.
 * **Request:**
 
     ```json
-    {
-       "photoIds": [1, 2, 3]
-    }
+    [ 1, 2, 3 ]
     ```
 
 * **Response:** `204 No Content` Pozostałe zdjęcia
