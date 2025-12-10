@@ -2,9 +2,14 @@ package com.example.drones.user;
 
 import com.example.drones.auth.dto.LoginResponse;
 import com.example.drones.auth.dto.RegisterRequest;
+import com.example.drones.operators.dto.OperatorDto;
+import com.example.drones.operators.dto.OperatorPortfolioDto;
+import com.example.drones.operators.dto.OperatorProfileDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
+
+import java.util.List;
 
 @Mapper(componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.IGNORE
@@ -16,9 +21,15 @@ public interface UserMapper {
     UserEntity toEntity(RegisterRequest registerRequest, String hashedPassword);
 
     @Mapping(target = "userId", source = "userEntity.id")
-    @Mapping(target = "email", source = "userEntity.email")
     @Mapping(target = "username", source = "userEntity.displayName")
-    @Mapping(target = "role", source = "userEntity.role")
     @Mapping(target = "token", source = "token")
     LoginResponse toLoginResponse(UserEntity userEntity, String token);
+
+    @Mapping(target = "services", source = "services")
+    OperatorProfileDto toOperatorProfileDto(UserEntity userEntity, List<String> services);
+
+    @Mapping(target = "username", source = "user.displayName")
+    @Mapping(target = "operatorServices", source = "services")
+    @Mapping(target = "portfolio", source = "portfolio")
+    OperatorDto toOperatorDto(UserEntity user, List<String> services, OperatorPortfolioDto portfolio);
 }

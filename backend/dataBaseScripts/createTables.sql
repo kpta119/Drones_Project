@@ -60,7 +60,7 @@ CREATE TABLE services
 
 CREATE TABLE portfolio
 (
-    id          UUID PRIMARY KEY,
+    id          SERIAL PRIMARY KEY,
     operator_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     description TEXT,
     title       VARCHAR(255)
@@ -69,9 +69,9 @@ CREATE TABLE portfolio
 CREATE TABLE photos
 (
     id          SERIAL PRIMARY KEY,
-    portfolio_id UUID NOT NULL REFERENCES portfolio (id) ON DELETE CASCADE,
+    portfolio_id INTEGER NOT NULL REFERENCES portfolio (id) ON DELETE CASCADE,
     name        VARCHAR(255) NOT NULL,
-    photo_url   VARCHAR(255) NOT NULL
+    url   VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE operator_service

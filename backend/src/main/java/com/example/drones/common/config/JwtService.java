@@ -1,4 +1,4 @@
-package com.example.drones.config;
+package com.example.drones.common.config;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -7,6 +7,9 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
@@ -59,6 +62,20 @@ public class JwtService {
     public UUID extractUserId(String token) {
         String uuidString = extractClaim(token, Claims::getSubject);
         return UUID.fromString(uuidString);
+    }
+
+    public UUID extractUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new IllegalStateException("No authenticated user found in security context");
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof UserDetails userDetails) {
+            return UUID.fromString(userDetails.getUsername());
+        }
+
+        throw new IllegalStateException("Unable to extract user ID from security context");
     }
 
     public boolean isTokenValid(String token) {

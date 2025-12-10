@@ -1,6 +1,6 @@
 package com.example.drones.auth.exceptions;
 
-import com.example.drones.config.exceptions.AppException;
+import com.example.drones.common.config.exceptions.AppException;
 import org.springframework.http.HttpStatus;
 
 public class UserAlreadyExistsException extends AppException {

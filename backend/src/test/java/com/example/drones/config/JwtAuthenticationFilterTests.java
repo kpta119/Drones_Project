@@ -1,9 +1,13 @@
 package com.example.drones.config;
 
+import com.example.drones.common.config.CustomUserDetailsService;
+import com.example.drones.common.config.JwtAuthenticationFilter;
+import com.example.drones.common.config.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,11 +65,16 @@ public class JwtAuthenticationFilterTests {
         );
     }
 
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
     @Test
     void givenNoAuthHeader_whenDoFilterInternal_thenContinuesFilterChain() throws ServletException, IOException {
         when(request.getHeader("X-USER-TOKEN")).thenReturn(null);
 
-        jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+        jwtAuthenticationFilter.doFilter(request, response, filterChain);
 
         verify(filterChain).doFilter(request, response);
         verify(jwtService, never()).extractUserId(any());
@@ -76,7 +85,7 @@ public class JwtAuthenticationFilterTests {
     void givenInvalidAuthHeaderPrefix_whenDoFilterInternal_thenContinuesFilterChain() throws ServletException, IOException {
         when(request.getHeader("X-USER-TOKEN")).thenReturn("InvalidPrefix token");
 
-        jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+        jwtAuthenticationFilter.doFilter(request, response, filterChain);
 
         verify(filterChain).doFilter(request, response);
         verify(jwtService, never()).extractUserId(any());
@@ -91,7 +100,7 @@ public class JwtAuthenticationFilterTests {
         when(jwtService.isTokenValid(validToken)).thenReturn(true);
         when(jwtService.refreshTokenIfNeeded(validToken)).thenReturn(validToken);
 
-        jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+        jwtAuthenticationFilter.doFilter(request, response, filterChain);
 
         verify(filterChain).doFilter(request, response);
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
@@ -105,7 +114,7 @@ public class JwtAuthenticationFilterTests {
         when(customUserDetailsService.loadUserById(testUserId)).thenReturn(userDetails);
         when(jwtService.isTokenValid(validToken)).thenReturn(false);
 
-        jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+        jwtAuthenticationFilter.doFilter(request, response, filterChain);
 
         verify(filterChain).doFilter(request, response);
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
@@ -117,7 +126,7 @@ public class JwtAuthenticationFilterTests {
         when(request.getHeader("X-USER-TOKEN")).thenReturn("Bearer " + validToken);
         when(jwtService.extractUserId(validToken)).thenReturn(null);
 
-        jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+        jwtAuthenticationFilter.doFilter(request, response, filterChain);
 
         verify(filterChain).doFilter(request, response);
         verify(customUserDetailsService, never()).loadUserById(any());
@@ -134,7 +143,7 @@ public class JwtAuthenticationFilterTests {
         when(request.getHeader("X-USER-TOKEN")).thenReturn("Bearer " + validToken);
         when(jwtService.extractUserId(validToken)).thenReturn(testUserId);
 
-        jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+        jwtAuthenticationFilter.doFilter(request, response, filterChain);
 
         verify(filterChain).doFilter(request, response);
         verify(customUserDetailsService, never()).loadUserById(any());
@@ -149,7 +158,7 @@ public class JwtAuthenticationFilterTests {
         when(jwtService.isTokenValid(validToken)).thenReturn(true);
         when(jwtService.refreshTokenIfNeeded(validToken)).thenReturn(newToken);
 
-        jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+        jwtAuthenticationFilter.doFilter(request, response, filterChain);
 
         verify(response).setHeader("X-Refresh-Token", newToken);
         verify(filterChain).doFilter(request, response);
@@ -163,7 +172,7 @@ public class JwtAuthenticationFilterTests {
         when(jwtService.isTokenValid(validToken)).thenReturn(true);
         when(jwtService.refreshTokenIfNeeded(validToken)).thenReturn(validToken);
 
-        jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+        jwtAuthenticationFilter.doFilter(request, response, filterChain);
 
         verify(response, never()).setHeader(eq("X-Refresh-Token"), any());
         verify(filterChain).doFilter(request, response);
@@ -174,7 +183,7 @@ public class JwtAuthenticationFilterTests {
         when(request.getHeader("X-USER-TOKEN")).thenReturn("Bearer " + validToken);
         when(jwtService.extractUserId(validToken)).thenThrow(new RuntimeException("JWT parsing error"));
 
-        jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+        jwtAuthenticationFilter.doFilter(request, response, filterChain);
 
         verify(handlerExceptionResolver).resolveException(
                 eq(request),

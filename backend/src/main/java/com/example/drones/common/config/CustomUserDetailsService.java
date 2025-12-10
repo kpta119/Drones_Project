@@ -1,6 +1,6 @@
-package com.example.drones.config;
+package com.example.drones.common.config;
 
-import com.example.drones.config.exceptions.UserNotFoundException;
+import com.example.drones.common.config.exceptions.UserNotFoundException;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
 import com.example.drones.user.UserRole;
@@ -23,12 +23,12 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) {
         return createUserDetails(userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException(email)));
+                .orElseThrow(UserNotFoundException::new));
     }
 
     public UserDetails loadUserById(UUID userId) {
         return createUserDetails(userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId.toString())));
+                .orElseThrow(UserNotFoundException::new));
     }
 
     private UserDetails createUserDetails(UserEntity user) {
