@@ -1,5 +1,6 @@
 package com.example.drones.user;
 
+import com.example.drones.auth.exceptions.InvalidCredentialsException;
 import com.example.drones.config.exceptions.UserNotFoundException;
 import com.example.drones.user.dto.UserResponse;
 import com.example.drones.user.dto.UserUpdateRequest;
@@ -35,6 +36,15 @@ public class UserService {
 
         UserEntity userEntity = userRepository.findById(userId)
                 .orElseThrow(()-> new UserNotFoundException(userId.toString()));
+        if (request.getRole() != null) {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+            if (!isAdmin) {
+                throw new InvalidCredentialsException();
+            }
+            userEntity.setRole(request.getRole());
+        }
 
         userMapper.updateEntityFromRequest(request, userEntity);
         UserEntity savedUser = userRepository.save(userEntity);

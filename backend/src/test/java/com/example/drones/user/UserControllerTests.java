@@ -1,5 +1,6 @@
 package com.example.drones.user;
 
+import com.example.drones.auth.exceptions.InvalidCredentialsException;
 import com.example.drones.user.dto.UserResponse;
 import com.example.drones.user.dto.UserUpdateRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -104,5 +105,41 @@ public class UserControllerTests {
 
         assertEquals(errorMsg, exception.getMessage());
         verify(userService).editUserData(mockUpdateRequest);
+    }
+
+    @Test
+    public void givenAdminUser_whenEditRole_thenReturnsUserWithNewRole() {
+        // Given
+        UserUpdateRequest roleChangeRequest = new UserUpdateRequest();
+        roleChangeRequest.setRole(UserRole.ADMIN);
+
+        UserResponse responseWithNewRole = UserResponse.builder()
+                .username("testUser")
+                .role("ADMIN")
+                .build();
+
+        when(userService.editUserData(roleChangeRequest)).thenReturn(responseWithNewRole);
+        UserResponse result = userController.editUserData(roleChangeRequest);
+
+        assertNotNull(result);
+        assertEquals("ADMIN", result.getRole());
+        verify(userService).editUserData(roleChangeRequest);
+    }
+
+    @Test
+    public void givenClientUser_whenEditRole_thenThrowsAccessDeniedException() {
+        UserUpdateRequest roleChangeRequest = new UserUpdateRequest();
+        roleChangeRequest.setRole(UserRole.ADMIN);
+
+
+        when(userService.editUserData(roleChangeRequest))
+                .thenThrow(new InvalidCredentialsException());
+
+        InvalidCredentialsException exception = assertThrows(InvalidCredentialsException.class, () -> {
+            userController.editUserData(roleChangeRequest);
+        });
+
+        assertEquals("The provided credentials are invalid.", exception.getMessage());
+        verify(userService).editUserData(roleChangeRequest);
     }
 }
