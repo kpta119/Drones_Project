@@ -1,5 +1,6 @@
 package com.example.drones.user;
 
+import com.example.drones.config.exceptions.UserNotFoundException;
 import com.example.drones.user.dto.UserResponse;
 import com.example.drones.user.dto.UserUpdateRequest;
 import jakarta.transaction.Transactional;
@@ -16,14 +17,13 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
 
-    public UserResponse getUserData(UUID userId) {
-        if (userId == null) {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String currentUserIdString = authentication.getName();
-            userId = UUID.fromString(currentUserIdString);
-        }
+    public UserResponse getUserData(UUID userIdParam) {
+        UUID userId = (userIdParam != null)
+                ? userIdParam
+                : UUID.fromString(SecurityContextHolder.getContext().getAuthentication().getName());
+
         UserEntity userEntity = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Logged in user not found in database"));
+                .orElseThrow(() -> new UserNotFoundException(userId.toString()));
 
         return userMapper.toResponse(userEntity);
     }
@@ -34,7 +34,7 @@ public class UserService {
         UUID userId = UUID.fromString(authentication.getName());
 
         UserEntity userEntity = userRepository.findById(userId)
-                .orElseThrow(()-> new RuntimeException("User not found"));
+                .orElseThrow(()-> new UserNotFoundException(userId.toString()));
 
         userMapper.updateEntityFromRequest(request, userEntity);
         UserEntity savedUser = userRepository.save(userEntity);
