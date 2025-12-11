@@ -67,7 +67,6 @@ public class UserIntegrationTests {
         return response.getBody().token();
     }
 
-    // Pomocnicza metoda: Tworzy nagłówki z Twoim niestandardowym X-USER-TOKEN
     private HttpHeaders getHeaders(String token) {
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-USER-TOKEN", "Bearer " + token);
@@ -96,10 +95,8 @@ public class UserIntegrationTests {
 
     @Test
     void givenAuthenticatedUser_whenGetUserDataWithId_thenReturnsSpecificUser() {
-        // 1. Zarejestruj User 1 (tego będziemy pytać)
         String tokenUser1 = registerAndLogin(user1Register, user1Login);
 
-        // 2. Zarejestruj User 2 (tego będziemy szukać w bazie)
         RegisterRequest user2Register = RegisterRequest.builder()
                 .displayName("userTwo")
                 .password("pass")
@@ -110,11 +107,9 @@ public class UserIntegrationTests {
                 .build();
         testRestTemplate.postForEntity("/api/auth/register", user2Register, Void.class);
 
-        // Pobierz ID Usera 2 z bazy
         UserEntity user2InDb = userRepository.findByEmail("adam@example.com").orElseThrow();
         UUID user2Id = user2InDb.getId();
 
-        // 3. User 1 pyta o dane Usera 2
         HttpEntity<Void> requestEntity = new HttpEntity<>(getHeaders(tokenUser1));
 
         ResponseEntity<UserResponse> response = testRestTemplate.exchange(
@@ -124,7 +119,6 @@ public class UserIntegrationTests {
                 UserResponse.class
         );
 
-        // 4. Sprawdź czy zwrócono dane Usera 2
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().getUsername()).isEqualTo("userTwo");
         assertThat(response.getBody().getEmail()).isEqualTo("adam@example.com");
@@ -166,5 +160,60 @@ public class UserIntegrationTests {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
-    
+    @Test
+    void givenClientUser_whenTryToChangeRole_thenReturnsForbidden() {
+        String token = registerAndLogin(user1Register, user1Login);
+
+        UserUpdateRequest updateRequest = new UserUpdateRequest();
+        updateRequest.setRole(UserRole.ADMIN);
+
+        HttpEntity<UserUpdateRequest> requestEntity = new HttpEntity<>(updateRequest, getHeaders(token));
+        ResponseEntity<String> response = testRestTemplate.exchange(
+                "/api/user/editUserData",
+                HttpMethod.PATCH,
+                requestEntity,
+                String.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        UserEntity userInDb = userRepository.findByEmail("jan@example.com").orElseThrow();
+        assertThat(userInDb.getRole()).isEqualTo(UserRole.CLIENT);
+    }
+
+    @Test
+    void givenAdminUser_whenChangeRole_thenRoleIsUpdated() {
+        testRestTemplate.postForEntity("/api/auth/register", user1Register, Void.class);
+
+
+        UserEntity userEntity = userRepository.findByEmail(user1Register.email()).orElseThrow();
+        userEntity.setRole(UserRole.ADMIN);
+        userRepository.save(userEntity);
+
+        ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
+                "/api/auth/login",
+                user1Login,
+                LoginResponse.class
+        );
+        String adminToken = loginResponse.getBody().token();
+
+        UserUpdateRequest updateRequest = new UserUpdateRequest();
+        updateRequest.setRole(UserRole.OPERATOR);
+
+        HttpEntity<UserUpdateRequest> requestEntity = new HttpEntity<>(updateRequest, getHeaders(adminToken));
+
+        ResponseEntity<UserResponse> response = testRestTemplate.exchange(
+                "/api/user/editUserData",
+                HttpMethod.PATCH,
+                requestEntity,
+                UserResponse.class
+        );
+
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        assertThat(response.getBody().getRole()).isEqualTo("OPERATOR");
+
+        UserEntity updatedUserInDb = userRepository.findByEmail(user1Register.email()).orElseThrow();
+        assertThat(updatedUserInDb.getRole()).isEqualTo(UserRole.OPERATOR);
+    }
+
 }
