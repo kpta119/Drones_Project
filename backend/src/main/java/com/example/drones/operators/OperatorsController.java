@@ -1,6 +1,6 @@
 package com.example.drones.operators;
 
-import com.example.drones.common.config.JwtService;
+import com.example.drones.common.config.auth.JwtService;
 import com.example.drones.operators.dto.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
