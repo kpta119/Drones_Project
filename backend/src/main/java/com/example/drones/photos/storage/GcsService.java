@@ -19,7 +19,7 @@ public class GcsService implements FileStorage {
 
     private final Storage storage;
     private final BucketConfiguration bucketConfig;
-    private final String publicUrlPrefix = "https://storage.googleapis.com/";
+    private static final String publicUrlPrefix = "https://storage.googleapis.com/";
 
     @Override
     public String uploadFile(MultipartFile file, String userSubdirectory) throws IOException {

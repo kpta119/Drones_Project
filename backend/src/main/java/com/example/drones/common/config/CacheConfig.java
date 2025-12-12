@@ -19,7 +19,9 @@ public class CacheConfig {
     public CacheManager cacheManager() {
         SimpleCacheManager cacheManager = new SimpleCacheManager();
         cacheManager.setCaches(List.of(
-                buildCache("operators", 60, 1000)
+                buildCache("operators", 60, 1000),
+                buildCache("services", 1440, 100),
+                buildCache("users", 30, 5000)
         ));
         return cacheManager;
     }
