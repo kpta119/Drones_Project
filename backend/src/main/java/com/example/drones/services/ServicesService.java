@@ -2,6 +2,8 @@ package com.example.drones.services;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,6 +15,7 @@ public class ServicesService {
 
     private final ServicesRepository servicesRepository;
 
+    @Cacheable("services")
     public List<String> getAllServices() {
         return servicesRepository.findAll()
                 .stream()
@@ -21,6 +24,7 @@ public class ServicesService {
     }
 
     @Transactional
+    @CacheEvict(value = "services", allEntries = true)
     public List<String> addServices(List<String> serviceNames) {
         List<ServicesEntity> newEntities = serviceNames.stream()
                 .filter(name -> !servicesRepository.existsById(name))
