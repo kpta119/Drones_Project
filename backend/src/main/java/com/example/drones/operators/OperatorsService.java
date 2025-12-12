@@ -77,6 +77,7 @@ public class OperatorsService {
         return operatorMapper.toOperatorProfileDto(savedUser, savedServices);
     }
 
+    @CacheEvict(value = "operators", key = "#userId")
     @Transactional
     public OperatorPortfolioDto createPortfolio(UUID userId, CreatePortfolioDto portfolioDto) {
         UserEntity user = userRepository.findById(userId)

@@ -1,6 +1,6 @@
 package com.example.drones.operators;
 
-import com.example.drones.common.config.JwtService;
+import com.example.drones.common.config.auth.JwtService;
 import com.example.drones.operators.dto.CreateOperatorProfileDto;
 import com.example.drones.operators.dto.CreatePortfolioDto;
 import com.example.drones.operators.dto.OperatorProfileDto;

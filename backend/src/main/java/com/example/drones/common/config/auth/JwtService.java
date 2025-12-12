@@ -1,4 +1,4 @@
-package com.example.drones.common.config;
+package com.example.drones.common.config.auth;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

@@ -1,8 +1,8 @@
 package com.example.drones.config;
 
-import com.example.drones.common.config.CustomUserDetailsService;
-import com.example.drones.common.config.JwtAuthenticationFilter;
-import com.example.drones.common.config.JwtService;
+import com.example.drones.common.config.auth.CustomUserDetailsService;
+import com.example.drones.common.config.auth.JwtAuthenticationFilter;
+import com.example.drones.common.config.auth.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
