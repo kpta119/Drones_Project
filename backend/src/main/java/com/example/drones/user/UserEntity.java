@@ -1,5 +1,6 @@
 package com.example.drones.user;
 
+import com.example.drones.operators.PortfolioEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
@@ -26,8 +27,9 @@ public class UserEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
-    @Column(columnDefinition = "user_role", nullable = false)
+    @Column(columnDefinition = "role", nullable = false)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private UserRole role = UserRole.CLIENT;
 
@@ -69,5 +71,9 @@ public class UserEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "certificates")
     private List<String> certificates;
+
+    @OneToOne(mappedBy = "operator")
+    private PortfolioEntity portfolio;
+
 
 }

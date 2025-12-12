@@ -1,7 +1,7 @@
 package com.example.drones.user;
 
 import com.example.drones.auth.exceptions.InvalidCredentialsException;
-import com.example.drones.config.exceptions.UserNotFoundException;
+import com.example.drones.common.config.exceptions.UserNotFoundException;
 import com.example.drones.user.dto.UserResponse;
 import com.example.drones.user.dto.UserUpdateRequest;
 import jakarta.transaction.Transactional;
@@ -24,7 +24,7 @@ public class UserService {
                 : UUID.fromString(SecurityContextHolder.getContext().getAuthentication().getName());
 
         UserEntity userEntity = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId.toString()));
+                .orElseThrow(UserNotFoundException::new);
 
         return userMapper.toResponse(userEntity);
     }
@@ -35,7 +35,7 @@ public class UserService {
         UUID userId = UUID.fromString(authentication.getName());
 
         UserEntity userEntity = userRepository.findById(userId)
-                .orElseThrow(()-> new UserNotFoundException(userId.toString()));
+                .orElseThrow(UserNotFoundException::new);
         if (request.getRole() != null) {
             boolean isAdmin = authentication.getAuthorities().stream()
                     .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));

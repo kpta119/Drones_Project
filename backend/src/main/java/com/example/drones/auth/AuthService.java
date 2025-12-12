@@ -6,7 +6,7 @@ import com.example.drones.auth.dto.LoginResponse;
 import com.example.drones.auth.dto.RegisterRequest;
 import com.example.drones.auth.exceptions.InvalidCredentialsException;
 import com.example.drones.auth.exceptions.UserAlreadyExistsException;
-import com.example.drones.config.JwtService;
+import com.example.drones.common.config.JwtService;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserMapper;
 import com.example.drones.user.UserRepository;
@@ -57,7 +57,9 @@ public class AuthService {
         }
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String jwtToken = jwtService.generateToken(UUID.fromString(userDetails.getUsername()));
-        return new LoginResponse(jwtToken);
+        UserEntity user = userRepository.findById(UUID.fromString(userDetails.getUsername()))
+                .orElseThrow(InvalidCredentialsException::new);
+        return userMapper.toLoginResponse(user, jwtToken);
 
     }
 }

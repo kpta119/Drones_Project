@@ -3,7 +3,7 @@ package com.example.drones.auth;
 import com.example.drones.auth.dto.LoginRequest;
 import com.example.drones.auth.dto.LoginResponse;
 import com.example.drones.auth.dto.RegisterRequest;
-import com.example.drones.config.exceptions.ErrorResponse;
+import com.example.drones.common.config.exceptions.ErrorResponse;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -23,6 +23,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Optional;
 
+import static com.example.drones.user.UserRole.CLIENT;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @Testcontainers
@@ -130,6 +131,11 @@ public class AuthIntegrationTests {
         testRestTemplate.postForEntity("/api/auth/register", registerRequest, Void.class);
         ResponseEntity<LoginResponse> response = testRestTemplate.postForEntity("/api/auth/login", loginRequest, LoginResponse.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        Assertions.assertNotNull(response.getBody());
+        assertThat(response.getBody().role()).isEqualTo(CLIENT);
+        assertThat(response.getBody().username()).isEqualTo("testUser");
+        assertThat(response.getBody().userId()).isNotNull();
+
     }
 
     @Test

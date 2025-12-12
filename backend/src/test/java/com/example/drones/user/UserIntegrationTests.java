@@ -6,6 +6,7 @@ import com.example.drones.auth.dto.RegisterRequest;
 import com.example.drones.user.dto.UserResponse;
 import com.example.drones.user.dto.UserUpdateRequest;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,6 +65,7 @@ public class UserIntegrationTests {
     private String registerAndLogin(RegisterRequest register, LoginRequest login) {
         testRestTemplate.postForEntity("/api/auth/register", register, Void.class);
         ResponseEntity<LoginResponse> response = testRestTemplate.postForEntity("/api/auth/login", login, LoginResponse.class);
+        Assertions.assertNotNull(response.getBody());
         return response.getBody().token();
     }
 
@@ -89,6 +91,7 @@ public class UserIntegrationTests {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
+        Assertions.assertNotNull(response.getBody());
         assertThat(response.getBody().getUsername()).isEqualTo("userOne");
         assertThat(response.getBody().getEmail()).isEqualTo("jan@example.com");
     }
@@ -120,6 +123,7 @@ public class UserIntegrationTests {
         );
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        Assertions.assertNotNull(response.getBody());
         assertThat(response.getBody().getUsername()).isEqualTo("userTwo");
         assertThat(response.getBody().getEmail()).isEqualTo("adam@example.com");
     }
@@ -144,6 +148,7 @@ public class UserIntegrationTests {
 
 
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        Assertions.assertNotNull(response.getBody());
         assertThat(response.getBody().getName()).isEqualTo("Janusz");
         assertThat(response.getBody().getPhoneNumber()).isEqualTo("000000000");
         assertThat(response.getBody().getSurname()).isEqualTo("Kowalski");
@@ -195,6 +200,7 @@ public class UserIntegrationTests {
                 user1Login,
                 LoginResponse.class
         );
+        Assertions.assertNotNull(loginResponse.getBody());
         String adminToken = loginResponse.getBody().token();
 
         UserUpdateRequest updateRequest = new UserUpdateRequest();
@@ -210,6 +216,7 @@ public class UserIntegrationTests {
         );
 
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        Assertions.assertNotNull(response.getBody());
         assertThat(response.getBody().getRole()).isEqualTo("OPERATOR");
 
         UserEntity updatedUserInDb = userRepository.findByEmail(user1Register.email()).orElseThrow();

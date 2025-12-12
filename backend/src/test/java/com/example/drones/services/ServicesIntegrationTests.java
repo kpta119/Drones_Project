@@ -7,6 +7,7 @@ import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
 import com.example.drones.user.UserRole;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,6 +71,7 @@ public class ServicesIntegrationTests {
     private String registerAndLogin(RegisterRequest register, LoginRequest login) {
         testRestTemplate.postForEntity("/api/auth/register", register, Void.class);
         ResponseEntity<LoginResponse> response = testRestTemplate.postForEntity("/api/auth/login", login, LoginResponse.class);
+        Assertions.assertNotNull(response.getBody());
         return response.getBody().token();
     }
 
@@ -154,6 +156,7 @@ public class ServicesIntegrationTests {
                 user1Login,
                 LoginResponse.class
         );
+        Assertions.assertNotNull(loginResponse.getBody());
         String adminToken = loginResponse.getBody().token();
 
         List<String> servicesToAdd = List.of("Geodezja", "Rolnictwo");

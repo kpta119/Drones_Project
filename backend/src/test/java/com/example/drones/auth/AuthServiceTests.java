@@ -1,13 +1,15 @@
 package com.example.drones.auth;
 
 import com.example.drones.auth.dto.LoginRequest;
+import com.example.drones.auth.dto.LoginResponse;
 import com.example.drones.auth.dto.RegisterRequest;
 import com.example.drones.auth.exceptions.InvalidCredentialsException;
 import com.example.drones.auth.exceptions.UserAlreadyExistsException;
-import com.example.drones.config.JwtService;
+import com.example.drones.common.config.JwtService;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserMapper;
 import com.example.drones.user.UserRepository;
+import com.example.drones.user.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -112,9 +114,16 @@ public class AuthServiceTests {
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(authentication);
         when(jwtService.generateToken(any(UUID.class))).thenReturn("jwtToken123");
-
+        when(userRepository.findById(any(UUID.class)))
+                .thenReturn(java.util.Optional.of(new UserEntity()));
+        when(userMapper.toLoginResponse(any(UserEntity.class), eq("jwtToken123")))
+                .thenReturn(new LoginResponse(
+                        "jwtToken123", UserRole.CLIENT, UUID.randomUUID(), "email", "user1"));
         var response = authService.login(loginRequest);
         assertThat(response.token()).isEqualTo("jwtToken123");
+        assertThat(response.username()).isEqualTo("user1");
+        assertThat(response.userId()).isNotNull();
+        assertThat(response.role()).isEqualTo(UserRole.CLIENT);
     }
 
     @Test

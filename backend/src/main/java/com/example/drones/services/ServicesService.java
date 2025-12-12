@@ -1,7 +1,5 @@
 package com.example.drones.services;
 
-import com.example.drones.services.dto.ServiceRequest;
-import com.example.drones.services.exceptions.ServiceAlreadyExistsException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
