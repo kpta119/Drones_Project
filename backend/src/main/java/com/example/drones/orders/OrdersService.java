@@ -1,0 +1,40 @@
+package com.example.drones.orders;
+
+import com.example.drones.common.config.exceptions.UserNotFoundException;
+import com.example.drones.orders.dto.OrderRequest;
+import com.example.drones.orders.dto.OrderResponse;
+import com.example.drones.services.exceptions.ServiceNotFoundException;
+import com.example.drones.user.UserEntity;
+import com.example.drones.user.UserRepository;
+import com.example.drones.services.ServicesEntity;
+import com.example.drones.services.ServicesRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class OrdersService {
+
+    private final OrdersRepository ordersRepository;
+    private final UserRepository userRepository;
+    private final ServicesRepository servicesRepository;
+    private final OrdersMapper ordersMapper;
+
+    @Transactional
+    public OrderResponse createOrder(OrderRequest request, UUID userId) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        ServicesEntity serviceEntity = servicesRepository.findById(request.getService())
+                .orElseThrow(ServiceNotFoundException::new);
+
+        OrdersEntity orderEntity = ordersMapper.toEntity(request, serviceEntity);
+
+        orderEntity.setUser(user);
+        OrdersEntity savedOrder = ordersRepository.save(orderEntity);
+        return ordersMapper.toResponse(savedOrder);
+    }
+}

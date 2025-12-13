@@ -4,6 +4,9 @@ import com.example.drones.user.UserEntity;
 import com.example.drones.services.ServicesEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnTransformer;
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
@@ -50,10 +53,12 @@ public class OrdersEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "order_status")
+    @ColumnTransformer(write = "?::order_status")
     private OrderStatus status;
 
     @CreatedDate
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "created_at", insertable = false, updatable = false)
+    @Generated(event = EventType.INSERT)
     private LocalDateTime createdAt;
 
 

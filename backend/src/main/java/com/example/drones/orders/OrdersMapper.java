@@ -1,0 +1,28 @@
+package com.example.drones.orders;
+
+import com.example.drones.orders.OrderStatus;
+import com.example.drones.orders.dto.OrderRequest;
+import com.example.drones.orders.dto.OrderResponse;
+import com.example.drones.services.ServicesEntity;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
+
+@Mapper(
+        componentModel = "spring",
+        unmappedTargetPolicy = ReportingPolicy.IGNORE,
+        imports = {OrderStatus.class}
+)
+public interface OrdersMapper {
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "service", source = "serviceEntity")
+    @Mapping(target = "parameters", source = "request.parameters")
+    @Mapping(target = "status", expression = "java(OrderStatus.OPEN)")
+    OrdersEntity toEntity(OrderRequest request, ServicesEntity serviceEntity);
+
+    @Mapping(target = "service", source = "service.name")
+    OrderResponse toResponse(OrdersEntity entity);
+}
