@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -22,6 +24,7 @@ public class OrdersService {
     private final UserRepository userRepository;
     private final ServicesRepository servicesRepository;
     private final OrdersMapper ordersMapper;
+    private final Clock clock;
 
     @Transactional
     public OrderResponse createOrder(OrderRequest request, UUID userId) {
@@ -33,8 +36,10 @@ public class OrdersService {
 
         OrdersEntity orderEntity = ordersMapper.toEntity(request, serviceEntity);
 
+        orderEntity.setCreatedAt(LocalDateTime.now(clock));
         orderEntity.setUser(user);
         OrdersEntity savedOrder = ordersRepository.save(orderEntity);
+
         return ordersMapper.toResponse(savedOrder);
     }
 }

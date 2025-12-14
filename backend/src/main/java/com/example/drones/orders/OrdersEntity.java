@@ -13,6 +13,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.UUID;
 
@@ -23,7 +25,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EntityListeners(AuditingEntityListener.class)
 public class OrdersEntity {
 
     @Id
@@ -56,13 +57,10 @@ public class OrdersEntity {
     @ColumnTransformer(write = "?::order_status")
     private OrderStatus status;
 
-    @CreatedDate
-    @Column(name = "created_at", insertable = false, updatable = false)
-    @Generated(event = EventType.INSERT)
-    private LocalDateTime createdAt;
-
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private UserEntity user;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 }
