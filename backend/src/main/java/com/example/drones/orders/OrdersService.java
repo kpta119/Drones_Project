@@ -1,8 +1,11 @@
 package com.example.drones.orders;
 
+import com.example.drones.auth.exceptions.InvalidCredentialsException;
 import com.example.drones.common.config.exceptions.UserNotFoundException;
 import com.example.drones.orders.dto.OrderRequest;
 import com.example.drones.orders.dto.OrderResponse;
+import com.example.drones.orders.dto.OrderUpdateRequest;
+import com.example.drones.orders.exceptions.OrderIsNotEditableException;
 import com.example.drones.services.exceptions.ServiceNotFoundException;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
@@ -41,5 +44,30 @@ public class OrdersService {
         OrdersEntity savedOrder = ordersRepository.save(orderEntity);
 
         return ordersMapper.toResponse(savedOrder);
+    }
+
+    @Transactional
+    public OrderResponse editOrder(UUID orderId, OrderUpdateRequest request, UUID userId) {
+        OrdersEntity order = ordersRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if (!order.getUser().getId().equals(userId)) {
+            throw new InvalidCredentialsException();
+        }
+
+        if (order.getStatus() != OrderStatus.OPEN) {
+            throw new OrderIsNotEditableException();
+        }
+
+        if (request.getService() != null) {
+            ServicesEntity newService = servicesRepository.findById(request.getService())
+                    .orElseThrow(ServiceNotFoundException::new);
+            order.setService(newService);
+        }
+
+        ordersMapper.updateEntityFromRequest(request, order);
+        OrdersEntity updatedOrder = ordersRepository.save(order);
+
+        return ordersMapper.toResponse(updatedOrder);
     }
 }
