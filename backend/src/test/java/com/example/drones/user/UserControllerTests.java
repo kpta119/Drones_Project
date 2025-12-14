@@ -1,6 +1,7 @@
 package com.example.drones.user;
 
 import com.example.drones.auth.exceptions.InvalidCredentialsException;
+import com.example.drones.common.config.auth.JwtService;
 import com.example.drones.user.dto.UserResponse;
 import com.example.drones.user.dto.UserUpdateRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +23,9 @@ public class UserControllerTests {
 
     @Mock
     private UserService userService;
+
+    @Mock
+    private JwtService jwtService;
 
     @InjectMocks
     private UserController userController;
@@ -62,12 +66,16 @@ public class UserControllerTests {
 
     @Test
     public void givenNullUserId_whenGetUserData_thenReturnsOkAndCurrentUser() {
-        when(userService.getUserData(null)).thenReturn(mockUserResponse);
+        UUID currentUserId = UUID.randomUUID();
+
+        when(jwtService.extractUserId()).thenReturn(currentUserId);
+        when(userService.getUserData(currentUserId)).thenReturn(mockUserResponse);
+
         ResponseEntity<UserResponse> response = userController.getUserData(null);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(mockUserResponse, response.getBody());
-        verify(userService).getUserData(null);
+        verify(userService).getUserData(currentUserId);
     }
 
     @Test
