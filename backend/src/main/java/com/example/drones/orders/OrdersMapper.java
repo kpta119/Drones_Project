@@ -3,14 +3,14 @@ package com.example.drones.orders;
 import com.example.drones.orders.OrderStatus;
 import com.example.drones.orders.dto.OrderRequest;
 import com.example.drones.orders.dto.OrderResponse;
+import com.example.drones.orders.dto.OrderUpdateRequest;
 import com.example.drones.services.ServicesEntity;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.ReportingPolicy;
+import org.mapstruct.*;
 
 @Mapper(
         componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.IGNORE,
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
         imports = {OrderStatus.class}
 )
 public interface OrdersMapper {
@@ -25,4 +25,11 @@ public interface OrdersMapper {
 
     @Mapping(target = "service", source = "service.name")
     OrderResponse toResponse(OrdersEntity entity);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "service", ignore = true)
+    void updateEntityFromRequest(OrderUpdateRequest request, @MappingTarget OrdersEntity entity);
 }
