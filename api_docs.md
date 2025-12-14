@@ -187,7 +187,6 @@ Base URL: `/api/user`.
       "description": "Zaktualizowany opis zlecenia...", // zmiana
       "service": "Kopanie rowów",
       "status": "open",
-      "updated_at": "2025-05-21T10:05:00"
       // ...pozostałe pola bez zmian
     }
     ```
@@ -211,7 +210,6 @@ Base URL: `/api/user`.
       "title": "Inspekcja dachu kamienicy",
       "status": "in_progress", // "in_progress" jeśli zaakceptował klient, "awaiting_operator" jeśli zaakceptował operator
       "operator_id": 55,
-      "updated_at": "2025-05-21T11:00:00"
       // ...pozostałe pola
     }
     ```
@@ -242,7 +240,6 @@ Odrzucenie operatora przez zleceniodawce i na odwrót nie wpływa na staus zlece
       "id": 123,
       "title": "Inspekcja dachu kamienicy",
       "status": "cancelled",
-      "updated_at": "2025-05-21T12:00:00"
       // ...pozostałe pola
     }
     ```
