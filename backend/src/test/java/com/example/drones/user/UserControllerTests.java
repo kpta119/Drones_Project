@@ -103,21 +103,18 @@ public class UserControllerTests {
 
     @Test
     public void givenTakenEmail_whenEditUserData_thenThrowsException() {
-        String errorMsg = "Email is already taken";
-        doThrow(new RuntimeException(errorMsg)).when(userService).editUserData(mockUpdateRequest);
+        doThrow(new InvalidCredentialsException()).when(userService).editUserData(mockUpdateRequest);
 
-        // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        RuntimeException exception = assertThrows(InvalidCredentialsException.class, () -> {
             userController.editUserData(mockUpdateRequest);
         });
 
-        assertEquals(errorMsg, exception.getMessage());
+        assertEquals("The provided credentials are invalid.", exception.getMessage());
         verify(userService).editUserData(mockUpdateRequest);
     }
 
     @Test
     public void givenAdminUser_whenEditRole_thenReturnsUserWithNewRole() {
-        // Given
         UserUpdateRequest roleChangeRequest = new UserUpdateRequest();
         roleChangeRequest.setRole(UserRole.ADMIN);
 

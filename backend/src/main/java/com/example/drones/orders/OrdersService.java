@@ -6,6 +6,7 @@ import com.example.drones.orders.dto.OrderRequest;
 import com.example.drones.orders.dto.OrderResponse;
 import com.example.drones.orders.dto.OrderUpdateRequest;
 import com.example.drones.orders.exceptions.OrderIsNotEditableException;
+import com.example.drones.orders.exceptions.OrderNotFoundException;
 import com.example.drones.services.exceptions.ServiceNotFoundException;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
@@ -49,7 +50,7 @@ public class OrdersService {
     @Transactional
     public OrderResponse editOrder(UUID orderId, OrderUpdateRequest request, UUID userId) {
         OrdersEntity order = ordersRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(OrderNotFoundException::new);
 
         if (!order.getUser().getId().equals(userId)) {
             throw new InvalidCredentialsException();
