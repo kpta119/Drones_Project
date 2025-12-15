@@ -29,6 +29,7 @@ public class OrdersService {
     private final ServicesRepository servicesRepository;
     private final OrdersMapper ordersMapper;
     private final Clock clock;
+    private final MatchingService matchingService;
 
     @Transactional
     public OrderResponse createOrder(OrderRequest request, UUID userId) {
@@ -43,6 +44,8 @@ public class OrdersService {
         orderEntity.setCreatedAt(LocalDateTime.now(clock));
         orderEntity.setUser(user);
         OrdersEntity savedOrder = ordersRepository.save(orderEntity);
+
+        matchingService.matchOperatorsToOrder(savedOrder);
 
         return ordersMapper.toResponse(savedOrder);
     }

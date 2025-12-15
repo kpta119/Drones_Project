@@ -6,12 +6,20 @@ import com.example.drones.auth.dto.RegisterRequest;
 import com.example.drones.orders.dto.OrderRequest;
 import com.example.drones.orders.dto.OrderResponse;
 import com.example.drones.orders.dto.OrderUpdateRequest;
+import com.example.drones.services.OperatorServicesEntity;
+import com.example.drones.services.OperatorServicesRepository;
 import com.example.drones.services.ServicesEntity;
 import com.example.drones.services.ServicesRepository;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
+import com.example.drones.user.UserRole;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,14 +28,14 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
-
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -45,7 +53,13 @@ public class OrdersIntegrationTests {
     private ServicesRepository servicesRepository;
 
     @Autowired
+    private OperatorServicesRepository operatorServicesRepository;
+
+    @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private NewMatchedOrdersRepository newMatchedOrdersRepository;
 
     @Autowired
     private TestRestTemplate testRestTemplate;
@@ -259,5 +273,83 @@ public class OrdersIntegrationTests {
         assertThat(response.getStatusCode().is4xxClientError()).isTrue();
 
         OrdersEntity orderInDb = ordersRepository.findById(orderId).orElseThrow();
+    }
+
+    @Test
+    void givenOrderRequest_whenCreated_thenMatchesOperatorsAutomatically() {
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElse(null);
+        if(service == null) {
+            service = new ServicesEntity();
+            service.setName(SERVICE_NAME);
+            servicesRepository.save(service);
+        }
+
+        createTestOperator("op_match", "52.2200, 21.0100", 20, service);
+
+        createTestOperator("op_far", "50.0647, 19.9450", 10, service);
+
+        String clientToken = registerAndLogin();
+
+        OrderRequest orderRequest = OrderRequest.builder()
+                .title("Szukam drona")
+                .description("Opis")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> requestEntity = new HttpEntity<>(orderRequest, getHeaders(clientToken));
+
+        ResponseEntity<OrderResponse> response = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                requestEntity,
+                OrderResponse.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        UUID createdOrderId = response.getBody().getId();
+
+        await().atMost(5, SECONDS)
+                .pollInterval(500, java.util.concurrent.TimeUnit.MILLISECONDS)
+                .untilAsserted(() -> {
+
+                    List<NewMatchedOrderEntity> matches = newMatchedOrdersRepository.findAll();
+
+                    List<NewMatchedOrderEntity> matchesForOrder = matches.stream()
+                            .filter(m -> m.getOrder().getId().equals(createdOrderId))
+                            .toList();
+
+                    assertThat(matchesForOrder).hasSize(1);
+                    NewMatchedOrderEntity match = matchesForOrder.getFirst();
+
+                    UUID operatorId = match.getOperator().getId();
+                    assertThat(operatorId).isNotNull();
+
+                    UserEntity operatorFromDb = userRepository.findById(operatorId).orElseThrow();
+                    assertThat(operatorFromDb.getDisplayName()).isEqualTo("op_match");
+                    assertThat(matchesForOrder.getFirst().getOperatorStatus()).isEqualTo(MatchedOrderStatus.PENDING);
+                    assertThat(matchesForOrder.getFirst().getClientStatus()).isEqualTo(MatchedOrderStatus.PENDING);
+                });
+    }
+
+    private void createTestOperator(String username, String coords, int radius, ServicesEntity service) {
+        UserEntity operator = UserEntity.builder()
+                .displayName(username)
+                .email(username + "@op.pl")
+                .password("pass")
+                .role(UserRole.OPERATOR)
+                .name("Op").surname("Erator")
+                .coordinates(coords)
+                .radius(radius)
+                .build();
+
+        userRepository.save(operator);
+
+        OperatorServicesEntity link = new OperatorServicesEntity();
+        link.setOperator(operator);
+        link.setServiceName(service.getName());
+        operatorServicesRepository.save(link);
     }
 }
