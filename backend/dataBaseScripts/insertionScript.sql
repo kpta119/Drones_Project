@@ -1,7 +1,7 @@
 -- 1. Czyszczenie tabel
 TRUNCATE reviews, new_matched_orders, orders, operator_service, photos, portfolio, users, services CASCADE;
 
--- 2. Definiowanie USŁUG (Główne kategorie z Twojej listy)
+-- 2. Definiowanie USŁUG
 INSERT INTO services (name) VALUES
                                 ('Fotografia/Wideo'),
                                 ('Skaning Laserowy (LiDAR)'),
@@ -34,15 +34,14 @@ SELECT
 FROM users u
          CROSS JOIN services s
 WHERE u.role = 'OPERATOR'
-  AND random() < 0.4 -- Każdy operator ma średnio 40% dostępnych usług
+  AND random() < 0.4
 ON CONFLICT DO NOTHING;
 
--- 5. Generowanie ZLECEŃ (Orders) - Tu dzieje się magia PRO vs NOOB
+-- 5. Generowanie ZLECEŃ (Orders)
 INSERT INTO orders (id, title, user_id, description, service_name, parameters, coordinates, from_date, to_date, status)
 SELECT
     gen_random_uuid(),
 
-    -- Tytuł zlecenia
     CASE
         WHEN random() < 0.25 THEN 'Szybkie zdjęcia drona'
         WHEN random() < 0.50 THEN 'Pomiary hałdy/terenu'
@@ -50,12 +49,9 @@ SELECT
         ELSE 'Opracowanie ortofotomapy i NMT'
         END,
 
-    -- ID Klienta
     (SELECT id FROM users WHERE role = 'CLIENT' OFFSET floor(random() * 3000) LIMIT 1),
 
-    -- OPIS (Podział na PRO i NOOB)
     CASE
-        -- Klient "NOOB" (nie wie czego chce)
         WHEN random() < 0.5 THEN
             (ARRAY[
                 'Potrzebuję ładnych zdjęć działki na sprzedaż.',
@@ -64,7 +60,6 @@ SELECT
                 'Potrzebuję mapy terenu pod budowę.'
                 ])[floor(random()*4+1)]
 
-        -- Klient "PRO" (Techniczny bełkot zgodny z checklistą)
         ELSE
             (ARRAY[
                 'Wymagany nalot fotogrametryczny z GSD < 2cm.',
@@ -74,19 +69,15 @@ SELECT
                 ])[floor(random()*4+1)]
         END,
 
-    -- Usługa
     (ARRAY['Fotografia/Wideo', 'Skaning Laserowy (LiDAR)', 'Fotogrametria i Geodezja', 'Inspekcja Techniczna'])[floor(random()*4+1)],
 
-    -- PARAMETRY (JSONB) - Zgodne z Twoją checklistą
     CASE
-        -- 1. FOTOGRAFIA / WIDEO
         WHEN random() < 0.25 THEN jsonb_build_object(
                 'resolution', (ARRAY['4K', '1080p', '20MP', '48MP'])[floor(random()*4+1)],
                 'format', (ARRAY['RAW', 'JPG', 'MP4', 'MOV'])[floor(random()*4+1)],
                 'expectations', 'Materiał surowy do montażu'
                                   )
 
-        -- 2. SKANING LASEROWY
         WHEN random() < 0.5 THEN jsonb_build_object(
                 'output_type', (ARRAY['Chmura punktów', 'Model 3D'])[floor(random()*2+1)],
                 'format', (ARRAY['.las', '.e57', '.xyz'])[floor(random()*3+1)],
@@ -94,24 +85,20 @@ SELECT
                 'density', (floor(random() * 500 + 50)) || ' pkt/m2'
                                  )
 
-        -- 3. GEODEZJA (Orto, NMT, Mesh) - Najbardziej skomplikowane
         WHEN random() < 0.75 THEN
             CASE
-                -- Ortofotomapa
                 WHEN random() < 0.33 THEN jsonb_build_object(
                         'product', 'Ortofotomapa',
-                        'gsd_cm', floor(random() * 5 + 1), -- GSD 1-5 cm
+                        'gsd_cm', floor(random() * 5 + 1),
                         'rtk_receiver', true,
-                        'gcp_measured', (random() > 0.3), -- Czy są fotopunkty?
+                        'gcp_measured', (random() > 0.3),
                         'format', 'GeoTIFF'
                                           )
-                -- Numeryczny Model Terenu
                 WHEN random() < 0.66 THEN jsonb_build_object(
                         'product', 'NMPT (Model Terenu)',
                         'type', (ARRAY['NMT (Teren)', 'NMPT (Pokrycie terenu)'])[floor(random()*2+1)],
                         'format', 'GeoTIFF + .xyz'
                                           )
-                -- Mesh 3D
                 ELSE jsonb_build_object(
                         'product', 'Model Mesh 3D',
                         'accuracy', 'High',
@@ -119,14 +106,11 @@ SELECT
                      )
                 END
 
-        -- 4. INSPEKCJA (Default)
         ELSE jsonb_build_object('target', 'Dach', 'report_needed', true)
         END,
 
-    -- Koordynaty
     (52.0 + random())::numeric(10,4) || ',' || (21.0 + random())::numeric(10,4),
 
-    -- Daty
     NOW() + (floor(random() * 10) || ' days')::interval,
     NOW() + (floor(random() * 20 + 10) || ' days')::interval,
 
@@ -136,15 +120,21 @@ FROM generate_series(1, 3000) AS i; -- Generujemy 3000 zleceń
 -- 6. Generowanie DOPASOWAŃ (New Matched Orders)
 INSERT INTO new_matched_orders (operator_id, order_id, operator_status, client_status)
 SELECT
-    u.id,
-    o.id,
+    u.id as operator_id,
+    o.id as order_id,
     'PENDING'::matched_order_status,
     'PENDING'::matched_order_status
 FROM orders o
-         JOIN users u ON u.role = 'OPERATOR'
--- Prosty warunek geograficzny "na oko" (w prawdziwej apce robi to Twój kod Java)
-WHERE abs(CAST(SPLIT_PART(o.coordinates, ',', 1) AS float) - CAST(SPLIT_PART(u.coordinates, ',', 1) AS float)) < 0.5
-  AND abs(CAST(SPLIT_PART(o.coordinates, ',', 2) AS float) - CAST(SPLIT_PART(u.coordinates, ',', 2) AS float)) < 0.5
-  AND random() < 0.1 -- Ograniczamy liczbę dopasowań
-LIMIT 5000
-ON CONFLICT DO NOTHING;
+         JOIN operator_service os ON o.service_name = os.service_name
+         JOIN users u ON os.operator_id = u.id
+WHERE u.role = 'OPERATOR'
+  AND u.coordinates IS NOT NULL
+  AND o.coordinates IS NOT NULL
+  AND (
+          6371 * acos(
+                  cos(radians(CAST(SPLIT_PART(o.coordinates, ',', 1) AS double precision))) * cos(radians(CAST(SPLIT_PART(u.coordinates, ',', 1) AS double precision))) * cos(radians(CAST(SPLIT_PART(u.coordinates, ',', 2) AS double precision)) -
+                                                                                                                                                                              radians(CAST(SPLIT_PART(o.coordinates, ',', 2) AS double precision))) +
+                  sin(radians(CAST(SPLIT_PART(o.coordinates, ',', 1) AS double precision))) * sin(radians(CAST(SPLIT_PART(u.coordinates, ',', 1) AS double precision)))
+                 )
+          ) <= u.radius
+ON CONFLICT (operator_id, order_id) DO NOTHING;

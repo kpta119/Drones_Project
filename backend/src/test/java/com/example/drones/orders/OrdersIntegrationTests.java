@@ -28,7 +28,6 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -63,6 +62,9 @@ public class OrdersIntegrationTests {
 
     @Autowired
     private TestRestTemplate testRestTemplate;
+
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     private RegisterRequest userRegister;
     private LoginRequest userLogin;
@@ -334,11 +336,11 @@ public class OrdersIntegrationTests {
                 });
     }
 
-    private void createTestOperator(String username, String coords, int radius, ServicesEntity service) {
+    private UserEntity createTestOperator(String username, String coords, int radius, ServicesEntity service) {
         UserEntity operator = UserEntity.builder()
                 .displayName(username)
                 .email(username + "@op.pl")
-                .password("pass")
+                .password(passwordEncoder.encode("pass"))
                 .role(UserRole.OPERATOR)
                 .name("Op").surname("Erator")
                 .coordinates(coords)
@@ -351,5 +353,412 @@ public class OrdersIntegrationTests {
         link.setOperator(operator);
         link.setServiceName(service.getName());
         operatorServicesRepository.save(link);
+
+        return operator;
+    }
+
+    @Test
+    void givenMatchedOrder_whenOperatorAcceptsOrder_thenStatusIsUpdatedToAwaitingOperator() {
+        String clientToken = registerAndLogin();
+
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator = createTestOperator("operator1", "52.2200, 21.0100", 20, service);
+
+        OrderRequest orderRequest = OrderRequest.builder()
+                .title("Test Order")
+                .description("Test description")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity = new HttpEntity<>(orderRequest, getHeaders(clientToken));
+        ResponseEntity<OrderResponse> createResponse = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity,
+                OrderResponse.class
+        );
+        UUID orderId = createResponse.getBody().getId();
+
+        await().atMost(5, SECONDS).untilAsserted(() -> {
+            List<NewMatchedOrderEntity> matches = newMatchedOrdersRepository
+                    .findAll().stream()
+                    .filter(m -> m.getOrder().getId().equals(orderId))
+                    .toList();
+            assertThat(matches).hasSize(1);
+        });
+
+        LoginRequest operatorLogin = LoginRequest.builder()
+                .email("operator1@op.pl")
+                .password("pass")
+                .build();
+        ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
+                "/api/auth/login", operatorLogin, LoginResponse.class);
+        String operatorToken = loginResponse.getBody().token();
+
+        HttpEntity<Void> acceptEntity = new HttpEntity<>(getHeaders(operatorToken));
+        ResponseEntity<OrderResponse> acceptResponse = testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + orderId,
+                HttpMethod.PATCH,
+                acceptEntity,
+                OrderResponse.class
+        );
+
+        // Then: Status zamówienia jest zmieniony na AWAITING_OPERATOR
+        assertThat(acceptResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(acceptResponse.getBody().getStatus()).isEqualTo(OrderStatus.AWAITING_OPERATOR);
+
+        // Weryfikacja w bazie danych
+        NewMatchedOrderEntity match = newMatchedOrdersRepository
+                .findByOrderIdAndOperatorId(orderId, operator.getId())
+                .orElseThrow();
+        assertThat(match.getOperatorStatus()).isEqualTo(MatchedOrderStatus.ACCEPTED);
+        assertThat(match.getClientStatus()).isEqualTo(MatchedOrderStatus.PENDING);
+    }
+
+    @Test
+    void givenMatchedOrder_whenClientAcceptsOperator_thenStatusIsUpdatedToInProgress() {
+        // Given: Utworzenie klienta i operatora
+        String clientToken = registerAndLogin();
+
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator = createTestOperator("operator2", "52.2200, 21.0100", 20, service);
+
+        // Utworzenie zamówienia
+        OrderRequest orderRequest = OrderRequest.builder()
+                .title("Test Order 2")
+                .description("Test description 2")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity = new HttpEntity<>(orderRequest, getHeaders(clientToken));
+        ResponseEntity<OrderResponse> createResponse = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity,
+                OrderResponse.class
+        );
+        UUID orderId = createResponse.getBody().getId();
+
+        // Czekanie na dopasowanie
+        await().atMost(5, SECONDS).untilAsserted(() -> {
+            assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
+                    .isPresent();
+        });
+
+        // Operator akceptuje zamówienie
+        LoginRequest operatorLogin = LoginRequest.builder()
+                .email("operator2@op.pl")
+                .password("pass")
+                .build();
+        ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
+                "/api/auth/login", operatorLogin, LoginResponse.class);
+        String operatorToken = loginResponse.getBody().token();
+
+        HttpEntity<Void> operatorAcceptEntity = new HttpEntity<>(getHeaders(operatorToken));
+        testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + orderId,
+                HttpMethod.PATCH,
+                operatorAcceptEntity,
+                OrderResponse.class
+        );
+
+        // When: Klient akceptuje operatora
+        HttpEntity<Void> clientAcceptEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<OrderResponse> acceptResponse = testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + orderId + "?operatorId=" + operator.getId(),
+                HttpMethod.PATCH,
+                clientAcceptEntity,
+                OrderResponse.class
+        );
+
+        // Then: Status zamówienia jest zmieniony na IN_PROGRESS
+        assertThat(acceptResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(acceptResponse.getBody().getStatus()).isEqualTo(OrderStatus.IN_PROGRESS);
+
+        // Weryfikacja w bazie danych
+        NewMatchedOrderEntity match = newMatchedOrdersRepository
+                .findByOrderIdAndOperatorId(orderId, operator.getId())
+                .orElseThrow();
+        assertThat(match.getOperatorStatus()).isEqualTo(MatchedOrderStatus.ACCEPTED);
+        assertThat(match.getClientStatus()).isEqualTo(MatchedOrderStatus.ACCEPTED);
+    }
+
+    @Test
+    void givenNonOperator_whenTriesToAcceptOrder_thenReturnsError() {
+        // Given: Dwóch klientów (nie operatorów)
+        String client1Token = registerAndLogin();
+
+        // Utworzenie zamówienia przez pierwszego klienta
+        OrderRequest orderRequest = OrderRequest.builder()
+                .title("Test Order")
+                .description("Test description")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity = new HttpEntity<>(orderRequest, getHeaders(client1Token));
+        ResponseEntity<OrderResponse> createResponse = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity,
+                OrderResponse.class
+        );
+        UUID orderId = createResponse.getBody().getId();
+
+        // Drugi klient próbuje zaakceptować zamówienie
+        RegisterRequest client2Register = RegisterRequest.builder()
+                .displayName("client2")
+                .password("password456")
+                .name("Anna")
+                .surname("Kowalska")
+                .email("client2@example.com")
+                .phoneNumber("987654321")
+                .build();
+        testRestTemplate.postForEntity("/api/auth/register", client2Register, Void.class);
+
+        LoginRequest client2Login = LoginRequest.builder()
+                .email("client2@example.com")
+                .password("password456")
+                .build();
+        ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
+                "/api/auth/login", client2Login, LoginResponse.class);
+        String client2Token = loginResponse.getBody().token();
+
+        // When: Klient (nie operator) próbuje zaakceptować zamówienie
+        HttpEntity<Void> acceptEntity = new HttpEntity<>(getHeaders(client2Token));
+        ResponseEntity<Void> acceptResponse = testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + orderId,
+                HttpMethod.PATCH,
+                acceptEntity,
+                Void.class
+        );
+
+        // Then: Zwraca błąd
+        assertThat(acceptResponse.getStatusCode().is4xxClientError()).isTrue();
+    }
+
+    @Test
+    void givenOwnOrder_whenOperatorTriesToAcceptIt_thenReturnsError() {
+        // Given: Użytkownik będący operatorem tworzy zamówienie
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+
+        UserEntity operatorClient = UserEntity.builder()
+                .displayName("operator_client")
+                .email("operator_client@example.com")
+                .password("pass123")
+                .role(UserRole.OPERATOR)
+                .name("Jan")
+                .surname("Operator")
+                .coordinates("52.23, 21.01")
+                .radius(20)
+                .build();
+        userRepository.save(operatorClient);
+
+        OperatorServicesEntity link = new OperatorServicesEntity();
+        link.setOperator(operatorClient);
+        link.setServiceName(service.getName());
+        operatorServicesRepository.save(link);
+
+        LoginRequest login = LoginRequest.builder()
+                .email("operator_client@example.com")
+                .password("pass123")
+                .build();
+        ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
+                "/api/auth/login", login, LoginResponse.class);
+        String token = loginResponse.getBody().token();
+
+        // Utworzenie zamówienia
+        OrderRequest orderRequest = OrderRequest.builder()
+                .title("Own Order")
+                .description("My own order")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity = new HttpEntity<>(orderRequest, getHeaders(token));
+        ResponseEntity<OrderResponse> createResponse = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity,
+                OrderResponse.class
+        );
+        UUID orderId = createResponse.getBody().getId();
+
+        // When: Operator próbuje zaakceptować własne zamówienie
+        HttpEntity<Void> acceptEntity = new HttpEntity<>(getHeaders(token));
+        ResponseEntity<Void> acceptResponse = testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + orderId,
+                HttpMethod.PATCH,
+                acceptEntity,
+                Void.class
+        );
+
+        // Then: Zwraca błąd
+        assertThat(acceptResponse.getStatusCode().is4xxClientError()).isTrue();
+    }
+
+    @Test
+    void givenNotMatchedOperator_whenTriesToAcceptOrder_thenReturnsError() {
+        // Given: Klient tworzy zamówienie
+        String clientToken = registerAndLogin();
+
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+
+        OrderRequest orderRequest = OrderRequest.builder()
+                .title("Test Order")
+                .description("Test description")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity = new HttpEntity<>(orderRequest, getHeaders(clientToken));
+        ResponseEntity<OrderResponse> createResponse = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity,
+                OrderResponse.class
+        );
+        UUID orderId = createResponse.getBody().getId();
+
+        // Operator, który nie został dopasowany do zamówienia
+        UserEntity unmatchedOperator = UserEntity.builder()
+                .displayName("unmatched_op")
+                .email("unmatched@op.pl")
+                .password("pass")
+                .role(UserRole.OPERATOR)
+                .name("Un").surname("Matched")
+                .coordinates("50.0647, 19.9450") // Daleko od zamówienia
+                .radius(5)
+                .build();
+        userRepository.save(unmatchedOperator);
+
+        OperatorServicesEntity link = new OperatorServicesEntity();
+        link.setOperator(unmatchedOperator);
+        link.setServiceName(service.getName());
+        operatorServicesRepository.save(link);
+
+        LoginRequest operatorLogin = LoginRequest.builder()
+                .email("unmatched@op.pl")
+                .password("pass")
+                .build();
+        ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
+                "/api/auth/login", operatorLogin, LoginResponse.class);
+        String operatorToken = loginResponse.getBody().token();
+
+        // When: Niedopasowany operator próbuje zaakceptować zamówienie
+        HttpEntity<Void> acceptEntity = new HttpEntity<>(getHeaders(operatorToken));
+        ResponseEntity<Void> acceptResponse = testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + orderId,
+                HttpMethod.PATCH,
+                acceptEntity,
+                Void.class
+        );
+
+        // Then: Zwraca błąd
+        assertThat(acceptResponse.getStatusCode().is4xxClientError()).isTrue();
+    }
+
+    @Test
+    void givenNotOrderOwner_whenTriesToAcceptOperator_thenReturnsError() {
+        // Given: Klient1 tworzy zamówienie
+        String client1Token = registerAndLogin();
+
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator = createTestOperator("operator3", "52.2200, 21.0100", 20, service);
+
+        OrderRequest orderRequest = OrderRequest.builder()
+                .title("Test Order")
+                .description("Test description")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity = new HttpEntity<>(orderRequest, getHeaders(client1Token));
+        ResponseEntity<OrderResponse> createResponse = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity,
+                OrderResponse.class
+        );
+        UUID orderId = createResponse.getBody().getId();
+
+        // Czekanie na dopasowanie
+        await().atMost(5, SECONDS).untilAsserted(() -> {
+            assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
+                    .isPresent();
+        });
+
+        // Klient2 (nie właściciel zamówienia)
+        RegisterRequest client2Register = RegisterRequest.builder()
+                .displayName("client2")
+                .password("password456")
+                .name("Anna")
+                .surname("Kowalska")
+                .email("client2@example.com")
+                .phoneNumber("987654321")
+                .build();
+        testRestTemplate.postForEntity("/api/auth/register", client2Register, Void.class);
+
+        LoginRequest client2Login = LoginRequest.builder()
+                .email("client2@example.com")
+                .password("password456")
+                .build();
+        ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
+                "/api/auth/login", client2Login, LoginResponse.class);
+        String client2Token = loginResponse.getBody().token();
+
+        // When: Klient2 próbuje zaakceptować operatora dla zamówienia Klienta1
+        HttpEntity<Void> acceptEntity = new HttpEntity<>(getHeaders(client2Token));
+        ResponseEntity<Void> acceptResponse = testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + orderId + "?operatorId=" + operator.getId(),
+                HttpMethod.PATCH,
+                acceptEntity,
+                Void.class
+        );
+
+        // Then: Zwraca błąd
+        assertThat(acceptResponse.getStatusCode().is4xxClientError()).isTrue();
+    }
+
+    @Test
+    void givenNonExistentOrder_whenTriesToAccept_thenReturnsError() {
+        // Given: Operator z tokenem
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        createTestOperator("operator4", "52.2200, 21.0100", 20, service);
+
+        LoginRequest operatorLogin = LoginRequest.builder()
+                .email("operator4@op.pl")
+                .password("pass")
+                .build();
+        ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
+                "/api/auth/login", operatorLogin, LoginResponse.class);
+        String operatorToken = loginResponse.getBody().token();
+
+        // When: Operator próbuje zaakceptować nieistniejące zamówienie
+        UUID fakeOrderId = UUID.randomUUID();
+        HttpEntity<Void> acceptEntity = new HttpEntity<>(getHeaders(operatorToken));
+        ResponseEntity<Void> acceptResponse = testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + fakeOrderId,
+                HttpMethod.PATCH,
+                acceptEntity,
+                Void.class
+        );
+
+        // Then: Zwraca błąd
+        assertThat(acceptResponse.getStatusCode().is4xxClientError()).isTrue();
     }
 }

@@ -5,13 +5,14 @@ import com.example.drones.common.config.exceptions.UserNotFoundException;
 import com.example.drones.orders.dto.OrderRequest;
 import com.example.drones.orders.dto.OrderResponse;
 import com.example.drones.orders.dto.OrderUpdateRequest;
-import com.example.drones.orders.exceptions.OrderIsNotEditableException;
-import com.example.drones.orders.exceptions.OrderNotFoundException;
+import com.example.drones.orders.exceptions.*;
 import com.example.drones.services.exceptions.ServiceNotFoundException;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
 import com.example.drones.services.ServicesEntity;
 import com.example.drones.services.ServicesRepository;
+import com.example.drones.user.UserRole;
+import com.example.drones.user.exceptions.NotOperatorException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +29,7 @@ public class OrdersService {
     private final UserRepository userRepository;
     private final ServicesRepository servicesRepository;
     private final OrdersMapper ordersMapper;
+    private final NewMatchedOrdersRepository newMatchedOrdersRepository;
     private final Clock clock;
     private final MatchingService matchingService;
 
@@ -73,5 +75,47 @@ public class OrdersService {
         OrdersEntity updatedOrder = ordersRepository.save(order);
 
         return ordersMapper.toResponse(updatedOrder);
+    }
+
+    @Transactional
+    public OrderResponse acceptOrder(UUID orderId, UUID operatorIdParam, UUID currentUserId) {
+        UserEntity currentUser = userRepository.findById(currentUserId)
+                .orElseThrow( UserNotFoundException::new);
+
+        OrdersEntity foundOrder = ordersRepository.findById(orderId)
+                .orElseThrow(OrderNotFoundException::new);
+
+        NewMatchedOrderEntity match;
+        if (operatorIdParam == null){
+            // Akceptuje operator
+            if (currentUser.getRole() != UserRole.OPERATOR) {
+                throw new NotOperatorException();
+            }
+
+            if (foundOrder.getUser().getId().equals(currentUserId)) {
+                throw new CannotAcceptOwnOrderException();
+            }
+
+            match = newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, currentUserId)
+                    .orElseThrow(MatchedOrderNotFoundException::new);
+            match.setOperatorStatus(MatchedOrderStatus.ACCEPTED);
+            foundOrder.setStatus(OrderStatus.AWAITING_OPERATOR);
+        } else {
+            // Akceptuje zleceniodawca
+            if (!foundOrder.getUser().getId().equals(currentUserId)) {
+                throw new NotOwnerOfOrderException();
+            }
+
+            match = newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operatorIdParam)
+                    .orElseThrow(MatchedOrderNotFoundException::new);
+            match.setClientStatus(MatchedOrderStatus.ACCEPTED);
+            if (match.getOperatorStatus() == MatchedOrderStatus.ACCEPTED) {
+                foundOrder.setStatus(OrderStatus.IN_PROGRESS);
+            }
+        }
+
+        newMatchedOrdersRepository.save(match);
+        ordersRepository.save(foundOrder);
+        return ordersMapper.toResponse(foundOrder);
     }
 }
