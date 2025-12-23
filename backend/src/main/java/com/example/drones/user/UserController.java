@@ -1,5 +1,6 @@
 package com.example.drones.user;
 
+import com.example.drones.common.config.auth.JwtService;
 import com.example.drones.user.dto.UserResponse;
 import com.example.drones.user.dto.UserUpdateRequest;
 import lombok.RequiredArgsConstructor;
@@ -15,12 +16,14 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+    private final JwtService jwtService;
 
     @GetMapping("/getUserData")
     public ResponseEntity<UserResponse> getUserData(
             @RequestParam(name = "user_id", required = false) UUID userId
             ){
-        UserResponse response = userService.getUserData(userId);
+        UUID targetId = (userId != null) ? userId : jwtService.extractUserId();
+        UserResponse response = userService.getUserData(targetId);
         return  ResponseEntity.ok(response);
     }
 
