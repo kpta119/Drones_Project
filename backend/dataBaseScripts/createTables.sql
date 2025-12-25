@@ -47,27 +47,21 @@ CREATE TABLE users
     phone_number        VARCHAR(20),
     created_at          TIMESTAMP                    DEFAULT NOW(),
     google_user_id      VARCHAR(255),
-    google_access_token VARCHAR(255)
-);
-
-CREATE TABLE services
-(
-    id   SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL
-);
-
-CREATE TABLE drone_operator
-(
-    user_id      UUID PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
+    google_access_token VARCHAR(255),
     coordinates  VARCHAR(255), -- Np. "52.2297,21.0122"
     radius       INTEGER,
     certificates JSONB         -- np. ['cert1', 'cert2']
 );
 
+CREATE TABLE services
+(
+    name varchar(100) PRIMARY KEY
+);
+
 CREATE TABLE portfolio
 (
-    id          UUID PRIMARY KEY,
-    operator_id UUID NOT NULL REFERENCES drone_operator (user_id) ON DELETE CASCADE,
+    id          SERIAL PRIMARY KEY,
+    operator_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     description TEXT,
     title       VARCHAR(255)
 );
@@ -75,17 +69,17 @@ CREATE TABLE portfolio
 CREATE TABLE photos
 (
     id          SERIAL PRIMARY KEY,
-    portfolio_id UUID NOT NULL REFERENCES portfolio (id) ON DELETE CASCADE,
+    portfolio_id INTEGER NOT NULL REFERENCES portfolio (id) ON DELETE CASCADE,
     name        VARCHAR(255) NOT NULL,
-    photo_url   VARCHAR(255) NOT NULL
+    url   VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE operator_service
 (
     id          SERIAL PRIMARY KEY,
-    service_id  INTEGER NOT NULL REFERENCES services (id) ON DELETE CASCADE,
-    operator_id UUID NOT NULL REFERENCES drone_operator (user_id) ON DELETE CASCADE,
-    UNIQUE (service_id, operator_id)
+    service_name VARCHAR(100) NOT NULL REFERENCES services (name) ON DELETE CASCADE,
+    operator_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    UNIQUE (service_name, operator_id)
 );
 
 CREATE TABLE orders
@@ -94,7 +88,7 @@ CREATE TABLE orders
     title       VARCHAR(255),
     user_id     UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     description TEXT,
-    service_id  INTEGER REFERENCES services (id),
+    service_name  VARCHAR(100) REFERENCES services (name),
     parameters  JSONB,  -- key -value pairs specific to the service
     coordinates VARCHAR(255),
     from_date   TIMESTAMP,
@@ -106,7 +100,7 @@ CREATE TABLE orders
 CREATE TABLE new_matched_orders
 (
     id              SERIAL PRIMARY KEY,
-    operator_id     UUID NOT NULL REFERENCES drone_operator (user_id) ON DELETE CASCADE,
+    operator_id     UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     order_id        UUID NOT NULL REFERENCES orders (id) ON DELETE CASCADE,
     operator_status matched_order_status DEFAULT 'PENDING',
     client_status   matched_order_status DEFAULT 'PENDING',
