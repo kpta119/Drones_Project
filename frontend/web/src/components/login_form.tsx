@@ -40,7 +40,7 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+    <div className="w-full max-w-md bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
       <h2 className="text-2xl font-semibold mb-6 text-center text-gray-800">
         Logowanie
       </h2>
@@ -70,7 +70,7 @@ export default function LoginForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="mt-4 bg-linear-to-r from-primary-400 to-primary-300 text-white font-semibold p-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
+          className="mt-4 bg-linear-to-r from-primary-400 to-primary-300 text-white font-semibold p-3 rounded-lg active:ring-0 hover:ring-2 hover:ring-primary-300 hover:shadow-lg transition-all disabled:opacity-50"
         >
           {isLoading ? "Logowanie..." : "Zaloguj"}
         </button>

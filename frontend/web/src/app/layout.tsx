@@ -1,4 +1,3 @@
-import PageHeader from "../components/page_header";
 import "./globals.css";
 import {
   Montserrat,
@@ -36,13 +35,9 @@ export default function RootLayout({
       className={`${montserrat.variable} ${openSans.variable} ${novaMono.variable} ${lato.variable} ${fredoka.variable}`}
     >
       <body>
-        <PageHeader />
         <div className="flex justify-center">
-          <div className="w-4/5">
-            {children}
-          </div>
+          <div className="w-4/5">{children}</div>
         </div>
-
       </body>
     </html>
   );
