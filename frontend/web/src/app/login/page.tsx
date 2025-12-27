@@ -14,7 +14,7 @@ export default function AuthPage() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      router.push("/marek_profile");
+      router.push("/user_profile");
     }
   }, [router]);
 
@@ -25,9 +25,9 @@ export default function AuthPage() {
           <div className="flex flex-col gap-4 w-full max-w-xs opacity-0 animate-fadeIn">
             <button
               onClick={() => setActiveForm("login")}
-              className="relative w-full h-12 px-6 rounded-lg font-semibold text-lg border-2 border-primary-400 text-primary-500 overflow-hidden group flex items-center justify-center"
+              className="relative w-full h-12 px-6 rounded-lg font-semibold text-lg border-2 border-primary-600 text-primary-900 overflow-hidden group flex items-center justify-center"
             >
-              <span className="absolute inset-0 bg-primary-400 translate-y-full transition-transform duration-300 ease-in-out group-hover:translate-y-0"></span>
+              <span className="absolute inset-0 bg-primary-600 translate-y-full transition-transform duration-300 ease-in-out group-hover:translate-y-0"></span>
               <span className="relative z-10 transition-colors duration-300 ease-in-out group-hover:text-white">
                 Logowanie
               </span>
@@ -39,7 +39,7 @@ export default function AuthPage() {
               <span className="absolute inset-0 flex items-center justify-center transition-transform duration-300 ease-in-out group-hover:-translate-x-full">
                 Rejestracja
               </span>
-              <span className="absolute inset-0 bg-primary-500 translate-x-full transition-transform duration-300 ease-in-out group-hover:translate-x-0 flex items-center justify-center font-bold text-lg text-white">
+              <span className="absolute inset-0 bg-primary-600 translate-x-full transition-transform duration-300 ease-in-out group-hover:translate-x-0 flex items-center justify-center font-bold text-lg text-white">
                 Dołącz do nas!
               </span>
             </button>
@@ -68,7 +68,7 @@ export default function AuthPage() {
           </div>
         )}
       </div>
-      <div className="w-3/5 bg-linear-to-br from-primary-200 to-white rounded-2xl flex items-center justify-center p-12 animate-gradient">
+      <div className="w-3/5 bg-linear-to-br from-primary-500 to-primary-50 rounded-2xl flex items-center justify-center p-12 animate-gradient">
         <div className="text-center">
           <h1 className="text-7xl font-bold text-black mb-6">Dronex</h1>
           <p className="text-2xl text-gray-800 leading-relaxed">

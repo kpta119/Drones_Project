@@ -25,7 +25,7 @@ export default function PageHeader() {
   }, []);
 
   return (
-    <header className="bg-linear-to-r from-primary-600 to-primary-500 w-full shadow-md mb-8 rounded-b-xl">
+    <header className="bg-linear-to-r from-primary-500 to-primary-400 w-full shadow-md mb-8">
       <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center w-full">
         <Link href="/login">
           <span className="font-bold text-lg cursor-pointer">Dronex</span>
@@ -40,7 +40,7 @@ export default function PageHeader() {
           ) : (
             <div className="flex space-x-4">
               <Link href="/login">
-                <button className="bg-white text-primary-300 px-3 py-1 rounded hover:bg-gray-100">
+                <button className="bg-white text-primary-900 px-3 py-1 rounded hover:bg-gray-100">
                   Login
                 </button>
               </Link>

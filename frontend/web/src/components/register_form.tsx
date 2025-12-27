@@ -110,7 +110,7 @@ export default function RegisterForm() {
         </div>
         <button
           type="submit"
-          className="mt-4 bg-linear-to-r from-primary-400 to-primary-300 active:ring-0 text-white font-semibold p-3 rounded-lg hover:ring-2 hover:ring-primary-300 hover:shadow-lg transition-all disabled:opacity-50"
+          className="mt-4 bg-linear-to-r from-primary-600 to-primary-700 active:ring-0 text-white font-semibold p-3 rounded-lg hover:ring-2 hover:ring-primary-300 hover:shadow-lg transition-all disabled:opacity-50"
         >
           Zarejestruj
         </button>
