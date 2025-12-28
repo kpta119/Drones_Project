@@ -14,6 +14,8 @@ import com.example.drones.services.ServicesRepository;
 import com.example.drones.user.UserRole;
 import com.example.drones.user.exceptions.NotOperatorException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +37,7 @@ public class OrdersService {
     private final MatchingService matchingService;
 
     @Transactional
+    @CacheEvict(value = "orders", key = "'open'")
     public OrderResponse createOrder(OrderRequest request, UUID userId) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
@@ -54,6 +57,7 @@ public class OrdersService {
     }
 
     @Transactional
+    @CacheEvict(value = "orders", allEntries = true)
     public OrderResponse editOrder(UUID orderId, OrderUpdateRequest request, UUID userId) {
         OrdersEntity order = ordersRepository.findById(orderId)
                 .orElseThrow(OrderNotFoundException::new);
@@ -79,6 +83,7 @@ public class OrdersService {
     }
 
     @Transactional
+    @CacheEvict(value = "orders", allEntries = true)
     public OrderResponse acceptOrder(UUID orderId, UUID operatorIdParam, UUID currentUserId) {
         UserEntity currentUser = userRepository.findById(currentUserId)
                 .orElseThrow( UserNotFoundException::new);
@@ -121,6 +126,7 @@ public class OrdersService {
     }
 
     @Transactional
+    @CacheEvict(value = "orders", allEntries = true)
     public void rejectOrder(UUID orderId, UUID operatorIdParam, UUID currentUserId) {
         UserEntity currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(UserNotFoundException::new);
@@ -156,6 +162,7 @@ public class OrdersService {
     }
 
     @Transactional
+    @CacheEvict(value = "orders", allEntries = true)
     public OrderResponse cancelOrder(UUID orderId, UUID currentUserId) {
         OrdersEntity order = ordersRepository.findById(orderId)
                 .orElseThrow(OrderNotFoundException::new);
@@ -173,6 +180,7 @@ public class OrdersService {
         return ordersMapper.toResponse(savedOrder);
     }
 
+    @Cacheable(value = "orders", key = "#statusStr")
     public List<OrderResponse> getOrdersByStatus(String statusStr) {
         OrderStatus status;
         try {
