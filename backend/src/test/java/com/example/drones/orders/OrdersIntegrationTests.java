@@ -1034,4 +1034,282 @@ public class OrdersIntegrationTests {
 
         assertThat(rejectResponse.getStatusCode().is4xxClientError()).isTrue();
     }
+
+
+    @Test
+    void givenValidOrder_whenOwnerCancelsOrder_thenStatusIsChangedToCancelled() {
+        String clientToken = registerAndLogin();
+
+        OrderRequest orderRequest = OrderRequest.builder()
+                .title("Order to Cancel")
+                .description("Test description")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity = new HttpEntity<>(orderRequest, getHeaders(clientToken));
+        ResponseEntity<OrderResponse> createResponse = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity,
+                OrderResponse.class
+        );
+        UUID orderId = createResponse.getBody().getId();
+
+        HttpEntity<Void> cancelEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<OrderResponse> cancelResponse = testRestTemplate.exchange(
+                "/api/orders/cancelOrder/" + orderId,
+                HttpMethod.PATCH,
+                cancelEntity,
+                OrderResponse.class
+        );
+
+        assertThat(cancelResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(cancelResponse.getBody().getStatus()).isEqualTo(OrderStatus.CANCELLED);
+
+        OrdersEntity orderInDb = ordersRepository.findById(orderId).orElseThrow();
+        assertThat(orderInDb.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    }
+
+    @Test
+    void givenNotOwner_whenTriesToCancelOrder_thenReturnsError() {
+        String client1Token = registerAndLogin();
+
+        OrderRequest orderRequest = OrderRequest.builder()
+                .title("Order to Cancel")
+                .description("Test description")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity = new HttpEntity<>(orderRequest, getHeaders(client1Token));
+        ResponseEntity<OrderResponse> createResponse = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity,
+                OrderResponse.class
+        );
+        UUID orderId = createResponse.getBody().getId();
+
+        RegisterRequest client2Register = RegisterRequest.builder()
+                .displayName("client_cancel")
+                .password("password456")
+                .name("Anna")
+                .surname("Kowalska")
+                .email("client_cancel@example.com")
+                .phoneNumber("987654321")
+                .build();
+        testRestTemplate.postForEntity("/api/auth/register", client2Register, Void.class);
+
+        LoginRequest client2Login = LoginRequest.builder()
+                .email("client_cancel@example.com")
+                .password("password456")
+                .build();
+        ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
+                "/api/auth/login", client2Login, LoginResponse.class);
+        String client2Token = loginResponse.getBody().token();
+
+        HttpEntity<Void> cancelEntity = new HttpEntity<>(getHeaders(client2Token));
+        ResponseEntity<OrderResponse> cancelResponse = testRestTemplate.exchange(
+                "/api/orders/cancelOrder/" + orderId,
+                HttpMethod.PATCH,
+                cancelEntity,
+                OrderResponse.class
+        );
+
+        assertThat(cancelResponse.getStatusCode().is4xxClientError()).isTrue();
+
+        OrdersEntity orderInDb = ordersRepository.findById(orderId).orElseThrow();
+        assertThat(orderInDb.getStatus()).isNotEqualTo(OrderStatus.CANCELLED);
+    }
+
+    @Test
+    void givenCompletedOrder_whenOwnerTriesToCancel_thenReturnsError() {
+        String clientToken = registerAndLogin();
+
+        OrderRequest orderRequest = OrderRequest.builder()
+                .title("Completed Order")
+                .description("Test description")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity = new HttpEntity<>(orderRequest, getHeaders(clientToken));
+        ResponseEntity<OrderResponse> createResponse = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity,
+                OrderResponse.class
+        );
+        UUID orderId = createResponse.getBody().getId();
+
+        OrdersEntity order = ordersRepository.findById(orderId).orElseThrow();
+        order.setStatus(OrderStatus.COMPLETED);
+        ordersRepository.save(order);
+
+        HttpEntity<Void> cancelEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<OrderResponse> cancelResponse = testRestTemplate.exchange(
+                "/api/orders/cancelOrder/" + orderId,
+                HttpMethod.PATCH,
+                cancelEntity,
+                OrderResponse.class
+        );
+
+        assertThat(cancelResponse.getStatusCode().is4xxClientError()).isTrue();
+
+        OrdersEntity orderInDb = ordersRepository.findById(orderId).orElseThrow();
+        assertThat(orderInDb.getStatus()).isEqualTo(OrderStatus.COMPLETED);
+    }
+
+    @Test
+    void givenNonExistentOrder_whenTriesToCancel_thenReturnsError() {
+        String clientToken = registerAndLogin();
+
+        UUID fakeOrderId = UUID.randomUUID();
+        HttpEntity<Void> cancelEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<OrderResponse> cancelResponse = testRestTemplate.exchange(
+                "/api/orders/cancelOrder/" + fakeOrderId,
+                HttpMethod.PATCH,
+                cancelEntity,
+                OrderResponse.class
+        );
+
+        assertThat(cancelResponse.getStatusCode().is4xxClientError()).isTrue();
+    }
+
+    @Test
+    void givenOrderInProgress_whenOwnerCancelsOrder_thenStatusIsChangedToCancelled() {
+        String clientToken = registerAndLogin();
+
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator = createTestOperator("operator_cancel", "52.2200, 21.0100", 20, service);
+
+        OrderRequest orderRequest = OrderRequest.builder()
+                .title("In Progress Order")
+                .description("Test description")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity = new HttpEntity<>(orderRequest, getHeaders(clientToken));
+        ResponseEntity<OrderResponse> createResponse = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity,
+                OrderResponse.class
+        );
+        UUID orderId = createResponse.getBody().getId();
+
+        await().atMost(5, SECONDS).untilAsserted(() ->
+                assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
+                        .isPresent()
+        );
+
+        LoginRequest operatorLogin = LoginRequest.builder()
+                .email("operator_cancel@op.pl")
+                .password("pass")
+                .build();
+        ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
+                "/api/auth/login", operatorLogin, LoginResponse.class);
+        String operatorToken = loginResponse.getBody().token();
+
+        HttpEntity<Void> acceptEntity = new HttpEntity<>(getHeaders(operatorToken));
+        testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + orderId,
+                HttpMethod.PATCH,
+                acceptEntity,
+                OrderResponse.class
+        );
+
+        HttpEntity<Void> clientAcceptEntity = new HttpEntity<>(getHeaders(clientToken));
+        testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + orderId + "?operatorId=" + operator.getId(),
+                HttpMethod.PATCH,
+                clientAcceptEntity,
+                OrderResponse.class
+        );
+
+        HttpEntity<Void> cancelEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<OrderResponse> cancelResponse = testRestTemplate.exchange(
+                "/api/orders/cancelOrder/" + orderId,
+                HttpMethod.PATCH,
+                cancelEntity,
+                OrderResponse.class
+        );
+
+        assertThat(cancelResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(cancelResponse.getBody().getStatus()).isEqualTo(OrderStatus.CANCELLED);
+
+        OrdersEntity orderInDb = ordersRepository.findById(orderId).orElseThrow();
+        assertThat(orderInDb.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    }
+
+    @Test
+    void givenAwaitingOperatorOrder_whenOwnerCancelsOrder_thenStatusIsChangedToCancelled() {
+        String clientToken = registerAndLogin();
+
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator = createTestOperator("operator_cancel2", "52.2200, 21.0100", 20, service);
+
+        OrderRequest orderRequest = OrderRequest.builder()
+                .title("Awaiting Operator Order")
+                .description("Test description")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity = new HttpEntity<>(orderRequest, getHeaders(clientToken));
+        ResponseEntity<OrderResponse> createResponse = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity,
+                OrderResponse.class
+        );
+        UUID orderId = createResponse.getBody().getId();
+
+        await().atMost(5, SECONDS).untilAsserted(() ->
+                assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
+                        .isPresent()
+        );
+
+        LoginRequest operatorLogin = LoginRequest.builder()
+                .email("operator_cancel2@op.pl")
+                .password("pass")
+                .build();
+        ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
+                "/api/auth/login", operatorLogin, LoginResponse.class);
+        String operatorToken = loginResponse.getBody().token();
+
+        HttpEntity<Void> acceptEntity = new HttpEntity<>(getHeaders(operatorToken));
+        testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + orderId,
+                HttpMethod.PATCH,
+                acceptEntity,
+                OrderResponse.class
+        );
+
+        HttpEntity<Void> cancelEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<OrderResponse> cancelResponse = testRestTemplate.exchange(
+                "/api/orders/cancelOrder/" + orderId,
+                HttpMethod.PATCH,
+                cancelEntity,
+                OrderResponse.class
+        );
+
+        assertThat(cancelResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(cancelResponse.getBody().getStatus()).isEqualTo(OrderStatus.CANCELLED);
+
+        OrdersEntity orderInDb = ordersRepository.findById(orderId).orElseThrow();
+        assertThat(orderInDb.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    }
 }

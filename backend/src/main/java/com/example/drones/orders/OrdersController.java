@@ -56,4 +56,11 @@ public class OrdersController {
         ordersService.rejectOrder(orderId, operatorId, currentUserId);
         return ResponseEntity.ok().build();
     }
+
+    @PatchMapping("/cancelOrder/{orderId}")
+    public ResponseEntity<OrderResponse> cancelOrder(@PathVariable UUID orderId) {
+        UUID currentUserId = jwtService.extractUserId();
+        OrderResponse response = ordersService.cancelOrder(orderId, currentUserId);
+        return ResponseEntity.ok(response);
+    }
 }

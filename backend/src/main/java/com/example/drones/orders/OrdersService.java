@@ -153,4 +153,22 @@ public class OrdersService {
 
         newMatchedOrdersRepository.save(match);
     }
+
+    @Transactional
+    public OrderResponse cancelOrder(UUID orderId, UUID currentUserId) {
+        OrdersEntity order = ordersRepository.findById(orderId)
+                .orElseThrow(OrderNotFoundException::new);
+
+        if (!order.getUser().getId().equals(currentUserId)) {
+            throw new NotOwnerOfOrderException();
+        }
+
+        if (order.getStatus() == OrderStatus.COMPLETED) {
+            throw new IllegalOrderStateException();
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        OrdersEntity savedOrder = ordersRepository.save(order);
+        return ordersMapper.toResponse(savedOrder);
+    }
 }
