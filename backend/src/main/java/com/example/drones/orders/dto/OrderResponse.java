@@ -13,7 +13,7 @@ import java.util.UUID;
 @Builder
 public class OrderResponse {
     private UUID id;
-
+    private UUID clientId;
     private String title;
     private String description;
     private String service;

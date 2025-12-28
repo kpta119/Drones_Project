@@ -177,7 +177,7 @@ public class OrdersService {
         OrderStatus status;
         try {
             status = OrderStatus.valueOf(statusStr.toUpperCase());
-        } catch (IllegalOrderStatusException e) {
+        } catch (IllegalArgumentException e) {
             throw new IllegalOrderStatusException(statusStr);
         }
 
