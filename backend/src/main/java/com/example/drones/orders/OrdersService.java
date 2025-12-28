@@ -87,7 +87,7 @@ public class OrdersService {
 
         NewMatchedOrderEntity match;
         if (operatorIdParam == null){
-            // Akceptuje operator
+            // Operator accepts
             if (currentUser.getRole() != UserRole.OPERATOR) {
                 throw new NotOperatorException();
             }
@@ -101,7 +101,7 @@ public class OrdersService {
             match.setOperatorStatus(MatchedOrderStatus.ACCEPTED);
             foundOrder.setStatus(OrderStatus.AWAITING_OPERATOR);
         } else {
-            // Akceptuje zleceniodawca
+            // Client accepts
             if (!foundOrder.getUser().getId().equals(currentUserId)) {
                 throw new NotOwnerOfOrderException();
             }
@@ -117,5 +117,40 @@ public class OrdersService {
         newMatchedOrdersRepository.save(match);
         ordersRepository.save(foundOrder);
         return ordersMapper.toResponse(foundOrder);
+    }
+
+    @Transactional
+    public void rejectOrder(UUID orderId, UUID operatorIdParam, UUID currentUserId) {
+        UserEntity currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(UserNotFoundException::new);
+
+        OrdersEntity foundOrder = ordersRepository.findById(orderId)
+                .orElseThrow(OrderNotFoundException::new);
+
+        NewMatchedOrderEntity match;
+
+        if (operatorIdParam == null) {
+            // Operator rejects an order
+            if (currentUser.getRole() != UserRole.OPERATOR) {
+                throw new NotOperatorException();
+            }
+
+            match = newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, currentUserId)
+                    .orElseThrow(MatchedOrderNotFoundException::new);
+
+            match.setOperatorStatus(MatchedOrderStatus.REJECTED);
+        } else {
+            // Client rejects an operator
+            if (!foundOrder.getUser().getId().equals(currentUserId)) {
+                throw new NotOwnerOfOrderException();
+            }
+
+            match = newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operatorIdParam)
+                    .orElseThrow(MatchedOrderNotFoundException::new);
+
+            match.setClientStatus(MatchedOrderStatus.REJECTED);
+        }
+
+        newMatchedOrdersRepository.save(match);
     }
 }
