@@ -257,7 +257,7 @@ Odrzucenie operatora przez zleceniodawce i na odwrót nie wpływa na staus zlece
     ```json
     [
       {
-        "orderId": 123,
+        "id": 123,
         "title": "Inspekcja dachu kamienicy",
         "description": "Potrzebuję nagrania inspekcyjnego dachu.",
         "service": "Kopanie rowów",
