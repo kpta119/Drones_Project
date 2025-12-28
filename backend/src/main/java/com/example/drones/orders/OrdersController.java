@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -62,5 +63,12 @@ public class OrdersController {
         UUID currentUserId = jwtService.extractUserId();
         OrderResponse response = ordersService.cancelOrder(orderId, currentUserId);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/getOrders/{status}")
+    public ResponseEntity<List<OrderResponse>> getOrders(@PathVariable String status) {
+        List<OrderResponse> responses = ordersService.getOrdersByStatus(status);
+
+        return ResponseEntity.ok(responses);
     }
 }

@@ -54,7 +54,7 @@ public class OrdersEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "order_status")
-    @ColumnTransformer(write = "?::order_status")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private OrderStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -1311,5 +1312,368 @@ public class OrdersIntegrationTests {
 
         OrdersEntity orderInDb = ordersRepository.findById(orderId).orElseThrow();
         assertThat(orderInDb.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    }
+
+
+    @Test
+    void givenOrdersWithOpenStatus_whenGetOrdersByOpenStatus_thenReturnsOnlyOpenOrders() {
+        String clientToken = registerAndLogin();
+
+        // Tworzymy 3 zamówienia OPEN
+        for (int i = 0; i < 3; i++) {
+            OrderRequest orderRequest = OrderRequest.builder()
+                    .title("Open Order " + i)
+                    .description("Test description")
+                    .service(SERVICE_NAME)
+                    .coordinates("52.23, 21.01")
+                    .fromDate(LocalDateTime.now().plusDays(1))
+                    .toDate(LocalDateTime.now().plusDays(2))
+                    .build();
+
+            HttpEntity<OrderRequest> createEntity = new HttpEntity<>(orderRequest, getHeaders(clientToken));
+            testRestTemplate.exchange(
+                    "/api/orders/createOrder",
+                    HttpMethod.POST,
+                    createEntity,
+                    OrderResponse.class
+            );
+        }
+
+        // Pobieramy zamówienia ze statusem OPEN
+        HttpEntity<Void> getEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<List<OrderResponse>> getResponse = testRestTemplate.exchange(
+                "/api/orders/getOrders/OPEN",
+                HttpMethod.GET,
+                getEntity,
+                new ParameterizedTypeReference<>() {}
+        );
+
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse.getBody()).isNotNull();
+        assertThat(getResponse.getBody().size()).isGreaterThanOrEqualTo(3);
+    }
+
+    @Test
+    void givenOrdersWithDifferentStatuses_whenGetOrdersByStatus_thenReturnsOnlyMatchingStatus() {
+        String clientToken = registerAndLogin();
+
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator = createTestOperator("operator_getorders1", "52.2200, 21.0100", 20, service);
+
+        // Tworzymy zamówienie 1 - pozostanie OPEN
+        OrderRequest orderRequest1 = OrderRequest.builder()
+                .title("Order 1 - OPEN")
+                .description("Test")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity1 = new HttpEntity<>(orderRequest1, getHeaders(clientToken));
+        ResponseEntity<OrderResponse> createResponse1 = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity1,
+                OrderResponse.class
+        );
+        UUID orderId1 = createResponse1.getBody().getId();
+
+        // Tworzymy zamówienie 2 - zmienimy na CANCELLED
+        OrderRequest orderRequest2 = OrderRequest.builder()
+                .title("Order 2 - CANCELLED")
+                .description("Test")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(3))
+                .toDate(LocalDateTime.now().plusDays(4))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity2 = new HttpEntity<>(orderRequest2, getHeaders(clientToken));
+        ResponseEntity<OrderResponse> createResponse2 = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity2,
+                OrderResponse.class
+        );
+        UUID orderId2 = createResponse2.getBody().getId();
+
+        // Anulujemy zamówienie 2
+        HttpEntity<Void> cancelEntity = new HttpEntity<>(getHeaders(clientToken));
+        testRestTemplate.exchange(
+                "/api/orders/cancelOrder/" + orderId2,
+                HttpMethod.PATCH,
+                cancelEntity,
+                OrderResponse.class
+        );
+
+        // Tworzymy zamówienie 3 - zmienimy na COMPLETED
+        OrderRequest orderRequest3 = OrderRequest.builder()
+                .title("Order 3 - COMPLETED")
+                .description("Test")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(5))
+                .toDate(LocalDateTime.now().plusDays(6))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity3 = new HttpEntity<>(orderRequest3, getHeaders(clientToken));
+        ResponseEntity<OrderResponse> createResponse3 = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity3,
+                OrderResponse.class
+        );
+        UUID orderId3 = createResponse3.getBody().getId();
+
+        // Ręcznie ustawiamy status na COMPLETED
+        OrdersEntity order3 = ordersRepository.findById(orderId3).orElseThrow();
+        order3.setStatus(OrderStatus.COMPLETED);
+        ordersRepository.save(order3);
+
+        // Testujemy GET dla każdego statusu
+        HttpEntity<Void> getEntity = new HttpEntity<>(getHeaders(clientToken));
+
+        // GET OPEN
+        ResponseEntity<List<OrderResponse>> openResponse = testRestTemplate.exchange(
+                "/api/orders/getOrders/OPEN",
+                HttpMethod.GET,
+                getEntity,
+                new ParameterizedTypeReference<>() {}
+        );
+        assertThat(openResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(openResponse.getBody()).isNotNull();
+        // Sprawdzamy czy order1 jest w liście
+        boolean containsOrder1 = openResponse.getBody().stream()
+                .anyMatch(o -> o.getId().equals(orderId1));
+        assertThat(containsOrder1).isTrue();
+
+        // GET CANCELLED
+        ResponseEntity<List<OrderResponse>> cancelledResponse = testRestTemplate.exchange(
+                "/api/orders/getOrders/CANCELLED",
+                HttpMethod.GET,
+                getEntity,
+                new ParameterizedTypeReference<>() {}
+        );
+        assertThat(cancelledResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(cancelledResponse.getBody()).isNotNull();
+        boolean containsOrder2 = cancelledResponse.getBody().stream()
+                .anyMatch(o -> o.getId().equals(orderId2));
+        assertThat(containsOrder2).isTrue();
+
+        // GET COMPLETED
+        ResponseEntity<List<OrderResponse>> completedResponse = testRestTemplate.exchange(
+                "/api/orders/getOrders/COMPLETED",
+                HttpMethod.GET,
+                getEntity,
+                new ParameterizedTypeReference<>() {}
+        );
+        assertThat(completedResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(completedResponse.getBody()).isNotNull();
+        boolean containsOrder3 = completedResponse.getBody().stream()
+                .anyMatch(o -> o.getId().equals(orderId3));
+        assertThat(containsOrder3).isTrue();
+    }
+
+    @Test
+    void givenNoOrdersWithStatus_whenGetOrdersByStatus_thenReturnsEmptyList() {
+        String clientToken = registerAndLogin();
+
+        HttpEntity<Void> getEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<List<OrderResponse>> getResponse = testRestTemplate.exchange(
+                "/api/orders/getOrders/COMPLETED",
+                HttpMethod.GET,
+                getEntity,
+                new ParameterizedTypeReference<>() {}
+        );
+
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse.getBody()).isNotNull();
+
+        assertThat(getResponse.getBody()).isInstanceOf(List.class);
+    }
+
+    @Test
+    void givenInvalidStatus_whenGetOrdersByStatus_thenReturnsError() {
+        String clientToken = registerAndLogin();
+
+        HttpEntity<Void> getEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<String> getResponse = testRestTemplate.exchange(
+                "/api/orders/getOrders/INVALID_STATUS",
+                HttpMethod.GET,
+                getEntity,
+                String.class
+        );
+
+        assertThat(getResponse.getStatusCode().is4xxClientError()).isTrue();
+    }
+
+    @Test
+    void givenLowercaseStatus_whenGetOrdersByStatus_thenReturnsOrders() {
+        String clientToken = registerAndLogin();
+
+        OrderRequest orderRequest = OrderRequest.builder()
+                .title("Test Order")
+                .description("Test description")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity = new HttpEntity<>(orderRequest, getHeaders(clientToken));
+        testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity,
+                OrderResponse.class
+        );
+
+        // Pobieramy zamówienia ze statusem w lowercase
+        HttpEntity<Void> getEntity = new HttpEntity<>(getHeaders(clientToken));
+        var getResponse = testRestTemplate.exchange(
+                "/api/orders/getOrders/open",
+                HttpMethod.GET,
+                getEntity,
+                new ParameterizedTypeReference<List<OrderResponse>>() {}
+        );
+
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse.getBody()).isNotNull();
+        assertThat(getResponse.getBody().size()).isGreaterThanOrEqualTo(1);
+    }
+
+    @Test
+    void givenAwaitingOperatorOrders_whenGetOrdersByAwaitingOperatorStatus_thenReturnsMatchingOrders() {
+        String clientToken = registerAndLogin();
+
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator = createTestOperator("operator_getorders2", "52.2200, 21.0100", 20, service);
+
+        OrderRequest orderRequest = OrderRequest.builder()
+                .title("Awaiting Operator Order")
+                .description("Test description")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity = new HttpEntity<>(orderRequest, getHeaders(clientToken));
+        ResponseEntity<OrderResponse> createResponse = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity,
+                OrderResponse.class
+        );
+        UUID orderId = createResponse.getBody().getId();
+
+        await().atMost(5, SECONDS).untilAsserted(() ->
+                assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
+                        .isPresent()
+        );
+
+        LoginRequest operatorLogin = LoginRequest.builder()
+                .email("operator_getorders2@op.pl")
+                .password("pass")
+                .build();
+        ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
+                "/api/auth/login", operatorLogin, LoginResponse.class);
+        String operatorToken = loginResponse.getBody().token();
+
+        HttpEntity<Void> acceptEntity = new HttpEntity<>(getHeaders(operatorToken));
+        testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + orderId,
+                HttpMethod.PATCH,
+                acceptEntity,
+                OrderResponse.class
+        );
+
+        HttpEntity<Void> getEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<List<OrderResponse>> getResponse = testRestTemplate.exchange(
+                "/api/orders/getOrders/AWAITING_OPERATOR",
+                HttpMethod.GET,
+                getEntity,
+                new ParameterizedTypeReference<List<OrderResponse>>() {}
+        );
+
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse.getBody()).isNotNull();
+        boolean containsOrder = getResponse.getBody().stream()
+                .anyMatch(o -> o.getId().equals(orderId));
+        assertThat(containsOrder).isTrue();
+    }
+
+    @Test
+    void givenInProgressOrders_whenGetOrdersByInProgressStatus_thenReturnsMatchingOrders() {
+        String clientToken = registerAndLogin();
+
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator = createTestOperator("operator_getorders3", "52.2200, 21.0100", 20, service);
+
+        OrderRequest orderRequest = OrderRequest.builder()
+                .title("In Progress Order")
+                .description("Test description")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity = new HttpEntity<>(orderRequest, getHeaders(clientToken));
+        ResponseEntity<OrderResponse> createResponse = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity,
+                OrderResponse.class
+        );
+        UUID orderId = createResponse.getBody().getId();
+
+        // Czekamy na dopasowanie
+        await().atMost(5, SECONDS).untilAsserted(() ->
+                assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
+                        .isPresent()
+        );
+
+        // Operator akceptuje zamówienie
+        LoginRequest operatorLogin = LoginRequest.builder()
+                .email("operator_getorders3@op.pl")
+                .password("pass")
+                .build();
+        ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
+                "/api/auth/login", operatorLogin, LoginResponse.class);
+        String operatorToken = loginResponse.getBody().token();
+
+        HttpEntity<Void> acceptEntity = new HttpEntity<>(getHeaders(operatorToken));
+        testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + orderId,
+                HttpMethod.PATCH,
+                acceptEntity,
+                OrderResponse.class
+        );
+
+        // Klient akceptuje operatora (zmienia status na IN_PROGRESS)
+        HttpEntity<Void> clientAcceptEntity = new HttpEntity<>(getHeaders(clientToken));
+        testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + orderId + "?operatorId=" + operator.getId(),
+                HttpMethod.PATCH,
+                clientAcceptEntity,
+                OrderResponse.class
+        );
+
+        // Pobieramy zamówienia ze statusem IN_PROGRESS
+        HttpEntity<Void> getEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<List<OrderResponse>> getResponse = testRestTemplate.exchange(
+                "/api/orders/getOrders/IN_PROGRESS",
+                HttpMethod.GET,
+                getEntity,
+                new ParameterizedTypeReference<>() {}
+        );
+
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse.getBody()).isNotNull();
+        boolean containsOrder = getResponse.getBody().stream()
+                .anyMatch(o -> o.getId().equals(orderId));
+        assertThat(containsOrder).isTrue();
     }
 }

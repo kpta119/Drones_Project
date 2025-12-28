@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -170,5 +171,20 @@ public class OrdersService {
         order.setStatus(OrderStatus.CANCELLED);
         OrdersEntity savedOrder = ordersRepository.save(order);
         return ordersMapper.toResponse(savedOrder);
+    }
+
+    public List<OrderResponse> getOrdersByStatus(String statusStr) {
+        OrderStatus status;
+        try {
+            status = OrderStatus.valueOf(statusStr.toUpperCase());
+        } catch (IllegalOrderStatusException e) {
+            throw new IllegalOrderStatusException(statusStr);
+        }
+
+        List<OrdersEntity> orders = ordersRepository.findAllByStatus(status);
+
+        return orders.stream()
+                .map(ordersMapper::toResponse)
+                .toList();
     }
 }
