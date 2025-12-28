@@ -152,6 +152,7 @@ Base URL: `/api/user`.
     {
       "id": 123,
       "title": "Inspekcja dachu kamienicy",
+      "clientId": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
       "description": "Potrzebuję nagrania inspekcyjnego dachu.",
       "service": "Kopanie rowów",
       "parameters": { "cecha": "wartość_cechy" },
@@ -184,6 +185,7 @@ Base URL: `/api/user`.
     {
       "id": 123,
       "title": "Inspekcja dachu kamienicy",
+      "clientId": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
       "description": "Zaktualizowany opis zlecenia...", // zmiana
       "service": "Kopanie rowów",
       "status": "open",
@@ -208,6 +210,7 @@ Base URL: `/api/user`.
     {
       "id": 123,
       "title": "Inspekcja dachu kamienicy",
+      "clientId": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
       "status": "in_progress", // "in_progress" jeśli zaakceptował klient, "awaiting_operator" jeśli zaakceptował operator
       "operator_id": 55,
       // ...pozostałe pola
@@ -239,6 +242,7 @@ Odrzucenie operatora przez zleceniodawce i na odwrót nie wpływa na staus zlece
     {
       "id": 123,
       "title": "Inspekcja dachu kamienicy",
+      "clientId": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
       "status": "cancelled",
       // ...pozostałe pola
     }
@@ -259,6 +263,7 @@ Odrzucenie operatora przez zleceniodawce i na odwrót nie wpływa na staus zlece
       {
         "id": 123,
         "title": "Inspekcja dachu kamienicy",
+        "clientId": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
         "description": "Potrzebuję nagrania inspekcyjnego dachu.",
         "service": "Kopanie rowów",
         "parameters": {
@@ -291,6 +296,7 @@ Base URL: `/api/operators`.
       {
         "id": 55,
         "title": "Inspekcja dachu",
+        "clientId": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
         "description": "Potrzebuję nagrania...",
         "service": "Kopanie rowów",
         "parameters": { "wysokosc": "20m" },
