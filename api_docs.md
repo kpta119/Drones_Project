@@ -312,7 +312,7 @@ Base URL: `/api/operators`.
 
 **GET** `/operators/getOperatorsInfo/:orderId`
 
-* **Response:** Lista operatorów, którzy zgłosili się do zlecenia lub pasują do niego.
+* **Response:** Lista operatorów, którzy zgłosili się do zlecenia, czyli mają status ACCEPTED
 
     ```json
     [
@@ -550,11 +550,11 @@ Base URL: `/api/reviews`.
 
 ## 7. Administrator (Admin)
 
-Base URL: `/api/admins`.
+Base URL: `/api/admin`.
 
 ### Pobierz statystyki systemu
 
-**GET** `/admins/getStats`
+**GET** `/admin/getStats`
 
 * **Response:**
 
@@ -572,7 +572,7 @@ Base URL: `/api/admins`.
 
 ### Pobierz listę użytkowników
 
-**GET** `/admins/getUsers`
+**GET** `/admin/getUsers`
 
 * **Parametry (Query):** `query` (wyszukiwanie po username/mailu), `role` (typ użytkownika), `page` (strona, domyślnie 0), `size` (wielkośc strony, domyślnie 20), 
 * **Response:**
@@ -602,7 +602,7 @@ Base URL: `/api/admins`.
 
 ### Zablokuj użytkownika
 
-**PATCH** `/admins/banUser/:userId`
+**PATCH** `/admin/banUser/:userId`
 
 * **Response (200 OK) - Zablokowany Użytkownik:**
 
@@ -620,7 +620,7 @@ Base URL: `/api/admins`.
 
 ### Pobierz wszystkie zamówienia (Widok Admina)
 
-**GET** `/admins/getOrders`
+**GET** `/admin/getOrders`
 
 * **Response:** Pełny zrzut zamówień ze szczegółami stron.
 
