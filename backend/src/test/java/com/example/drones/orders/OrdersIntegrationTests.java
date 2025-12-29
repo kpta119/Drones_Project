@@ -15,11 +15,6 @@ import com.example.drones.user.UserRepository;
 import com.example.drones.user.UserRole;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +30,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -197,6 +196,7 @@ public class OrdersIntegrationTests {
                 createEntity,
                 OrderResponse.class
         );
+        Assertions.assertNotNull(createResponse.getBody());
         UUID orderId = createResponse.getBody().getId();
 
         OrderUpdateRequest updateRequest = new OrderUpdateRequest();
@@ -214,6 +214,7 @@ public class OrdersIntegrationTests {
         assertThat(patchResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
         OrderResponse body = patchResponse.getBody();
 
+        Assertions.assertNotNull(body);
         assertThat(body.getDescription()).isEqualTo("NOWY OPIS");
         assertThat(body.getTitle()).isEqualTo("Stary Tytuł");
 
@@ -241,6 +242,7 @@ public class OrdersIntegrationTests {
                 createEntity,
                 OrderResponse.class
         );
+        Assertions.assertNotNull(createResponse.getBody());
         UUID orderId = createResponse.getBody().getId();
 
         RegisterRequest user2Register = RegisterRequest.builder()
@@ -258,6 +260,7 @@ public class OrdersIntegrationTests {
                 .password("pass")
                 .build();
         ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity("/api/auth/login", user2Login, LoginResponse.class);
+        Assertions.assertNotNull(loginResponse.getBody());
         String tokenUser2 = loginResponse.getBody().token();
 
         OrderUpdateRequest updateRequest = new OrderUpdateRequest();
@@ -274,13 +277,13 @@ public class OrdersIntegrationTests {
 
         assertThat(response.getStatusCode().is4xxClientError()).isTrue();
 
-        OrdersEntity orderInDb = ordersRepository.findById(orderId).orElseThrow();
+        ordersRepository.findById(orderId).orElseThrow();
     }
 
     @Test
     void givenOrderRequest_whenCreated_thenMatchesOperatorsAutomatically() {
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElse(null);
-        if(service == null) {
+        if (service == null) {
             service = new ServicesEntity();
             service.setName(SERVICE_NAME);
             servicesRepository.save(service);
@@ -311,6 +314,7 @@ public class OrdersIntegrationTests {
         );
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        Assertions.assertNotNull(response.getBody());
         UUID createdOrderId = response.getBody().getId();
 
         await().atMost(5, SECONDS)
@@ -380,6 +384,7 @@ public class OrdersIntegrationTests {
                 createEntity,
                 OrderResponse.class
         );
+        Assertions.assertNotNull(createResponse.getBody());
         UUID orderId = createResponse.getBody().getId();
 
         await().atMost(5, SECONDS).untilAsserted(() -> {
@@ -396,6 +401,7 @@ public class OrdersIntegrationTests {
                 .build();
         ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
                 "/api/auth/login", operatorLogin, LoginResponse.class);
+        Assertions.assertNotNull(loginResponse.getBody());
         String operatorToken = loginResponse.getBody().token();
 
         HttpEntity<Void> acceptEntity = new HttpEntity<>(getHeaders(operatorToken));
@@ -408,6 +414,7 @@ public class OrdersIntegrationTests {
 
         // Then: Status zamówienia jest zmieniony na AWAITING_OPERATOR
         assertThat(acceptResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        Assertions.assertNotNull(acceptResponse.getBody());
         assertThat(acceptResponse.getBody().getStatus()).isEqualTo(OrderStatus.AWAITING_OPERATOR);
 
         // Weryfikacja w bazie danych
@@ -443,13 +450,12 @@ public class OrdersIntegrationTests {
                 createEntity,
                 OrderResponse.class
         );
+        Assertions.assertNotNull(createResponse.getBody());
         UUID orderId = createResponse.getBody().getId();
 
         // Czekanie na dopasowanie
-        await().atMost(5, SECONDS).untilAsserted(() -> {
-            assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
-                    .isPresent();
-        });
+        await().atMost(5, SECONDS).untilAsserted(() -> assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
+                .isPresent());
 
         // Operator akceptuje zamówienie
         LoginRequest operatorLogin = LoginRequest.builder()
@@ -458,6 +464,7 @@ public class OrdersIntegrationTests {
                 .build();
         ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
                 "/api/auth/login", operatorLogin, LoginResponse.class);
+        Assertions.assertNotNull(loginResponse.getBody());
         String operatorToken = loginResponse.getBody().token();
 
         HttpEntity<Void> operatorAcceptEntity = new HttpEntity<>(getHeaders(operatorToken));
@@ -479,6 +486,7 @@ public class OrdersIntegrationTests {
 
         // Then: Status zamówienia jest zmieniony na IN_PROGRESS
         assertThat(acceptResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        Assertions.assertNotNull(acceptResponse.getBody());
         assertThat(acceptResponse.getBody().getStatus()).isEqualTo(OrderStatus.IN_PROGRESS);
 
         // Weryfikacja w bazie danych
@@ -511,6 +519,7 @@ public class OrdersIntegrationTests {
                 createEntity,
                 OrderResponse.class
         );
+        Assertions.assertNotNull(createResponse.getBody());
         UUID orderId = createResponse.getBody().getId();
 
         // Drugi klient próbuje zaakceptować zamówienie
@@ -530,6 +539,7 @@ public class OrdersIntegrationTests {
                 .build();
         ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
                 "/api/auth/login", client2Login, LoginResponse.class);
+        Assertions.assertNotNull(loginResponse.getBody());
         String client2Token = loginResponse.getBody().token();
 
         // When: Klient (nie operator) próbuje zaakceptować zamówienie
@@ -573,6 +583,7 @@ public class OrdersIntegrationTests {
                 .build();
         ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
                 "/api/auth/login", login, LoginResponse.class);
+        Assertions.assertNotNull(loginResponse.getBody());
         String token = loginResponse.getBody().token();
 
         // Utworzenie zamówienia
@@ -592,6 +603,7 @@ public class OrdersIntegrationTests {
                 createEntity,
                 OrderResponse.class
         );
+        Assertions.assertNotNull(createResponse.getBody());
         UUID orderId = createResponse.getBody().getId();
 
         // When: Operator próbuje zaakceptować własne zamówienie
@@ -630,6 +642,7 @@ public class OrdersIntegrationTests {
                 createEntity,
                 OrderResponse.class
         );
+        Assertions.assertNotNull(createResponse.getBody());
         UUID orderId = createResponse.getBody().getId();
 
         // Operator, który nie został dopasowany do zamówienia
@@ -655,6 +668,7 @@ public class OrdersIntegrationTests {
                 .build();
         ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
                 "/api/auth/login", operatorLogin, LoginResponse.class);
+        Assertions.assertNotNull(loginResponse.getBody());
         String operatorToken = loginResponse.getBody().token();
 
         // When: Niedopasowany operator próbuje zaakceptować zamówienie
@@ -694,13 +708,12 @@ public class OrdersIntegrationTests {
                 createEntity,
                 OrderResponse.class
         );
+        Assertions.assertNotNull(createResponse.getBody());
         UUID orderId = createResponse.getBody().getId();
 
         // Czekanie na dopasowanie
-        await().atMost(5, SECONDS).untilAsserted(() -> {
-            assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
-                    .isPresent();
-        });
+        await().atMost(5, SECONDS).untilAsserted(() -> assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
+                .isPresent());
 
         // Klient2 (nie właściciel zamówienia)
         RegisterRequest client2Register = RegisterRequest.builder()
@@ -719,6 +732,7 @@ public class OrdersIntegrationTests {
                 .build();
         ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
                 "/api/auth/login", client2Login, LoginResponse.class);
+        Assertions.assertNotNull(loginResponse.getBody());
         String client2Token = loginResponse.getBody().token();
 
         // When: Klient2 próbuje zaakceptować operatora dla zamówienia Klienta1
@@ -746,6 +760,7 @@ public class OrdersIntegrationTests {
                 .build();
         ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
                 "/api/auth/login", operatorLogin, LoginResponse.class);
+        Assertions.assertNotNull(loginResponse.getBody());
         String operatorToken = loginResponse.getBody().token();
 
         // When: Operator próbuje zaakceptować nieistniejące zamówienie

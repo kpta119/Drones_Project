@@ -7,17 +7,14 @@ import com.example.drones.services.ServicesRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,12 +37,14 @@ class UserRepositoryTests {
     private OperatorServicesRepository operatorServicesRepository;
 
     private final String SERVICE_NAME = "Filmowanie";
-    private final String OTHER_SERVICE = "Kopanie";
 
     @BeforeEach
     void setUp() {
-        ServicesEntity s1 = new ServicesEntity(); s1.setName(SERVICE_NAME);
-        ServicesEntity s2 = new ServicesEntity(); s2.setName(OTHER_SERVICE);
+        ServicesEntity s1 = new ServicesEntity();
+        s1.setName(SERVICE_NAME);
+        ServicesEntity s2 = new ServicesEntity();
+        String OTHER_SERVICE = "Kopanie";
+        s2.setName(OTHER_SERVICE);
         servicesRepository.saveAll(List.of(s1, s2));
 
         createOperator("operator_ok", "52.2300, 21.0100", 10, SERVICE_NAME);

@@ -1,20 +1,14 @@
 package com.example.drones.orders;
 
-import com.example.drones.user.UserEntity;
 import com.example.drones.services.ServicesEntity;
+import com.example.drones.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnTransformer;
-import org.hibernate.annotations.Generated;
-import org.hibernate.generator.EventType;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.UUID;
 

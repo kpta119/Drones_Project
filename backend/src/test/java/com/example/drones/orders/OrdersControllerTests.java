@@ -2,7 +2,6 @@ package com.example.drones.orders;
 
 import com.example.drones.auth.exceptions.InvalidCredentialsException;
 import com.example.drones.common.config.auth.JwtService;
-import com.example.drones.orders.OrderStatus;
 import com.example.drones.orders.dto.OrderRequest;
 import com.example.drones.orders.dto.OrderResponse;
 import com.example.drones.orders.dto.OrderUpdateRequest;
@@ -90,9 +89,7 @@ public class OrdersControllerTests {
         when(ordersService.createOrder(mockOrderRequest, userId))
                 .thenThrow(new ServiceNotFoundException());
 
-        RuntimeException exception = assertThrows(ServiceNotFoundException.class, () -> {
-            ordersController.createOrder(mockOrderRequest);
-        });
+        RuntimeException exception = assertThrows(ServiceNotFoundException.class, () -> ordersController.createOrder(mockOrderRequest));
 
         assertEquals("Service not found", exception.getMessage());
         verify(ordersService).createOrder(mockOrderRequest, userId);
@@ -115,6 +112,7 @@ public class OrdersControllerTests {
 
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertEquals("Zaktualizowany opis", response.getBody().getDescription());
 
         verify(jwtService).extractUserId();
@@ -128,9 +126,7 @@ public class OrdersControllerTests {
                 .when(ordersService).editOrder(orderId, mockUpdateRequest, userId);
 
         // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            ordersController.editOrder(orderId, mockUpdateRequest);
-        });
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> ordersController.editOrder(orderId, mockUpdateRequest));
 
         assertEquals("The provided credentials are invalid.", exception.getMessage());
         verify(ordersService).editOrder(orderId, mockUpdateRequest, userId);
@@ -142,9 +138,7 @@ public class OrdersControllerTests {
         doThrow(new OrderIsNotEditableException())
                 .when(ordersService).editOrder(orderId, mockUpdateRequest, userId);
 
-        RuntimeException exception = assertThrows(OrderIsNotEditableException.class, () -> {
-            ordersController.editOrder(orderId, mockUpdateRequest);
-        });
+        RuntimeException exception = assertThrows(OrderIsNotEditableException.class, () -> ordersController.editOrder(orderId, mockUpdateRequest));
 
         assertEquals("Order is not editable because of status", exception.getMessage());
         verify(ordersService).editOrder(orderId, mockUpdateRequest, userId);

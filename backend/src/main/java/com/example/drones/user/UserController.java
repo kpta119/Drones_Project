@@ -21,15 +21,15 @@ public class UserController {
     @GetMapping("/getUserData")
     public ResponseEntity<UserResponse> getUserData(
             @RequestParam(name = "user_id", required = false) UUID userId
-            ){
+    ) {
         UUID targetId = (userId != null) ? userId : jwtService.extractUserId();
         UserResponse response = userService.getUserData(targetId);
-        return  ResponseEntity.ok(response);
+        return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/editUserData")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public UserResponse editUserData(@RequestBody UserUpdateRequest request){
+    public UserResponse editUserData(@RequestBody UserUpdateRequest request) {
         return userService.editUserData(request);
     }
 }

@@ -1,6 +1,5 @@
 package com.example.drones.orders;
 
-import com.example.drones.orders.OrderStatus;
 import com.example.drones.orders.dto.OrderRequest;
 import com.example.drones.orders.dto.OrderResponse;
 import com.example.drones.orders.dto.OrderUpdateRequest;
