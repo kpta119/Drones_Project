@@ -1,5 +1,6 @@
 package com.example.drones.admin;
 
+import com.example.drones.admin.dto.OrderDto;
 import com.example.drones.admin.dto.UserDto;
 import com.example.drones.user.UserRole;
 import lombok.RequiredArgsConstructor;
@@ -31,5 +32,13 @@ class AdminController {
     public ResponseEntity<UserDto> banUser(@PathVariable UUID userId) {
         UserDto bannedUser = adminService.banUser(userId);
         return ResponseEntity.ok().body(bannedUser);
+    }
+
+    @GetMapping("/getOrders")
+    public ResponseEntity<Page<OrderDto>> getOrder(
+            @PageableDefault(size = 20) Pageable pageable
+    ) {
+        Page<OrderDto> response = adminService.getOrders(pageable);
+        return ResponseEntity.ok().body(response);
     }
 }

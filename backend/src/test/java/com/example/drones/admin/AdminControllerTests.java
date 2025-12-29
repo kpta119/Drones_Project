@@ -1,6 +1,8 @@
 package com.example.drones.admin;
 
+import com.example.drones.admin.dto.OrderDto;
 import com.example.drones.admin.dto.UserDto;
+import com.example.drones.orders.OrderStatus;
 import com.example.drones.user.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -87,6 +90,56 @@ public class AdminControllerTests {
         assertThat(response.getBody().getContent()).hasSize(1);
         assertThat(response.getBody().getContent()).containsExactly(userDto1);
         verify(adminService).getUsers(query, null, pageable);
+    }
+
+    @Test
+    public void givenPageable_whenGetOrder_thenReturnsPageOfOrders() {
+        UUID orderId1 = UUID.randomUUID();
+        UUID orderId2 = UUID.randomUUID();
+        UUID clientId = UUID.randomUUID();
+        UUID operatorId = UUID.randomUUID();
+        LocalDateTime now = LocalDateTime.now();
+
+        OrderDto orderDto1 = new OrderDto(
+                orderId1,
+                "Aerial Photography",
+                "Professional aerial photography for real estate",
+                "Photography",
+                "52.2297,21.0122",
+                now.plusDays(1),
+                now.plusDays(2),
+                OrderStatus.OPEN,
+                now,
+                clientId,
+                null
+        );
+
+        OrderDto orderDto2 = new OrderDto(
+                orderId2,
+                "Land Survey",
+                "Topographic survey of construction site",
+                "Surveying",
+                "52.2400,21.0300",
+                now.plusDays(3),
+                now.plusDays(4),
+                OrderStatus.IN_PROGRESS,
+                now,
+                clientId,
+                operatorId
+        );
+
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<OrderDto> expectedPage = new PageImpl<>(List.of(orderDto1, orderDto2), pageable, 2);
+        when(adminService.getOrders(pageable)).thenReturn(expectedPage);
+
+        ResponseEntity<Page<OrderDto>> response = adminController.getOrder(pageable);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getContent()).hasSize(2);
+        assertThat(response.getBody().getContent()).containsExactly(orderDto1, orderDto2);
+        assertThat(response.getBody().getTotalElements()).isEqualTo(2);
+        verify(adminService).getOrders(pageable);
     }
 
 }

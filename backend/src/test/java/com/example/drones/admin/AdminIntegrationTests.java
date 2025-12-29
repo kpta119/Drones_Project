@@ -1,6 +1,11 @@
 package com.example.drones.admin;
 
 import com.example.drones.common.config.auth.JwtService;
+import com.example.drones.orders.OrderStatus;
+import com.example.drones.orders.OrdersEntity;
+import com.example.drones.orders.OrdersRepository;
+import com.example.drones.services.ServicesEntity;
+import com.example.drones.services.ServicesRepository;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
 import com.example.drones.user.UserRole;
@@ -40,6 +45,12 @@ public class AdminIntegrationTests {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private OrdersRepository ordersRepository;
+
+    @Autowired
+    private ServicesRepository servicesRepository;
 
     @Autowired
     private MockMvc mockMvc;
@@ -206,6 +217,107 @@ public class AdminIntegrationTests {
 
         UserEntity updatedOperator = userRepository.findById(operatorId).orElseThrow();
         assertThat(updatedOperator.getRole()).isEqualTo(UserRole.BLOCKED);
+    }
+
+    @Test
+    void givenAdminUser_whenGetOrders_thenReturnsPageOfOrders() throws Exception {
+        ServicesEntity service = new ServicesEntity("Photography");
+        servicesRepository.saveAndFlush(service);
+
+        OrdersEntity order1 = OrdersEntity.builder()
+                .title("Aerial Photography Order")
+                .description("Need professional aerial photos")
+                .service(service)
+                .coordinates("52.2297,21.0122")
+                .fromDate(java.time.LocalDateTime.now().plusDays(1))
+                .toDate(java.time.LocalDateTime.now().plusDays(2))
+                .status(OrderStatus.OPEN)
+                .user(clientUser)
+                .createdAt(java.time.LocalDateTime.now())
+                .build();
+        ordersRepository.saveAndFlush(order1);
+
+        OrdersEntity order2 = OrdersEntity.builder()
+                .title("Land Survey Order")
+                .description("Topographic survey needed")
+                .service(service)
+                .coordinates("52.2400,21.0300")
+                .fromDate(java.time.LocalDateTime.now().plusDays(3))
+                .toDate(java.time.LocalDateTime.now().plusDays(4))
+                .status(OrderStatus.IN_PROGRESS)
+                .user(clientUser)
+                .createdAt(java.time.LocalDateTime.now())
+                .build();
+        ordersRepository.saveAndFlush(order2);
+
+        mockMvc.perform(get("/api/admin/getOrders")
+                        .header("X-USER-TOKEN", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.page.totalElements").value(2));
+    }
+
+    @Test
+    void givenAdminUser_whenGetOrdersWithPagination_thenReturnsPagedResults() throws Exception {
+        ServicesEntity service = new ServicesEntity("Surveying");
+        servicesRepository.saveAndFlush(service);
+
+        for (int i = 0; i < 5; i++) {
+            OrdersEntity order = OrdersEntity.builder()
+                    .title("Order " + i)
+                    .description("Description " + i)
+                    .service(service)
+                    .coordinates("52.23,21.01")
+                    .fromDate(java.time.LocalDateTime.now().plusDays(i + 1))
+                    .toDate(java.time.LocalDateTime.now().plusDays(i + 2))
+                    .status(OrderStatus.OPEN)
+                    .user(clientUser)
+                    .createdAt(java.time.LocalDateTime.now())
+                    .build();
+            ordersRepository.saveAndFlush(order);
+        }
+
+        mockMvc.perform(get("/api/admin/getOrders")
+                        .param("page", "0")
+                        .param("size", "2")
+                        .header("X-USER-TOKEN", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.page.totalElements").value(5))
+                .andExpect(jsonPath("$.page.size").value(2));
+    }
+
+    @Test
+    void givenNonAdminUser_whenGetOrders_thenReturnsForbidden() throws Exception {
+        mockMvc.perform(get("/api/admin/getOrders")
+                        .header("X-USER-TOKEN", "Bearer " + clientToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void givenUnauthenticatedUser_whenGetOrders_thenReturnsForbidden() throws Exception {
+        mockMvc.perform(get("/api/admin/getOrders")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void givenAdminUser_whenGetOrdersWithNoOrders_thenReturnsEmptyPage() throws Exception {
+        ordersRepository.deleteAll();
+        ordersRepository.flush();
+
+        mockMvc.perform(get("/api/admin/getOrders")
+                        .header("X-USER-TOKEN", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content").isEmpty())
+                .andExpect(jsonPath("$.page.totalElements").value(0));
     }
 
 }

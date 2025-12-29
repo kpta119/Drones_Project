@@ -1,7 +1,10 @@
 package com.example.drones.admin;
 
+import com.example.drones.admin.dto.OrderDto;
 import com.example.drones.admin.dto.UserDto;
 import com.example.drones.admin.exceptions.NoSuchUserException;
+import com.example.drones.orders.MatchedOrderStatus;
+import com.example.drones.orders.OrderStatus;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRole;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -30,4 +34,12 @@ class AdminService {
         return adminMapper.toUserDto(user);
     }
 
+    public Page<OrderDto> getOrders(Pageable pageable) {
+        List<OrderStatus> statusesWithVisibleOperator = List.of(
+                OrderStatus.IN_PROGRESS,
+                OrderStatus.COMPLETED,
+                OrderStatus.CANCELLED
+        );
+        return adminRepository.findAllOrders(statusesWithVisibleOperator, MatchedOrderStatus.ACCEPTED, pageable);
+    }
 }

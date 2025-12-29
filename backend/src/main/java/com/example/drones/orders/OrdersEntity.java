@@ -29,6 +29,9 @@ public class OrdersEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "user_id", insertable = false, updatable = false)
+    private UUID userId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_name", referencedColumnName = "name")
     private ServicesEntity service;
