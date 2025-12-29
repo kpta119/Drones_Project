@@ -625,33 +625,29 @@ Base URL: `/api/admins`.
 * **Response:** Pełny zrzut zamówień ze szczegółami stron.
 
     ```json
-    [
-     {
-      "order_id": 101,
-      "title": "Inspekcja dachu kamienicy",
-      "description": "Potrzebuję nagrania inspekcyjnego dachu.",
-      "service_name": "Inspekcja dachów",
-      "coordinates": "52.2300,21.0100",
-      "from_date": "2025-06-10T10:00:00",
-      "to_date": "2025-06-10T12:00:00",
-      "status": "pending",
-      "operator_status": "pending",
-      "client_status": "pending"
-      "created_at": "2025-05-01T09:15:00",
-      "client": {
-           "user_id": 501,
-           "username": "jan_kowalski",
-           "name": "Jan",
-           "surname": "Kowalski"
-    },
-    "operator": {
-         "user_id": 201,
-         "username": "droniarz123",
-         "name": "Piotr",
-         "surname": "Nowak"
-         }
-    }
+    {
+      "content": [
+        {
+          "order_id": "24b71e24-62ac-4b32-99e0-3c691df633d9",
+          "title": "Inspekcja dachu/mostu",
+          "description": "Numeryczny Model Terenu (NMT) z filtracją roślinności.",
+          "service_name": "Skaning Laserowy",
+          "coordinates": "52.9096,21.3593",
+          "from_date": "2025-12-25T20:41:04.904761",
+          "to_date": "2025-12-31T20:41:04.904761",
+          "status": "OPEN",
+          "created_at": "2025-12-17T20:41:04.904761",
+          "client_id": "bf3f520c-0ce9-47ea-8c22-bff041164f37",
+          "operator_id": null // null jeśli brak przydzielonego operatora do zlecenia.
+        },
+        {},
     ]
+  "page": {
+    "size": 10,
+    "number": 299,
+    "totalElements": 3000,
+    "totalPages": 300
+  }
     ```
 
 ---
