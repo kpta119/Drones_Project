@@ -642,11 +642,12 @@ Base URL: `/api/admins`.
         },
         {},
     ]
-  "page": {
-    "size": 10,
-    "number": 299,
-    "totalElements": 3000,
-    "totalPages": 300
+      "page": {
+        "size": 10,
+        "number": 299,
+        "totalElements": 3000,
+        "totalPages": 300
+      }
   }
     ```
 
