@@ -574,37 +574,48 @@ Base URL: `/api/admins`.
 
 **GET** `/admins/getUsers`
 
-* **Parametry (Query):** `query` (wyszukiwanie po nazwie/mailu), `role` (typ użytkownika).
+* **Parametry (Query):** `query` (wyszukiwanie po username/mailu), `role` (typ użytkownika), `page` (strona, domyślnie 0), `size` (wielkośc strony, domyślnie 20), 
 * **Response:**
 
     ```json
-    [
-      {
-        "id": 101,
-        "username": "jan_kowalski",
-        "role": "client",
-        "name": "Jan",
-        "surname": "Kowalski",
-        "email": "jan@example.com",
-        "phone_number": "+48..."
-      }
-    ]
+    {
+      "content": [
+        {
+          "id": "92142266-cdf6-45dd-8749-4ff3de268feb",
+          "username": "user_1",
+          "role": "CLIENT",
+          "name": "Imie_1",
+          "surname": "Nazwisko_1",
+          "email": "user1@test.com",
+          "phone_number": "595883690"
+        },
+        {},
+       ],
+      "page": {
+        "size": 20,
+        "number": 0,
+        "totalElements": 4003,
+        "totalPages": 201
+        }
+    }
     ```
 
 ### Zablokuj użytkownika
 
 **PATCH** `/admins/banUser/:userId`
 
-* **Response (202 Accepted) - Zablokowany Użytkownik:**
+* **Response (200 OK) - Zablokowany Użytkownik:**
 
     ```json
-    {
-      "id": 101,
-      "username": "jan_kowalski",
-      "role": "blocked", // Rola zmieniona na zablokowaną
-      "name": "Jan",
-      "surname": "Kowalski"
-    }
+        {
+          "id": "1702fbf6-a13e-4e1e-91c4-eec1d6fc871e",
+          "username": "user_5",
+          "role": "BLOCKED",
+          "name": "Imie_5",
+          "surname": "Nazwisko_5",
+          "email": "user5@test.com",
+          "phone_number": "566212183"
+        }
     ```
 
 ### Pobierz wszystkie zamówienia (Widok Admina)
