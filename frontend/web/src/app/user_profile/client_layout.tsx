@@ -1,6 +1,18 @@
 "use client";
 
-export default function ClientLayout() {
+interface ClientLayoutProps {
+  data: {
+    name: string;
+    surname: string;
+    username: string;
+    phone_number: string;
+    email: string;
+    rating: number;
+    reviews: any[];
+  };
+}
+
+export default function ClientLayout({ data }: ClientLayoutProps) {
   return (
     <div
       className="grid grid-cols-2 grid-rows-1 justify-center items-center pl-10 pr-10 pt-10 pb-10 m-auto font-montserrat w-7xl"
@@ -26,20 +38,28 @@ export default function ClientLayout() {
           <div className="w-48 h-48 bg-[#D9D9D9] rounded-full flex items-center justify-center shrink-0 drop-shadow-lg/40 hover:ring-4 hover:ring-[#D9D9D9] transition-all hover:drop-shadow-xl/50">
             <span className="text-7xl">👤</span>
           </div>
-          <div className="flex text-black text-3xl pt-2">★★★★☆</div>
+          <div className="flex text-black text-3xl pt-2">
+            {[...Array(5)].map((_, i) => (
+              <span key={i}>
+                {i < Math.floor(data.rating || 0) ? "★" : "☆"}
+              </span>
+            ))}
+          </div>
         </div>
 
         <div className="flex flex-col justify-center items-center flex-1">
-          <h2 className="text-3xl font-light">Jan Kowalski</h2>
-          <p className="text-gray-600 text-lg mb-4">jkowalski</p>
+          <h2 className="text-3xl font-light">
+            {data.name} {data.surname}
+          </h2>
+          <p className="text-gray-600 text-lg mb-4">@{data.username}</p>
           <div className="space-y-1 mb-6">
             <div className="flex items-center gap-2">
               <span>📞</span>
-              <p className="">+48 123 456 789</p>
+              <p>{data.phone_number}</p>
             </div>
             <div className="flex items-center gap-2">
               <span>✉️</span>
-              <p className="">jkowalski@gmail.com</p>
+              <p>{data.email}</p>
             </div>
           </div>
         </div>
@@ -47,10 +67,21 @@ export default function ClientLayout() {
 
       <div className="bg-[#D9D9D9] rounded-4xl p-6 h-full w-[90%] flex flex-col">
         <h3 className="font-light text-lg mb-3 text-center">
-          Najnowsze opinie na temat jkowalski
+          Najnowsze opinie na temat {data.username}
         </h3>
 
-        <div className="flex-1">{/* Reviews content goes here */}</div>
+        <div className="flex-1">
+          {data.reviews?.length > 0 ? (
+            data.reviews.slice(0, 3).map((review, idx) => (
+              <div key={idx} className="mb-3 text-sm">
+                <p className="font-semibold">{review.author_id}</p>
+                <p className="text-gray-700">{review.body}</p>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-600 text-sm">Brak opinii</p>
+          )}
+        </div>
 
         <button className="w-full bg-gray-700 text-white rounded-2xl py-2 font-semibold hover:cursor-pointer hover:bg-primary-800 hover:ring-2 hover:ring-primary-800 transition-all text-sm mt-4">
           Sprawdź więcej opinii

@@ -38,6 +38,8 @@ export default function ProfilePage() {
           setIsOperator(false);
         }
 
+        console.log(userData);
+
         setProfileData(userData);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
@@ -73,5 +75,9 @@ export default function ProfilePage() {
     );
   }
 
-  return isOperator ? <OperatorLayout /> : <ClientLayout />;
+  return isOperator ? (
+    <OperatorLayout data={profileData as OperatorDto} />
+  ) : (
+    <ClientLayout data={profileData as ClientDto} />
+  );
 }
