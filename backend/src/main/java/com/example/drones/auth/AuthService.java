@@ -6,7 +6,7 @@ import com.example.drones.auth.dto.LoginResponse;
 import com.example.drones.auth.dto.RegisterRequest;
 import com.example.drones.auth.exceptions.InvalidCredentialsException;
 import com.example.drones.auth.exceptions.UserAlreadyExistsException;
-import com.example.drones.config.JwtService;
+import com.example.drones.common.config.auth.JwtService;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserMapper;
 import com.example.drones.user.UserRepository;
@@ -14,9 +14,14 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -38,20 +43,23 @@ public class AuthService {
         userRepository.save(user);
     }
 
+    @Transactional
     public LoginResponse login(LoginRequest request) {
+        Authentication authentication;
         try {
-            authenticationManager.authenticate(
+            authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.email(), request.password())
             );
 
-        } catch (BadCredentialsException e) {
+        } catch (InternalAuthenticationServiceException | BadCredentialsException e) {
             throw new InvalidCredentialsException();
 
         }
-        UserEntity user = userRepository.findByEmail(request.email())
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String jwtToken = jwtService.generateToken(UUID.fromString(userDetails.getUsername()));
+        UserEntity user = userRepository.findById(UUID.fromString(userDetails.getUsername()))
                 .orElseThrow(InvalidCredentialsException::new);
-        String jwtToken = jwtService.generateToken(user.getId());
-        return new LoginResponse(jwtToken);
+        return userMapper.toLoginResponse(user, jwtToken);
 
     }
 }

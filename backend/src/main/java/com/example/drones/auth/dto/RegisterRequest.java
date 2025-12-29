@@ -3,7 +3,9 @@ package com.example.drones.auth.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 
+@Builder
 public record RegisterRequest(
         @NotNull @JsonProperty("username") String displayName,
         @NotNull String password,

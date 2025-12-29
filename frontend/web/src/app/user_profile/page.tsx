@@ -1,38 +1,83 @@
-
 "use client";
 
-import Image from "next/image";
+import { useEffect, useState } from "react";
+import OperatorLayout from "./operator_layout";
+import ClientLayout from "./client_layout";
+import type { OperatorDto } from "./operator_dto";
+import type { ClientDto } from "./client_dto";
 
 export default function ProfilePage() {
+  const [profileData, setProfileData] = useState<
+    ClientDto | OperatorDto | null
+  >(null);
+  const [isOperator, setIsOperator] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        const userResponse = await fetch(`/api/user/getUserData`, {
+          headers: {
+            "X-USER-TOKEN": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!userResponse.ok) {
+          throw new Error("Failed to get user data");
+        }
+
+        const userData = await userResponse.json();
+
+        if (userData.role === "OPERATOR") {
+          setIsOperator(true);
+        } else {
+          setIsOperator(false);
+        }
+
+        console.log(userData);
+
+        setProfileData(userData);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, []);
+
+  if (loading) {
     return (
-        <div className="min-h-screen flex justify-center">
-            <div className="w-full max-w-5xl bg-white shadow-lg rounded-lg p-6">
-                {/* Header */}
-                <div className="flex items-center space-x-6 mb-6">
-                    <div className="w-24 h-24 relative">
-                        <Image
-                            src="/dron.png" // replace with actual image or avatar
-                            alt="Profile Avatar"
-                            fill
-                            className="rounded-full object-cover"
-                        />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold">John Doe</h1>
-                        <p className="text-gray-500">johndoe@example.com</p>
-                    </div>
-                </div>
-                <div className="space-y-4">
-                    <div className="bg-gray-50 p-4 rounded">
-                        <h2 className="font-semibold text-lg mb-1">About Me</h2>
-                        <p className="text-gray-600">
-                            This is a placeholder bio. You can update it with user information.
-                        </p>
-                    </div>
-
-                </div>
-
-            </div>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        Ładowanie...
+      </div>
     );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-red-600">
+        {error}
+      </div>
+    );
+  }
+
+  if (!profileData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Brak danych
+      </div>
+    );
+  }
+
+  return isOperator ? (
+    <OperatorLayout data={profileData as OperatorDto} />
+  ) : (
+    <ClientLayout data={profileData as ClientDto} />
+  );
 }
