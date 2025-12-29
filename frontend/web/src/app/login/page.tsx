@@ -19,7 +19,10 @@ export default function AuthPage() {
   }, [router]);
 
   return (
-    <div className="max-w-full w-screen h-screen max-h-full flex p-8 gap-6">
+    <div
+      style={{ height: "calc(100vh - 120px)" }}
+      className="max-w-full w-screen max-h-full  flex p-8 gap-6"
+    >
       <div className="w-2/5 rounded-2xl flex flex-col items-center justify-center p-8">
         {activeForm === "none" && (
           <div className="flex flex-col gap-4 w-full max-w-xs opacity-0 animate-fadeIn">
