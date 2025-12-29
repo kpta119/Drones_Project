@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -45,5 +46,29 @@ public class OrdersController {
         UUID currentUserId = jwtService.extractUserId();
         OrderResponse response = ordersService.acceptOrder(orderId, operatorId, currentUserId);
         return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/rejectOrder/{orderId}")
+    public ResponseEntity<Void> rejectOrder(
+            @PathVariable UUID orderId,
+            @RequestParam(required = false) UUID operatorId
+    ) {
+        UUID currentUserId = jwtService.extractUserId();
+        ordersService.rejectOrder(orderId, operatorId, currentUserId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/cancelOrder/{orderId}")
+    public ResponseEntity<OrderResponse> cancelOrder(@PathVariable UUID orderId) {
+        UUID currentUserId = jwtService.extractUserId();
+        OrderResponse response = ordersService.cancelOrder(orderId, currentUserId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/getOrders/{status}")
+    public ResponseEntity<List<OrderResponse>> getOrders(@PathVariable String status) {
+        List<OrderResponse> responses = ordersService.getOrdersByStatus(status);
+
+        return ResponseEntity.ok(responses);
     }
 }

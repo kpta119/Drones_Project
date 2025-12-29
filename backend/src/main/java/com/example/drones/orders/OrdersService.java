@@ -14,11 +14,14 @@ import com.example.drones.user.UserRepository;
 import com.example.drones.user.UserRole;
 import com.example.drones.user.exceptions.NotOperatorException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -34,6 +37,7 @@ public class OrdersService {
     private final MatchingService matchingService;
 
     @Transactional
+    @CacheEvict(value = "orders", key = "'open'")
     public OrderResponse createOrder(OrderRequest request, UUID userId) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
@@ -53,6 +57,7 @@ public class OrdersService {
     }
 
     @Transactional
+    @CacheEvict(value = "orders", allEntries = true)
     public OrderResponse editOrder(UUID orderId, OrderUpdateRequest request, UUID userId) {
         OrdersEntity order = ordersRepository.findById(orderId)
                 .orElseThrow(OrderNotFoundException::new);
@@ -78,6 +83,7 @@ public class OrdersService {
     }
 
     @Transactional
+    @CacheEvict(value = "orders", allEntries = true)
     public OrderResponse acceptOrder(UUID orderId, UUID operatorIdParam, UUID currentUserId) {
         UserEntity currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(UserNotFoundException::new);
@@ -87,7 +93,7 @@ public class OrdersService {
 
         NewMatchedOrderEntity match;
         if (operatorIdParam == null) {
-            // Akceptuje operator
+            // Operator accepts
             if (currentUser.getRole() != UserRole.OPERATOR) {
                 throw new NotOperatorException();
             }
@@ -101,7 +107,7 @@ public class OrdersService {
             match.setOperatorStatus(MatchedOrderStatus.ACCEPTED);
             foundOrder.setStatus(OrderStatus.AWAITING_OPERATOR);
         } else {
-            // Akceptuje zleceniodawca
+            // Client accepts
             if (!foundOrder.getUser().getId().equals(currentUserId)) {
                 throw new NotOwnerOfOrderException();
             }
@@ -117,5 +123,76 @@ public class OrdersService {
         newMatchedOrdersRepository.save(match);
         ordersRepository.save(foundOrder);
         return ordersMapper.toResponse(foundOrder);
+    }
+
+    @Transactional
+    @CacheEvict(value = "orders", allEntries = true)
+    public void rejectOrder(UUID orderId, UUID operatorIdParam, UUID currentUserId) {
+        UserEntity currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(UserNotFoundException::new);
+
+        OrdersEntity foundOrder = ordersRepository.findById(orderId)
+                .orElseThrow(OrderNotFoundException::new);
+
+        NewMatchedOrderEntity match;
+
+        if (operatorIdParam == null) {
+            // Operator rejects an order
+            if (currentUser.getRole() != UserRole.OPERATOR) {
+                throw new NotOperatorException();
+            }
+
+            match = newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, currentUserId)
+                    .orElseThrow(MatchedOrderNotFoundException::new);
+
+            match.setOperatorStatus(MatchedOrderStatus.REJECTED);
+        } else {
+            // Client rejects an operator
+            if (!foundOrder.getUser().getId().equals(currentUserId)) {
+                throw new NotOwnerOfOrderException();
+            }
+
+            match = newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operatorIdParam)
+                    .orElseThrow(MatchedOrderNotFoundException::new);
+
+            match.setClientStatus(MatchedOrderStatus.REJECTED);
+        }
+
+        newMatchedOrdersRepository.save(match);
+    }
+
+    @Transactional
+    @CacheEvict(value = "orders", allEntries = true)
+    public OrderResponse cancelOrder(UUID orderId, UUID currentUserId) {
+        OrdersEntity order = ordersRepository.findById(orderId)
+                .orElseThrow(OrderNotFoundException::new);
+
+        if (!order.getUser().getId().equals(currentUserId)) {
+            throw new NotOwnerOfOrderException();
+        }
+
+        if (order.getStatus() == OrderStatus.COMPLETED) {
+            throw new IllegalOrderStateException();
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        OrdersEntity savedOrder = ordersRepository.save(order);
+        return ordersMapper.toResponse(savedOrder);
+    }
+
+    @Cacheable(value = "orders", key = "#statusStr")
+    public List<OrderResponse> getOrdersByStatus(String statusStr) {
+        OrderStatus status;
+        try {
+            status = OrderStatus.valueOf(statusStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalOrderStatusException(statusStr);
+        }
+
+        List<OrdersEntity> orders = ordersRepository.findAllByStatus(status);
+
+        return orders.stream()
+                .map(ordersMapper::toResponse)
+                .toList();
     }
 }

@@ -4,7 +4,6 @@ import com.example.drones.services.ServicesEntity;
 import com.example.drones.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -48,7 +47,7 @@ public class OrdersEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "order_status")
-    @ColumnTransformer(write = "?::order_status")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private OrderStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
