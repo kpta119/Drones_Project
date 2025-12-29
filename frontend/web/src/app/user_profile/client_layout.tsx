@@ -1,5 +1,7 @@
 "use client";
 
+import { ReviewDto } from "./client_dto";
+
 interface ClientLayoutProps {
   data: {
     name: string;
@@ -8,7 +10,7 @@ interface ClientLayoutProps {
     phone_number: string;
     email: string;
     rating: number;
-    reviews: any[];
+    reviews: ReviewDto[];
   };
 }
 

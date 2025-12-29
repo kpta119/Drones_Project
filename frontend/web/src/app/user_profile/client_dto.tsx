@@ -14,5 +14,5 @@ export interface ReviewDto {
   id: number;
   body: string;
   stars: number;
-  authorId: string;
+  author_id: string;
 }
