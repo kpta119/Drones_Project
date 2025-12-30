@@ -5,6 +5,10 @@ import com.example.drones.operators.dto.CreateOperatorProfileDto;
 import com.example.drones.operators.dto.CreatePortfolioDto;
 import com.example.drones.operators.dto.OperatorProfileDto;
 import com.example.drones.operators.dto.UpdatePortfolioDto;
+import com.example.drones.orders.MatchedOrderStatus;
+import com.example.drones.orders.NewMatchedOrderEntity;
+import com.example.drones.orders.OrderStatus;
+import com.example.drones.orders.OrdersEntity;
 import com.example.drones.photos.PhotoEntity;
 import com.example.drones.services.OperatorServicesEntity;
 import com.example.drones.services.OperatorServicesRepository;
@@ -64,6 +68,10 @@ public class OperatorsIntegrationTests {
     private JwtService jwtService;
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private com.example.drones.orders.OrdersRepository ordersRepository;
+    @Autowired
+    private com.example.drones.orders.NewMatchedOrdersRepository newMatchedOrdersRepository;
 
     private UserEntity testUser;
     private String jwtToken;
@@ -561,6 +569,216 @@ public class OperatorsIntegrationTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-USER-TOKEN", "Bearer " + jwtToken))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void givenValidOrderWithMultipleInterestedOperators_whenGetOperatorsInfo_thenReturnsOkWithOperatorsList() throws Exception {
+        ServicesEntity service = servicesRepository.findById("Aerial Photography").orElseThrow();
+
+        OrdersEntity order = OrdersEntity.builder()
+                .title("Real Estate Photography")
+                .description("Need aerial photos of property")
+                .user(testUser)
+                .service(service)
+                .coordinates("52.2297,21.0122")
+                .status(OrderStatus.OPEN)
+                .createdAt(java.time.LocalDateTime.now())
+                .fromDate(java.time.LocalDateTime.now().plusDays(1))
+                .toDate(java.time.LocalDateTime.now().plusDays(2))
+                .build();
+        order = ordersRepository.save(order);
+
+        UserEntity operator1 = UserEntity.builder()
+                .displayName("operator1")
+                .name("John")
+                .surname("Smith")
+                .email("john.operator@test.com")
+                .password(passwordEncoder.encode("password123"))
+                .phoneNumber("111222333")
+                .role(UserRole.OPERATOR)
+                .certificates(List.of("UAV License", "Commercial Pilot"))
+                .build();
+        operator1 = userRepository.save(operator1);
+
+        UserEntity operator2 = UserEntity.builder()
+                .displayName("operator2")
+                .name("Jane")
+                .surname("Doe")
+                .email("jane.operator@test.com")
+                .password(passwordEncoder.encode("password123"))
+                .phoneNumber("444555666")
+                .role(UserRole.OPERATOR)
+                .certificates(List.of("Advanced Drone License"))
+                .build();
+        operator2 = userRepository.save(operator2);
+
+        NewMatchedOrderEntity match1 = NewMatchedOrderEntity.builder()
+                .order(order)
+                .operator(operator1)
+                .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                .clientStatus(MatchedOrderStatus.PENDING)
+                .build();
+        newMatchedOrdersRepository.save(match1);
+
+        NewMatchedOrderEntity match2 = NewMatchedOrderEntity.builder()
+                .order(order)
+                .operator(operator2)
+                .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                .clientStatus(MatchedOrderStatus.PENDING)
+                .build();
+        newMatchedOrdersRepository.save(match2);
+
+        mockMvc.perform(get("/api/operators/getOperatorsInfo/{orderId}", order.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].user_id").exists())
+                .andExpect(jsonPath("$[0].username").exists())
+                .andExpect(jsonPath("$[0].name").exists())
+                .andExpect(jsonPath("$[0].surname").exists())
+                .andExpect(jsonPath("$[0].certificates").isArray())
+                .andExpect(jsonPath("$[1].user_id").exists())
+                .andExpect(jsonPath("$[1].username").exists())
+                .andExpect(jsonPath("$[1].name").exists())
+                .andExpect(jsonPath("$[1].surname").exists())
+                .andExpect(jsonPath("$[1].certificates").isArray());
+    }
+
+    @Test
+    void givenValidOrderWithNoInterestedOperators_whenGetOperatorsInfo_thenReturnsOkWithEmptyList() throws Exception {
+        ServicesEntity service = servicesRepository.findById("Surveying").orElseThrow();
+
+        OrdersEntity order = OrdersEntity.builder()
+                .title("Land Survey")
+                .description("Need topographic survey")
+                .user(testUser)
+                .service(service)
+                .coordinates("52.2400,21.0300")
+                .status(OrderStatus.OPEN)
+                .createdAt(java.time.LocalDateTime.now())
+                .fromDate(java.time.LocalDateTime.now().plusDays(1))
+                .toDate(java.time.LocalDateTime.now().plusDays(2))
+                .build();
+        order = ordersRepository.save(order);
+
+        mockMvc.perform(get("/api/operators/getOperatorsInfo/{orderId}", order.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void givenOrderWithOnlyPendingOperators_whenGetOperatorsInfo_thenReturnsOkWithEmptyList() throws Exception {
+        ServicesEntity service = servicesRepository.findById("Delivery").orElseThrow();
+
+        OrdersEntity order = OrdersEntity.builder()
+                .title("Package Delivery")
+                .description("Need urgent delivery")
+                .user(testUser)
+                .service(service)
+                .coordinates("52.2500,21.0400")
+                .status(OrderStatus.OPEN)
+                .createdAt(java.time.LocalDateTime.now())
+                .fromDate(java.time.LocalDateTime.now().plusHours(2))
+                .toDate(java.time.LocalDateTime.now().plusHours(4))
+                .build();
+        order = ordersRepository.save(order);
+
+        UserEntity operator = UserEntity.builder()
+                .displayName("pendingOperator")
+                .name("Pending")
+                .surname("Operator")
+                .email("pending.operator@test.com")
+                .password(passwordEncoder.encode("password123"))
+                .phoneNumber("777888999")
+                .role(UserRole.OPERATOR)
+                .certificates(List.of("Basic License"))
+                .build();
+        operator = userRepository.save(operator);
+
+        NewMatchedOrderEntity match = NewMatchedOrderEntity.builder()
+                .order(order)
+                .operator(operator)
+                .operatorStatus(MatchedOrderStatus.PENDING)
+                .clientStatus(MatchedOrderStatus.PENDING)
+                .build();
+        newMatchedOrdersRepository.save(match);
+
+        mockMvc.perform(get("/api/operators/getOperatorsInfo/{orderId}", order.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void givenNonExistentOrderId_whenGetOperatorsInfo_thenReturnsNotFound() throws Exception {
+        UUID nonExistentOrderId = UUID.randomUUID();
+
+        mockMvc.perform(get("/api/operators/getOperatorsInfo/{orderId}", nonExistentOrderId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void givenOrderBelongingToAnotherUser_whenGetOperatorsInfo_thenReturnsUnauthorized() throws Exception {
+        UserEntity anotherUser = UserEntity.builder()
+                .displayName("anotherClient")
+                .name("Another")
+                .surname("Client")
+                .email("another.client@test.com")
+                .password(passwordEncoder.encode("password123"))
+                .phoneNumber("999888777")
+                .role(UserRole.CLIENT)
+                .build();
+        anotherUser = userRepository.save(anotherUser);
+
+        ServicesEntity service = servicesRepository.findById("Aerial Photography").orElseThrow();
+        OrdersEntity order = OrdersEntity.builder()
+                .title("Private Order")
+                .description("This is someone else's order")
+                .user(anotherUser)
+                .service(service)
+                .coordinates("52.2700,21.0600")
+                .status(OrderStatus.OPEN)
+                .createdAt(java.time.LocalDateTime.now())
+                .fromDate(java.time.LocalDateTime.now().plusDays(1))
+                .toDate(java.time.LocalDateTime.now().plusDays(2))
+                .build();
+        order = ordersRepository.save(order);
+
+        mockMvc.perform(get("/api/operators/getOperatorsInfo/{orderId}", order.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void givenNoAuthToken_whenGetOperatorsInfo_thenReturnsForbidden() throws Exception {
+        ServicesEntity service = servicesRepository.findById("Aerial Photography").orElseThrow();
+
+        OrdersEntity order = OrdersEntity.builder()
+                .title("Test Order")
+                .description("Test description")
+                .user(testUser)
+                .service(service)
+                .coordinates("52.2800,21.0700")
+                .status(OrderStatus.OPEN)
+                .createdAt(java.time.LocalDateTime.now())
+                .fromDate(java.time.LocalDateTime.now().plusDays(1))
+                .toDate(java.time.LocalDateTime.now().plusDays(2))
+                .build();
+        order = ordersRepository.save(order);
+
+        mockMvc.perform(get("/api/operators/getOperatorsInfo/{orderId}", order.getId())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
     }
 
 }

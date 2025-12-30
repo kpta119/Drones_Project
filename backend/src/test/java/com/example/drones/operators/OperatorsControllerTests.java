@@ -320,4 +320,42 @@ public class OperatorsControllerTests {
                 .hasMessage("No operator profile found for this user.");
         verify(operatorsService).getOperatorProfile(userId);
     }
+
+    @Test
+    public void givenValidOrderId_whenGetOperatorsInfo_thenReturnsOk() {
+        UUID orderId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID operator1Id = UUID.randomUUID();
+        UUID operator2Id = UUID.randomUUID();
+
+        MatchingOperatorDto operator1 = new MatchingOperatorDto(
+                operator1Id,
+                "operator1",
+                "John",
+                "Smith",
+                List.of("UAV License", "Advanced Drone Pilot")
+        );
+
+        MatchingOperatorDto operator2 = new MatchingOperatorDto(
+                operator2Id,
+                "operator2",
+                "Jane",
+                "Doe",
+                List.of("Commercial Drone License")
+        );
+
+        List<MatchingOperatorDto> matchingOperators = List.of(operator1, operator2);
+
+        when(jwtService.extractUserId()).thenReturn(userId);
+        when(operatorsService.getOperatorInfo(userId, orderId)).thenReturn(matchingOperators);
+
+        ResponseEntity<List<MatchingOperatorDto>> response = operatorsController.getOperatorsInfo(orderId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody()).hasSize(2);
+        assertThat(response.getBody()).containsExactly(operator1, operator2);
+        verify(jwtService).extractUserId();
+        verify(operatorsService).getOperatorInfo(userId, orderId);
+    }
 }

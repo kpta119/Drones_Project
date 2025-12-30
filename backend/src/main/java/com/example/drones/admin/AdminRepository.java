@@ -36,27 +36,27 @@ interface AdminRepository extends JpaRepository<UserEntity, UUID> {
     Page<UserDto> findAllByQueryAndRole(@Param("query") String query, @Param("role") UserRole role, Pageable pageable);
 
     @Query(""" 
-        SELECT new com.example.drones.admin.dto.OrderDto(
-            o.id,
-            o.title,
-            o.description,
-            o.service.name,
-            o.coordinates,
-            o.fromDate,
-            o.toDate,
-            o.status,
-            o.createdAt,
-            o.user.id,
-            CASE
-                WHEN o.status IN :visibleStatuses THEN nmo.operator.id
-                ELSE null
-            END
-        )
-        FROM OrdersEntity o
-        LEFT JOIN NewMatchedOrderEntity nmo ON nmo.order = o
-            AND nmo.clientStatus = :acceptedStatus
-            AND nmo.operatorStatus = :acceptedStatus
-        """)
+            SELECT new com.example.drones.admin.dto.OrderDto(
+                o.id,
+                o.title,
+                o.description,
+                o.service.name,
+                o.coordinates,
+                o.fromDate,
+                o.toDate,
+                o.status,
+                o.createdAt,
+                o.user.id,
+                CASE
+                    WHEN o.status IN :visibleStatuses THEN nmo.operator.id
+                    ELSE null
+                END
+            )
+            FROM OrdersEntity o
+            LEFT JOIN NewMatchedOrderEntity nmo ON nmo.order = o
+                AND nmo.clientStatus = :acceptedStatus
+                AND nmo.operatorStatus = :acceptedStatus
+            """)
     Page<OrderDto> findAllOrders(
             @Param("visibleStatuses") List<OrderStatus> visibleStatuses,
             @Param("acceptedStatus") MatchedOrderStatus acceptedStatus,

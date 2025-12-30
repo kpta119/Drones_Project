@@ -1,11 +1,16 @@
 package com.example.drones.operators;
 
+import com.example.drones.auth.exceptions.InvalidCredentialsException;
 import com.example.drones.common.config.exceptions.UserNotFoundException;
 import com.example.drones.operators.dto.*;
 import com.example.drones.operators.exceptions.NoSuchOperatorException;
 import com.example.drones.operators.exceptions.NoSuchPortfolioException;
 import com.example.drones.operators.exceptions.OperatorAlreadyExistsException;
 import com.example.drones.operators.exceptions.PortfolioAlreadyExistsException;
+import com.example.drones.orders.NewMatchedOrdersRepository;
+import com.example.drones.orders.OrdersEntity;
+import com.example.drones.orders.OrdersRepository;
+import com.example.drones.orders.exceptions.OrderNotFoundException;
 import com.example.drones.services.OperatorServicesService;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserMapper;
@@ -39,6 +44,10 @@ public class OperatorsServiceTests {
     private UserMapper operatorMapper;
     @Mock
     private PortfolioMapper portfolioMapper;
+    @Mock
+    private OrdersRepository ordersRepository;
+    @Mock
+    private NewMatchedOrdersRepository newMatchedOrdersRepository;
 
     @InjectMocks
     private OperatorsService service;
@@ -844,6 +853,196 @@ public class OperatorsServiceTests {
         verify(operatorServicesService).getOperatorServices(operator);
         verify(portfolioMapper).toOperatorPortfolioDto(null);
         verify(operatorMapper).toOperatorDto(operator, emptyServices, null);
+    }
+
+    @Test
+    public void givenValidOrderAndUser_whenGetOperatorInfo_thenReturnsListOfMatchingOperators() {
+        UUID userId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+        UUID operator1Id = UUID.randomUUID();
+        UUID operator2Id = UUID.randomUUID();
+
+        UserEntity client = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.CLIENT)
+                .build();
+
+        OrdersEntity order = OrdersEntity.builder()
+                .id(orderId)
+                .user(client)
+                .build();
+
+        UserEntity operator1 = UserEntity.builder()
+                .id(operator1Id)
+                .name("John")
+                .surname("Smith")
+                .displayName("operator1")
+                .role(UserRole.OPERATOR)
+                .certificates(List.of("UAV License", "Commercial Pilot"))
+                .build();
+
+        UserEntity operator2 = UserEntity.builder()
+                .id(operator2Id)
+                .name("Jane")
+                .surname("Doe")
+                .displayName("operator2")
+                .role(UserRole.OPERATOR)
+                .certificates(List.of("Basic UAV License"))
+                .build();
+
+        List<UserEntity> matchedOperators = List.of(operator1, operator2);
+
+        MatchingOperatorDto matchingDto1 = new MatchingOperatorDto(
+                operator1Id,
+                "operator1",
+                "John",
+                "Smith",
+                List.of("UAV License", "Commercial Pilot")
+        );
+
+        MatchingOperatorDto matchingDto2 = new MatchingOperatorDto(
+                operator2Id,
+                "operator2",
+                "Jane",
+                "Doe",
+                List.of("Basic UAV License")
+        );
+
+        when(ordersRepository.findByIdWithUser(orderId)).thenReturn(Optional.of(order));
+        when(newMatchedOrdersRepository.findInterestedOperatorByOrderId(orderId)).thenReturn(matchedOperators);
+        when(operatorMapper.toMatchingOperatorDto(operator1)).thenReturn(matchingDto1);
+        when(operatorMapper.toMatchingOperatorDto(operator2)).thenReturn(matchingDto2);
+
+        List<MatchingOperatorDto> result = service.getOperatorInfo(userId, orderId);
+
+        assertThat(result).hasSize(2);
+        assertThat(result).containsExactly(matchingDto1, matchingDto2);
+        verify(ordersRepository).findByIdWithUser(orderId);
+        verify(newMatchedOrdersRepository).findInterestedOperatorByOrderId(orderId);
+        verify(operatorMapper).toMatchingOperatorDto(operator1);
+        verify(operatorMapper).toMatchingOperatorDto(operator2);
+    }
+
+    @Test
+    public void givenValidOrderWithNoMatchedOperators_whenGetOperatorInfo_thenReturnsEmptyList() {
+        UUID userId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+
+        UserEntity client = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.CLIENT)
+                .build();
+
+        OrdersEntity order = OrdersEntity.builder()
+                .id(orderId)
+                .user(client)
+                .build();
+
+        List<UserEntity> emptyMatchedOperators = List.of();
+
+        when(ordersRepository.findByIdWithUser(orderId)).thenReturn(Optional.of(order));
+        when(newMatchedOrdersRepository.findInterestedOperatorByOrderId(orderId)).thenReturn(emptyMatchedOperators);
+
+        List<MatchingOperatorDto> result = service.getOperatorInfo(userId, orderId);
+
+        assertThat(result).isEmpty();
+        verify(ordersRepository).findByIdWithUser(orderId);
+        verify(newMatchedOrdersRepository).findInterestedOperatorByOrderId(orderId);
+        verify(operatorMapper, never()).toMatchingOperatorDto(any());
+    }
+
+    @Test
+    public void givenOrderNotFound_whenGetOperatorInfo_thenThrowsOrderNotFoundException() {
+        UUID userId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+
+        when(ordersRepository.findByIdWithUser(orderId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getOperatorInfo(userId, orderId))
+                .isInstanceOf(OrderNotFoundException.class);
+
+        verify(ordersRepository).findByIdWithUser(orderId);
+        verify(newMatchedOrdersRepository, never()).findInterestedOperatorByOrderId(any());
+        verify(operatorMapper, never()).toMatchingOperatorDto(any());
+    }
+
+    @Test
+    public void givenOrderBelongsToAnotherUser_whenGetOperatorInfo_thenThrowsInvalidCredentialsException() {
+        UUID userId = UUID.randomUUID();
+        UUID anotherUserId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+
+        UserEntity anotherClient = UserEntity.builder()
+                .id(anotherUserId)
+                .role(UserRole.CLIENT)
+                .build();
+
+        OrdersEntity order = OrdersEntity.builder()
+                .id(orderId)
+                .user(anotherClient)
+                .build();
+
+        when(ordersRepository.findByIdWithUser(orderId)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> service.getOperatorInfo(userId, orderId))
+                .isInstanceOf(InvalidCredentialsException.class);
+
+        verify(ordersRepository).findByIdWithUser(orderId);
+        verify(newMatchedOrdersRepository, never()).findInterestedOperatorByOrderId(any());
+        verify(operatorMapper, never()).toMatchingOperatorDto(any());
+    }
+
+    @Test
+    public void givenValidOrderWithSingleOperator_whenGetOperatorInfo_thenReturnsSingleOperator() {
+        UUID userId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+        UUID operatorId = UUID.randomUUID();
+
+        UserEntity client = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.CLIENT)
+                .build();
+
+        OrdersEntity order = OrdersEntity.builder()
+                .id(orderId)
+                .user(client)
+                .build();
+
+        UserEntity operator = UserEntity.builder()
+                .id(operatorId)
+                .name("Alice")
+                .surname("Operator")
+                .displayName("alice_operator")
+                .role(UserRole.OPERATOR)
+                .certificates(List.of("Advanced Drone License", "Night Flight Certification"))
+                .build();
+
+        List<UserEntity> matchedOperators = List.of(operator);
+
+        MatchingOperatorDto matchingDto = new MatchingOperatorDto(
+                operatorId,
+                "alice_operator",
+                "Alice",
+                "Operator",
+                List.of("Advanced Drone License", "Night Flight Certification")
+        );
+
+        when(ordersRepository.findByIdWithUser(orderId)).thenReturn(Optional.of(order));
+        when(newMatchedOrdersRepository.findInterestedOperatorByOrderId(orderId)).thenReturn(matchedOperators);
+        when(operatorMapper.toMatchingOperatorDto(operator)).thenReturn(matchingDto);
+
+        List<MatchingOperatorDto> result = service.getOperatorInfo(userId, orderId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst()).isEqualTo(matchingDto);
+        assertThat(result.getFirst().userId()).isEqualTo(operatorId);
+        assertThat(result.getFirst().displayName()).isEqualTo("alice_operator");
+        assertThat(result.getFirst().name()).isEqualTo("Alice");
+        assertThat(result.getFirst().surname()).isEqualTo("Operator");
+        assertThat(result.getFirst().certificates()).hasSize(2);
+        verify(ordersRepository).findByIdWithUser(orderId);
+        verify(newMatchedOrdersRepository).findInterestedOperatorByOrderId(orderId);
+        verify(operatorMapper).toMatchingOperatorDto(operator);
     }
 }
 
