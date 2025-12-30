@@ -195,4 +195,12 @@ public class OrdersService {
                 .map(ordersMapper::toResponse)
                 .toList();
     }
+
+    public List<OrderResponse> getMyOrders(UUID userId) {
+        List<OrdersEntity> orders = ordersRepository.findAllByUser_IdOrderByCreatedAtDesc(userId);
+
+        return orders.stream()
+                .map(ordersMapper::toResponse)
+                .toList();
+    }
 }
