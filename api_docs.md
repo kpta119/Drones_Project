@@ -277,6 +277,28 @@ Odrzucenie operatora przez zleceniodawce i na odwrót nie wpływa na staus zlece
     ]
     ```
 
+### Pobierz listę zleceń uzytkownika
+**GET** `/getMyOrders`
+* **Response (200 OK):**
+
+    ```json
+    [
+      {
+        "id": 10,
+        "title": "Inspekcja dachu kamienicy",
+        "clientId": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
+        "description": "Potrzebuję nagrania inspekcyjnego dachu.",
+        "service": "Kopanie rowów",
+        "parameters": {
+          "cecha": "wartość_cechy"
+        },
+        "coordinates": "52.2300,21.0100",
+        "from_date": "2025-06-10T10:00:00",
+        "to_date": "2025-06-10T12:00:00",
+        "status": "open"
+      }
+    ]
+    ```
 ---
 
 ## 4. Operatorzy (Operators)
