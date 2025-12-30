@@ -280,7 +280,7 @@ Odrzucenie operatora przez zleceniodawce i na odwrót nie wpływa na staus zlece
 ### Pobierz listę zleceń uzytkownika
 **GET** `/getMyOrders`
 * **Response (200 OK):**
-
+Zwraca zlecenia użytkownika o `userId` zawartym w `JWT tokenie`
     ```json
     [
       {
