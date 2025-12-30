@@ -9,6 +9,7 @@ import com.example.drones.orders.exceptions.IllegalOrderStatusException;
 import com.example.drones.orders.exceptions.OrderNotFoundException;
 import com.example.drones.reviews.dto.ReviewRequest;
 import com.example.drones.reviews.dto.ReviewResponse;
+import com.example.drones.reviews.dto.UserReviewResponse;
 import com.example.drones.reviews.exceptions.IllegalOrderStateToReviewException;
 import com.example.drones.reviews.exceptions.IllegalTargetOfReviewException;
 import com.example.drones.reviews.exceptions.ReviewAlreadyExistsException;
@@ -18,6 +19,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -58,5 +60,14 @@ public class ReviewsService {
 
         ReviewEntity savedReview = reviewsRepository.save(review);
         return reviewMapper.toResponse(savedReview);
+    }
+
+    public List<UserReviewResponse> getUserReviews(UUID userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new UserNotFoundException();
+        }
+
+        List<ReviewEntity> reviews = reviewsRepository.findAllByTargetId(userId);
+        return reviewMapper.toUserReviewResponseList(reviews);
     }
 }

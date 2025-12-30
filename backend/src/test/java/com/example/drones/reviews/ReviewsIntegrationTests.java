@@ -661,4 +661,380 @@ public class ReviewsIntegrationTests {
         List<ReviewEntity> reviews = reviewsRepository.findAll();
         assertThat(reviews).hasSize(1);
     }
+
+
+    @Test
+    void givenUserWithReviews_whenGetUserReviews_thenReturnsAllReviewsForThatUser() {
+        // Given: Klient z dwiema recenzjami od różnych operatorów
+        String clientToken = registerAndLoginClient();
+        UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
+
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator1 = createTestOperator("operator_reviews1", "52.2200, 21.0100", 20, service);
+        UserEntity operator2 = createTestOperator("operator_reviews2", "52.2200, 21.0100", 20, service);
+
+        OrdersEntity order1 = createCompletedOrder(client, operator1);
+        OrdersEntity order2 = createCompletedOrder(client, operator2);
+
+        // Operator 1 tworzy recenzję dla klienta
+        String operator1Token = loginAsOperator("operator_reviews1@op.pl");
+        ReviewRequest review1 = ReviewRequest.builder()
+                .stars(5)
+                .body("Great client to work with!")
+                .build();
+
+        HttpEntity<ReviewRequest> request1 = new HttpEntity<>(review1, getHeaders(operator1Token));
+        testRestTemplate.exchange(
+                "/api/reviews/createReview/" + order1.getId() + "/" + client.getId(),
+                HttpMethod.POST,
+                request1,
+                ReviewResponse.class
+        );
+
+        // Operator 2 tworzy recenzję dla klienta
+        String operator2Token = loginAsOperator("operator_reviews2@op.pl");
+        ReviewRequest review2 = ReviewRequest.builder()
+                .stars(4)
+                .body("Good communication.")
+                .build();
+
+        HttpEntity<ReviewRequest> request2 = new HttpEntity<>(review2, getHeaders(operator2Token));
+        testRestTemplate.exchange(
+                "/api/reviews/createReview/" + order2.getId() + "/" + client.getId(),
+                HttpMethod.POST,
+                request2,
+                ReviewResponse.class
+        );
+
+        // When: Pobieramy recenzje użytkownika
+        HttpEntity<Void> getEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<List<com.example.drones.reviews.dto.UserReviewResponse>> getResponse = testRestTemplate.exchange(
+                "/api/reviews/getUserReviews/" + client.getId(),
+                HttpMethod.GET,
+                getEntity,
+                new org.springframework.core.ParameterizedTypeReference<>() {}
+        );
+
+        // Then: Zwrócone są obie recenzje
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse.getBody()).isNotNull();
+        assertThat(getResponse.getBody()).hasSize(2);
+
+        List<com.example.drones.reviews.dto.UserReviewResponse> reviews = getResponse.getBody();
+
+        // Weryfikacja zawartości recenzji
+        boolean hasOperator1Review = reviews.stream()
+                .anyMatch(r -> r.getStars() == 5 && r.getBody().equals("Great client to work with!"));
+        assertThat(hasOperator1Review).isTrue();
+
+        boolean hasOperator2Review = reviews.stream()
+                .anyMatch(r -> r.getStars() == 4 && r.getBody().equals("Good communication."));
+        assertThat(hasOperator2Review).isTrue();
+    }
+
+    @Test
+    void givenUserWithNoReviews_whenGetUserReviews_thenReturnsEmptyList() {
+        // Given: Zarejestrowany klient bez recenzji
+        String clientToken = registerAndLoginClient();
+        UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
+
+        // When: Pobieramy recenzje użytkownika bez recenzji
+        HttpEntity<Void> getEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<List<com.example.drones.reviews.dto.UserReviewResponse>> getResponse = testRestTemplate.exchange(
+                "/api/reviews/getUserReviews/" + client.getId(),
+                HttpMethod.GET,
+                getEntity,
+                new org.springframework.core.ParameterizedTypeReference<>() {}
+        );
+
+        // Then: Zwrócona jest pusta lista
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse.getBody()).isNotNull();
+        assertThat(getResponse.getBody()).isEmpty();
+    }
+
+    @Test
+    void givenNonExistentUser_whenGetUserReviews_thenReturnsNotFound() {
+        // Given: Zarejestrowany klient
+        String clientToken = registerAndLoginClient();
+        UUID nonExistentUserId = UUID.randomUUID();
+
+        // When: Próba pobrania recenzji dla nieistniejącego użytkownika
+        HttpEntity<Void> getEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<String> getResponse = testRestTemplate.exchange(
+                "/api/reviews/getUserReviews/" + nonExistentUserId,
+                HttpMethod.GET,
+                getEntity,
+                String.class
+        );
+
+        // Then: Zwrócony błąd - użytkownik nie istnieje
+        assertThat(getResponse.getStatusCode().is4xxClientError()).isTrue();
+    }
+
+    @Test
+    void givenOperatorWithReviews_whenGetUserReviews_thenReturnsAllReviewsForOperator() {
+        // Given: Operator z recenzjami od różnych klientów
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator = createTestOperator("operator_reviews3", "52.2200, 21.0100", 20, service);
+
+        // Pierwszy klient
+        String client1Token = registerAndLoginClient();
+        UserEntity client1 = userRepository.findByEmail("client@example.com").orElseThrow();
+
+        OrdersEntity order1 = createCompletedOrder(client1, operator);
+
+        ReviewRequest review1 = ReviewRequest.builder()
+                .stars(5)
+                .body("Excellent operator!")
+                .build();
+
+        HttpEntity<ReviewRequest> request1 = new HttpEntity<>(review1, getHeaders(client1Token));
+        testRestTemplate.exchange(
+                "/api/reviews/createReview/" + order1.getId() + "/" + operator.getId(),
+                HttpMethod.POST,
+                request1,
+                ReviewResponse.class
+        );
+
+        // Drugi klient
+        RegisterRequest client2Register = RegisterRequest.builder()
+                .displayName("testClient2")
+                .password("password456")
+                .name("Anna")
+                .surname("Kowalska")
+                .email("client2@example.com")
+                .phoneNumber("987654321")
+                .build();
+
+        testRestTemplate.postForEntity("/api/auth/register", client2Register, Void.class);
+
+        LoginRequest client2Login = LoginRequest.builder()
+                .email("client2@example.com")
+                .password("password456")
+                .build();
+
+        ResponseEntity<LoginResponse> login2Response = testRestTemplate.postForEntity(
+                "/api/auth/login", client2Login, LoginResponse.class);
+        String client2Token = login2Response.getBody().token();
+
+        UserEntity client2 = userRepository.findByEmail("client2@example.com").orElseThrow();
+
+        OrdersEntity order2 = createCompletedOrder(client2, operator);
+
+        ReviewRequest review2 = ReviewRequest.builder()
+                .stars(3)
+                .body("Average service.")
+                .build();
+
+        HttpEntity<ReviewRequest> request2 = new HttpEntity<>(review2, getHeaders(client2Token));
+        testRestTemplate.exchange(
+                "/api/reviews/createReview/" + order2.getId() + "/" + operator.getId(),
+                HttpMethod.POST,
+                request2,
+                ReviewResponse.class
+        );
+
+        // When: Pobieramy recenzje operatora
+        HttpEntity<Void> getEntity = new HttpEntity<>(getHeaders(client1Token));
+        ResponseEntity<List<com.example.drones.reviews.dto.UserReviewResponse>> getResponse = testRestTemplate.exchange(
+                "/api/reviews/getUserReviews/" + operator.getId(),
+                HttpMethod.GET,
+                getEntity,
+                new org.springframework.core.ParameterizedTypeReference<>() {}
+        );
+
+        // Then: Zwrócone są obie recenzje
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse.getBody()).isNotNull();
+        assertThat(getResponse.getBody()).hasSize(2);
+
+        List<com.example.drones.reviews.dto.UserReviewResponse> reviews = getResponse.getBody();
+
+        // Weryfikacja zawartości
+        boolean hasClient1Review = reviews.stream()
+                .anyMatch(r -> r.getStars() == 5 && r.getBody().equals("Excellent operator!"));
+        assertThat(hasClient1Review).isTrue();
+
+        boolean hasClient2Review = reviews.stream()
+                .anyMatch(r -> r.getStars() == 3 && r.getBody().equals("Average service."));
+        assertThat(hasClient2Review).isTrue();
+    }
+
+    @Test
+    void givenUserWithMixedReviews_whenGetUserReviews_thenReturnsOnlyReviewsWhereUserIsTarget() {
+        // Given: Klient który ma recenzje jako target i jako author
+        String clientToken = registerAndLoginClient();
+        UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
+
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator = createTestOperator("operator_reviews4", "52.2200, 21.0100", 20, service);
+
+        OrdersEntity order = createCompletedOrder(client, operator);
+
+        // Operator tworzy recenzję dla klienta (klient jest target)
+        String operatorToken = loginAsOperator("operator_reviews4@op.pl");
+        ReviewRequest operatorReview = ReviewRequest.builder()
+                .stars(5)
+                .body("Great client!")
+                .build();
+
+        HttpEntity<ReviewRequest> operatorRequest = new HttpEntity<>(operatorReview, getHeaders(operatorToken));
+        testRestTemplate.exchange(
+                "/api/reviews/createReview/" + order.getId() + "/" + client.getId(),
+                HttpMethod.POST,
+                operatorRequest,
+                ReviewResponse.class
+        );
+
+        // Klient tworzy recenzję dla operatora (klient jest author)
+        ReviewRequest clientReview = ReviewRequest.builder()
+                .stars(4)
+                .body("Good operator!")
+                .build();
+
+        HttpEntity<ReviewRequest> clientRequest = new HttpEntity<>(clientReview, getHeaders(clientToken));
+        testRestTemplate.exchange(
+                "/api/reviews/createReview/" + order.getId() + "/" + operator.getId(),
+                HttpMethod.POST,
+                clientRequest,
+                ReviewResponse.class
+        );
+
+        // When: Pobieramy recenzje klienta (gdzie klient jest target)
+        HttpEntity<Void> getEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<List<com.example.drones.reviews.dto.UserReviewResponse>> getResponse = testRestTemplate.exchange(
+                "/api/reviews/getUserReviews/" + client.getId(),
+                HttpMethod.GET,
+                getEntity,
+                new org.springframework.core.ParameterizedTypeReference<>() {}
+        );
+
+        // Then: Zwrócona jest tylko recenzja gdzie klient jest target
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse.getBody()).isNotNull();
+        assertThat(getResponse.getBody()).hasSize(1);
+
+        com.example.drones.reviews.dto.UserReviewResponse review = getResponse.getBody().get(0);
+        assertThat(review.getStars()).isEqualTo(5);
+        assertThat(review.getBody()).isEqualTo("Great client!");
+    }
+
+    @Test
+    void givenUserWithMultipleReviewsWithDifferentRatings_whenGetUserReviews_thenReturnsAllWithCorrectData() {
+        // Given: Operator z różnymi ocenami od klientów
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator = createTestOperator("operator_reviews5", "52.2200, 21.0100", 20, service);
+
+        String clientToken = registerAndLoginClient();
+        UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
+
+        // Tworzenie 5 recenzji z różnymi ocenami
+        for (int i = 1; i <= 5; i++) {
+            OrdersEntity order = createCompletedOrder(client, operator);
+
+            ReviewRequest review = ReviewRequest.builder()
+                    .stars(i)
+                    .body("Review with " + i + " stars")
+                    .build();
+
+            HttpEntity<ReviewRequest> request = new HttpEntity<>(review, getHeaders(clientToken));
+            testRestTemplate.exchange(
+                    "/api/reviews/createReview/" + order.getId() + "/" + operator.getId(),
+                    HttpMethod.POST,
+                    request,
+                    ReviewResponse.class
+            );
+        }
+
+        // When: Pobieramy wszystkie recenzje operatora
+        HttpEntity<Void> getEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<List<com.example.drones.reviews.dto.UserReviewResponse>> getResponse = testRestTemplate.exchange(
+                "/api/reviews/getUserReviews/" + operator.getId(),
+                HttpMethod.GET,
+                getEntity,
+                new org.springframework.core.ParameterizedTypeReference<>() {}
+        );
+
+        // Then: Zwróconych jest 5 recenzji z prawidłowymi ocenami
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse.getBody()).isNotNull();
+        assertThat(getResponse.getBody()).hasSize(5);
+
+        List<com.example.drones.reviews.dto.UserReviewResponse> reviews = getResponse.getBody();
+
+        // Weryfikacja że są wszystkie oceny od 1 do 5
+        for (int i = 1; i <= 5; i++) {
+            final int stars = i;
+            boolean hasReviewWithStars = reviews.stream()
+                    .anyMatch(r -> r.getStars() == stars);
+            assertThat(hasReviewWithStars).isTrue();
+        }
+    }
+
+    @Test
+    void givenUnauthenticatedUser_whenGetUserReviews_thenReturnsUnauthorized() {
+        // Given: Nieuwierzytelniony użytkownik
+        String clientToken = registerAndLoginClient();
+        UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
+
+        // When: Próba pobrania recenzji bez tokenu
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Void> getEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> getResponse = testRestTemplate.exchange(
+                "/api/reviews/getUserReviews/" + client.getId(),
+                HttpMethod.GET,
+                getEntity,
+                String.class
+        );
+
+        // Then: Zwrócony błąd autoryzacji
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void givenUserWithReviewsWithoutBody_whenGetUserReviews_thenReturnsReviewsWithNullBody() {
+        // Given: Klient z recenzją bez treści (tylko ocena)
+        String clientToken = registerAndLoginClient();
+        UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
+
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator = createTestOperator("operator_reviews6", "52.2200, 21.0100", 20, service);
+
+        OrdersEntity order = createCompletedOrder(client, operator);
+
+        // Operator tworzy recenzję bez treści
+        String operatorToken = loginAsOperator("operator_reviews6@op.pl");
+        ReviewRequest review = ReviewRequest.builder()
+                .stars(5)
+                .build();
+
+        HttpEntity<ReviewRequest> request = new HttpEntity<>(review, getHeaders(operatorToken));
+        testRestTemplate.exchange(
+                "/api/reviews/createReview/" + order.getId() + "/" + client.getId(),
+                HttpMethod.POST,
+                request,
+                ReviewResponse.class
+        );
+
+        // When: Pobieramy recenzje klienta
+        HttpEntity<Void> getEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<List<com.example.drones.reviews.dto.UserReviewResponse>> getResponse = testRestTemplate.exchange(
+                "/api/reviews/getUserReviews/" + client.getId(),
+                HttpMethod.GET,
+                getEntity,
+                new org.springframework.core.ParameterizedTypeReference<>() {}
+        );
+
+        // Then: Recenzja została zwrócona z pustą treścią
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse.getBody()).isNotNull();
+        assertThat(getResponse.getBody()).hasSize(1);
+
+        com.example.drones.reviews.dto.UserReviewResponse reviewResponse = getResponse.getBody().get(0);
+        assertThat(reviewResponse.getStars()).isEqualTo(5);
+        assertThat(reviewResponse.getBody()).isNullOrEmpty();
+    }
 }
