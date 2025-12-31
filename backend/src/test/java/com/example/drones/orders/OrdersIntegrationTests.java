@@ -1629,13 +1629,11 @@ public class OrdersIntegrationTests {
         );
         UUID orderId = createResponse.getBody().getId();
 
-        // Czekamy na dopasowanie
         await().atMost(5, SECONDS).untilAsserted(() ->
                 assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
                         .isPresent()
         );
 
-        // Operator akceptuje zamówienie
         LoginRequest operatorLogin = LoginRequest.builder()
                 .email("operator_getorders3@op.pl")
                 .password("pass")
@@ -1652,7 +1650,6 @@ public class OrdersIntegrationTests {
                 OrderResponse.class
         );
 
-        // Klient akceptuje operatora (zmienia status na IN_PROGRESS)
         HttpEntity<Void> clientAcceptEntity = new HttpEntity<>(getHeaders(clientToken));
         testRestTemplate.exchange(
                 "/api/orders/acceptOrder/" + orderId + "?operatorId=" + operator.getId(),
@@ -1661,7 +1658,6 @@ public class OrdersIntegrationTests {
                 OrderResponse.class
         );
 
-        // Pobieramy zamówienia ze statusem IN_PROGRESS
         HttpEntity<Void> getEntity = new HttpEntity<>(getHeaders(clientToken));
         ResponseEntity<List<OrderResponse>> getResponse = testRestTemplate.exchange(
                 "/api/orders/getOrders/IN_PROGRESS",
@@ -1675,5 +1671,383 @@ public class OrdersIntegrationTests {
         boolean containsOrder = getResponse.getBody().stream()
                 .anyMatch(o -> o.getId().equals(orderId));
         assertThat(containsOrder).isTrue();
+    }
+
+    @Test
+    void givenUserWithOrders_whenGetMyOrders_thenReturnsAllUserOrdersSortedByCreatedAtDesc() {
+        String clientToken = registerAndLogin();
+
+        // Tworzymy 3 zamówienia dla tego samego użytkownika
+        UUID firstOrderId = null;
+        UUID secondOrderId = null;
+        UUID thirdOrderId = null;
+
+        for (int i = 0; i < 3; i++) {
+            OrderRequest orderRequest = OrderRequest.builder()
+                    .title("My Order " + i)
+                    .description("Description " + i)
+                    .service(SERVICE_NAME)
+                    .coordinates("52.23, 21.01")
+                    .fromDate(LocalDateTime.now().plusDays(1 + i))
+                    .toDate(LocalDateTime.now().plusDays(2 + i))
+                    .build();
+
+            HttpEntity<OrderRequest> createEntity = new HttpEntity<>(orderRequest, getHeaders(clientToken));
+            ResponseEntity<OrderResponse> createResponse = testRestTemplate.exchange(
+                    "/api/orders/createOrder",
+                    HttpMethod.POST,
+                    createEntity,
+                    OrderResponse.class
+            );
+
+            if (i == 0) firstOrderId = createResponse.getBody().getId();
+            if (i == 1) secondOrderId = createResponse.getBody().getId();
+            if (i == 2) thirdOrderId = createResponse.getBody().getId();
+        }
+
+        // Pobieramy wszystkie zamówienia użytkownika
+        HttpEntity<Void> getEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<List<OrderResponse>> getResponse = testRestTemplate.exchange(
+                "/api/orders/getMyOrders",
+                HttpMethod.GET,
+                getEntity,
+                new ParameterizedTypeReference<>() {}
+        );
+
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse.getBody()).isNotNull();
+        assertThat(getResponse.getBody()).hasSize(3);
+
+        // Weryfikacja sortowania - najnowsze powinno być pierwsze (DESC)
+        List<OrderResponse> orders = getResponse.getBody();
+        assertThat(orders.get(0).getId()).isEqualTo(thirdOrderId);
+        assertThat(orders.get(1).getId()).isEqualTo(secondOrderId);
+        assertThat(orders.get(2).getId()).isEqualTo(firstOrderId);
+
+        // Weryfikacja że wszystkie zamówienia należą do użytkownika
+        orders.forEach(order -> {
+            assertThat(order.getTitle()).startsWith("My Order");
+            assertThat(order.getService()).isEqualTo(SERVICE_NAME);
+        });
+    }
+
+    @Test
+    void givenUserWithNoOrders_whenGetMyOrders_thenReturnsEmptyList() {
+        String clientToken = registerAndLogin();
+
+        // Pobieramy zamówienia bez tworzenia żadnych
+        HttpEntity<Void> getEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<List<OrderResponse>> getResponse = testRestTemplate.exchange(
+                "/api/orders/getMyOrders",
+                HttpMethod.GET,
+                getEntity,
+                new ParameterizedTypeReference<>() {}
+        );
+
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse.getBody()).isNotNull();
+        assertThat(getResponse.getBody()).isEmpty();
+    }
+
+    @Test
+    void givenMultipleUsers_whenGetMyOrders_thenReturnsOnlyCurrentUserOrders() {
+        // Pierwszy użytkownik
+        String client1Token = registerAndLogin();
+
+        OrderRequest order1 = OrderRequest.builder()
+                .title("Client 1 Order")
+                .description("First user order")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity1 = new HttpEntity<>(order1, getHeaders(client1Token));
+        testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity1,
+                OrderResponse.class
+        );
+
+        // Drugi użytkownik
+        RegisterRequest user2Register = RegisterRequest.builder()
+                .displayName("testClient2")
+                .password("password456")
+                .name("Anna")
+                .surname("Testowa")
+                .email("test2@example.com")
+                .phoneNumber("987654321")
+                .build();
+
+        testRestTemplate.postForEntity("/api/auth/register", user2Register, Void.class);
+
+        LoginRequest user2Login = LoginRequest.builder()
+                .email("test2@example.com")
+                .password("password456")
+                .build();
+
+        ResponseEntity<LoginResponse> login2Response = testRestTemplate.postForEntity(
+                "/api/auth/login", user2Login, LoginResponse.class);
+        String client2Token = login2Response.getBody().token();
+
+        OrderRequest order2 = OrderRequest.builder()
+                .title("Client 2 Order")
+                .description("Second user order")
+                .service(SERVICE_NAME)
+                .coordinates("52.24, 21.02")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity2 = new HttpEntity<>(order2, getHeaders(client2Token));
+        testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity2,
+                OrderResponse.class
+        );
+
+        // Pobieramy zamówienia pierwszego użytkownika
+        HttpEntity<Void> getEntity1 = new HttpEntity<>(getHeaders(client1Token));
+        ResponseEntity<List<OrderResponse>> getResponse1 = testRestTemplate.exchange(
+                "/api/orders/getMyOrders",
+                HttpMethod.GET,
+                getEntity1,
+                new ParameterizedTypeReference<>() {}
+        );
+
+        assertThat(getResponse1.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse1.getBody()).hasSize(1);
+        assertThat(getResponse1.getBody().get(0).getTitle()).isEqualTo("Client 1 Order");
+
+        // Pobieramy zamówienia drugiego użytkownika
+        HttpEntity<Void> getEntity2 = new HttpEntity<>(getHeaders(client2Token));
+        ResponseEntity<List<OrderResponse>> getResponse2 = testRestTemplate.exchange(
+                "/api/orders/getMyOrders",
+                HttpMethod.GET,
+                getEntity2,
+                new ParameterizedTypeReference<>() {}
+        );
+
+        assertThat(getResponse2.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse2.getBody()).hasSize(1);
+        assertThat(getResponse2.getBody().get(0).getTitle()).isEqualTo("Client 2 Order");
+    }
+
+    @Test
+    void givenUserWithOrdersInDifferentStatuses_whenGetMyOrders_thenReturnsAllStatuses() {
+        String clientToken = registerAndLogin();
+
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator = createTestOperator("operator_myorders", "52.2200, 21.0100", 20, service);
+
+        // Tworzymy zamówienie 1 - OPEN
+        OrderRequest orderRequest1 = OrderRequest.builder()
+                .title("Order OPEN")
+                .description("Test")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity1 = new HttpEntity<>(orderRequest1, getHeaders(clientToken));
+        ResponseEntity<OrderResponse> createResponse1 = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity1,
+                OrderResponse.class
+        );
+        UUID order1Id = createResponse1.getBody().getId();
+
+        // Tworzymy zamówienie 2 - będzie AWAITING_OPERATOR
+        OrderRequest orderRequest2 = OrderRequest.builder()
+                .title("Order AWAITING")
+                .description("Test")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(3))
+                .toDate(LocalDateTime.now().plusDays(4))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity2 = new HttpEntity<>(orderRequest2, getHeaders(clientToken));
+        ResponseEntity<OrderResponse> createResponse2 = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity2,
+                OrderResponse.class
+        );
+        UUID order2Id = createResponse2.getBody().getId();
+
+        // Czekamy na dopasowanie
+        await().atMost(5, SECONDS).untilAsserted(() -> {
+            List<NewMatchedOrderEntity> matches = newMatchedOrdersRepository
+                    .findAll().stream()
+                    .filter(m -> m.getOrder().getId().equals(order2Id))
+                    .toList();
+            assertThat(matches).hasSize(1);
+        });
+
+        // Operator akceptuje zamówienie 2
+        LoginRequest operatorLogin = LoginRequest.builder()
+                .email("operator_myorders@op.pl")
+                .password("pass")
+                .build();
+        ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
+                "/api/auth/login", operatorLogin, LoginResponse.class);
+        String operatorToken = loginResponse.getBody().token();
+
+        HttpEntity<Void> acceptEntity = new HttpEntity<>(getHeaders(operatorToken));
+        testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + order2Id,
+                HttpMethod.PATCH,
+                acceptEntity,
+                OrderResponse.class
+        );
+
+        // Tworzymy zamówienie 3 - będzie CANCELLED
+        OrderRequest orderRequest3 = OrderRequest.builder()
+                .title("Order CANCELLED")
+                .description("Test")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(5))
+                .toDate(LocalDateTime.now().plusDays(6))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity3 = new HttpEntity<>(orderRequest3, getHeaders(clientToken));
+        ResponseEntity<OrderResponse> createResponse3 = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity3,
+                OrderResponse.class
+        );
+        UUID order3Id = createResponse3.getBody().getId();
+
+        // Anulujemy zamówienie 3
+        HttpEntity<Void> cancelEntity = new HttpEntity<>(getHeaders(clientToken));
+        testRestTemplate.exchange(
+                "/api/orders/cancelOrder/" + order3Id,
+                HttpMethod.PATCH,
+                cancelEntity,
+                OrderResponse.class
+        );
+
+        // Pobieramy wszystkie zamówienia użytkownika
+        HttpEntity<Void> getEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<List<OrderResponse>> getResponse = testRestTemplate.exchange(
+                "/api/orders/getMyOrders",
+                HttpMethod.GET,
+                getEntity,
+                new ParameterizedTypeReference<>() {}
+        );
+
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse.getBody()).isNotNull();
+        assertThat(getResponse.getBody()).hasSize(3);
+
+        // Weryfikacja że zwrócone są wszystkie statusy
+        List<OrderStatus> statuses = getResponse.getBody().stream()
+                .map(OrderResponse::getStatus)
+                .toList();
+
+        assertThat(statuses).contains(OrderStatus.OPEN);
+        assertThat(statuses).contains(OrderStatus.AWAITING_OPERATOR);
+        assertThat(statuses).contains(OrderStatus.CANCELLED);
+    }
+
+    @Test
+    void givenUnauthenticatedUser_whenGetMyOrders_thenReturnsUnauthorized() {
+        // Próba pobrania zamówień bez tokenu
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Void> getEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> getResponse = testRestTemplate.exchange(
+                "/api/orders/getMyOrders",
+                HttpMethod.GET,
+                getEntity,
+                String.class
+        );
+
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void givenOrdersCreatedAtDifferentTimes_whenGetMyOrders_thenReturnsSortedByCreatedAtDesc() throws InterruptedException {
+        String clientToken = registerAndLogin();
+
+        // Tworzymy pierwsze zamówienie
+        OrderRequest orderRequest1 = OrderRequest.builder()
+                .title("First Order Time Test")
+                .description("Created first")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity1 = new HttpEntity<>(orderRequest1, getHeaders(clientToken));
+        ResponseEntity<OrderResponse> createResponse1 = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity1,
+                OrderResponse.class
+        );
+        UUID firstOrderId = createResponse1.getBody().getId();
+
+        // Czekamy, aby upewnić się, że timestamp będzie inny
+        Thread.sleep(1000);
+
+        // Tworzymy drugie zamówienie
+        OrderRequest orderRequest2 = OrderRequest.builder()
+                .title("Second Order Time Test")
+                .description("Created second")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(3))
+                .toDate(LocalDateTime.now().plusDays(4))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity2 = new HttpEntity<>(orderRequest2, getHeaders(clientToken));
+        ResponseEntity<OrderResponse> createResponse2 = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity2,
+                OrderResponse.class
+        );
+        UUID secondOrderId = createResponse2.getBody().getId();
+
+        // Pobieramy zamówienia
+        HttpEntity<Void> getEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<List<OrderResponse>> getResponse = testRestTemplate.exchange(
+                "/api/orders/getMyOrders",
+                HttpMethod.GET,
+                getEntity,
+                new ParameterizedTypeReference<>() {}
+        );
+
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse.getBody()).isNotNull();
+
+        // Filtrujemy tylko zamówienia z tego testu (aby uniknąć konfliktów z innymi testami)
+        List<OrderResponse> orders = getResponse.getBody().stream()
+                .filter(o -> o.getTitle().contains("Time Test"))
+                .toList();
+
+        assertThat(orders).hasSize(2);
+
+        // Najnowsze zamówienie (drugie) powinno być na pierwszym miejscu
+        assertThat(orders.get(0).getId()).isEqualTo(secondOrderId);
+        assertThat(orders.get(0).getTitle()).isEqualTo("Second Order Time Test");
+
+        // Starsze zamówienie (pierwsze) powinno być na drugim miejscu
+        assertThat(orders.get(1).getId()).isEqualTo(firstOrderId);
+        assertThat(orders.get(1).getTitle()).isEqualTo("First Order Time Test");
+
+        // Weryfikacja sortowania DESC - drugie zamówienie powinno być utworzone po pierwszym
+        assertThat(orders.get(0).getCreatedAt()).isAfter(orders.get(1).getCreatedAt());
     }
 }
