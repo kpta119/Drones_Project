@@ -309,25 +309,42 @@ Base URL: `/api/operators`.
 
 **GET** `/operators/getMatchedOrders`
 
-* **Opis:** Zwraca zlecenia, które nie zostały jeszcze zatwierdzone przez obie strony (status inny niż `in_progress` lub `completed`).
-* **Parametry (Query):** `location`, `radius`, `serviceId`, `fromDate`, `toDate`.
+* **Opis:** Zwraca machujące zlecenia
+* **Parametry (Query):** `location`, `radius`, `service`, `from_date`, `to_date`, `order_status`, `client_status`, `operator_status`
 * **Response:** Lista obiektów zamówień.
 
     ```json
-    [
-      {
-        "id": 55,
-        "title": "Inspekcja dachu",
-        "clientId": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
-        "description": "Potrzebuję nagrania...",
-        "service": "Kopanie rowów",
-        "parameters": { "wysokosc": "20m" },
-        "coordinates": "52.2300,21.0100",
-        "from_date": "2025-06-10T10:00:00",
-        "to_date": "2025-06-10T12:00:00",
-        "created_at": "2025-05-20T12:00:00"
-      },
-    ]
+    {
+      "content": [
+        {
+          "id": "01199aee-d8cf-485e-a76b-6493182628d7",
+          "client_id": "bf3f520c-0ce9-47ea-8c22-bff041164f37",
+          "title": "Szybkie zdjęcia drona",
+          "description": "Numeryczny Model Terenu (NMT) z filtracją roślinności.",
+          "service": "Fotogrametria i Geodezja",
+          "parameters": {
+            "type": "NMT (Teren)",
+            "format": "GeoTIFF + .xyz",
+            "product": "NMPT (Model Terenu)"
+          },
+          "coordinates": "52.1677,21.0803",
+          "distance": 451.13,
+          "from_date": "2025-12-18T20:41:04.904761",
+          "to_date": "2026-01-08T20:41:04.904761",
+          "created_at": "2025-12-17T20:41:04.904761",
+          "order_status": "OPEN",
+          "client_status": "PENDING",
+          "operator_status": "PENDING"
+        },
+        {}
+      ],
+      "page": {
+        "size": 5,
+        "number": 0,
+        "totalElements": 1,
+        "totalPages": 1
+      }
+    }
     ```
 
 ### Pobierz informacje o operatorach (dla danego zlecenia)
