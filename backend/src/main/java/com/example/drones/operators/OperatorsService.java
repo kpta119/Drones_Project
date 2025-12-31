@@ -15,23 +15,19 @@ import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserMapper;
 import com.example.drones.user.UserRepository;
 import com.example.drones.user.UserRole;
-import jakarta.persistence.criteria.Fetch;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
-import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.math3.util.Precision;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -163,8 +159,9 @@ public class OperatorsService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public Page<MatchedOrderDto> getMatchedOrders(UUID userId, MatchedOrdersFilters filters, Pageable pageable) {
-        UserEntity operator = userRepository.findById(userId)
+        UserEntity operator = userRepository.findByIdWithPortfolio(userId)
                 .orElseThrow(UserNotFoundException::new);
         if (operator.getRole() != UserRole.OPERATOR) {
             throw new NoSuchOperatorException();
@@ -175,23 +172,39 @@ public class OperatorsService {
 
         Specification<OrdersEntity> spec = createSpecification(userId, filters, location, radius);
         Page<OrdersEntity> orders = ordersRepository.findAll(spec, pageable);
-        // TODO:
-        return null;
+
+        List<MatchedOrderDto> dtos = orders.getContent().stream()
+                .map(order -> {
+                    NewMatchedOrderEntity matchedOrder = order.getMatchedOrders().getFirst();
+                    Double distance = Precision.round(calculateDistance(location, order.getCoordinates()), 2);
+
+                    return ordersMapper.toMatchedOrderDto(order, matchedOrder, distance);
+                })
+                .toList();
+
+        return new PageImpl<>(dtos, pageable, orders.getTotalElements());
     }
 
     @SuppressWarnings("unchecked")
-    private Specification<OrdersEntity> createSpecification(UUID userId, MatchedOrdersFilters filters,
-                                                            String location, Integer radius) {
+    private Specification<OrdersEntity> createSpecification(UUID userId, MatchedOrdersFilters filters, String location, Integer radius) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
+            boolean isCountQuery = Long.class == Objects.requireNonNull(query).getResultType() || long.class == query.getResultType();
+
+            Join<OrdersEntity, ServicesEntity> service;
+
+            if (isCountQuery) {
+                service = root.join("service", JoinType.INNER);
+
+            } else {
+                service = (Join<OrdersEntity, ServicesEntity>) (Object) root.fetch("service", JoinType.INNER);
+
+                Fetch<OrdersEntity, UserEntity> userFetch = root.fetch("user", JoinType.INNER);
+                userFetch.fetch("portfolio", JoinType.LEFT);
+            }
+
             Join<OrdersEntity, NewMatchedOrderEntity> nmo = root.join("matchedOrders", JoinType.INNER);
-
-            Fetch<OrdersEntity, ServicesEntity> serviceFetch = root.fetch("service", JoinType.INNER);
-            Join<OrdersEntity, ServicesEntity> service = (Join<OrdersEntity, ServicesEntity>) serviceFetch;
-
-            Fetch<OrdersEntity, UserEntity> userFetch = root.fetch("user", JoinType.INNER);
-            userFetch.fetch("portfolio", JoinType.LEFT);
 
             predicates.add(cb.equal(nmo.get("operator").get("id"), userId));
 
@@ -201,20 +214,92 @@ public class OperatorsService {
             if (filters.orderStatus() != null) {
                 predicates.add(cb.equal(root.get("status"), filters.orderStatus()));
             }
-            if (filters.fromDate() != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("fromDate"), filters.fromDate()));
-            }
-            if (filters.toDate() != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("toDate"), filters.toDate()));
-            }
-            if (filters.operatorStatus() != null) {
-                predicates.add(cb.equal(nmo.get("operatorStatus"), filters.operatorStatus()));
-            }
-            if (filters.clientStatus() != null) {
-                predicates.add(cb.equal(nmo.get("clientStatus"), filters.clientStatus()));
-            }
+
+            predicates.add(createDistancePredicate(cb, root, location, radius));
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    private Predicate createDistancePredicate(
+            CriteriaBuilder cb,
+            Root<OrdersEntity> root,
+            String location,
+            Integer radius
+    ) {
+        try {
+            String[] coords = location.split(",");
+            if (coords.length != 2) {
+                return cb.conjunction();
+            }
+
+            double lat1 = Double.parseDouble(coords[0].trim());
+            double lon1 = Double.parseDouble(coords[1].trim());
+
+            Expression<String> coordinates = root.get("coordinates");
+            Expression<String> latString = cb.function("SPLIT_PART", String.class,
+                    coordinates, cb.literal(","), cb.literal(1));
+
+            Expression<String> lonString = cb.function("SPLIT_PART", String.class,
+                    coordinates, cb.literal(","), cb.literal(2));
+
+            Expression<Double> lat2 = cb.function("float8", Double.class, latString);
+            Expression<Double> lon2 = cb.function("float8", Double.class, lonString);
+
+            // 6371 * acos(cos(radians(lat1)) * cos(radians(lat2)) * cos(radians(lon2) - radians(lon1)) + sin(radians(lat1)) * sin(radians(lat2)))
+            Expression<Double> distance = cb.prod(
+                    cb.literal(6371.0),
+                    cb.function("ACOS", Double.class,
+                            cb.sum(
+                                    cb.prod(
+                                            cb.prod(
+                                                    cb.function("COS", Double.class, cb.function("RADIANS", Double.class, cb.literal(lat1))),
+                                                    cb.function("COS", Double.class, cb.function("RADIANS", Double.class, lat2))
+                                            ),
+                                            cb.function("COS", Double.class,
+                                                    cb.diff(
+                                                            cb.function("RADIANS", Double.class, lon2),
+                                                            cb.function("RADIANS", Double.class, cb.literal(lon1))
+                                                    )
+                                            )
+                                    ),
+                                    cb.prod(
+                                            cb.function("SIN", Double.class, cb.function("RADIANS", Double.class, cb.literal(lat1))),
+                                            cb.function("SIN", Double.class, cb.function("RADIANS", Double.class, lat2))
+                                    )
+                            )
+                    )
+            );
+
+            return cb.lessThanOrEqualTo(distance, radius.doubleValue());
+
+        } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
+            return cb.conjunction();
+        }
+    }
+
+    private Double calculateDistance(String location1, String location2) {
+        if (location1 == null || location2 == null) {
+            return null;
+        }
+
+        String[] cords1 = location1.split(",");
+        String[] cords2 = location2.split(",");
+
+        if (cords1.length != 2 || cords2.length != 2) {
+            return null;
+        }
+
+        double lat1 = Double.parseDouble(cords1[0].trim());
+        double lon1 = Double.parseDouble(cords1[1].trim());
+        double lat2 = Double.parseDouble(cords2[0].trim());
+        double lon2 = Double.parseDouble(cords2[1].trim());
+
+        double earthRadius = 6371;
+        return earthRadius * Math.acos(
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                        Math.cos(Math.toRadians(lon2) - Math.toRadians(lon1)) +
+                        Math.sin(Math.toRadians(lat1)) * Math.sin(Math.toRadians(lat2))
+        );
     }
 }

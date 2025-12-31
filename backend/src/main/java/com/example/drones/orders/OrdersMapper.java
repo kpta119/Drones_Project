@@ -1,5 +1,6 @@
 package com.example.drones.orders;
 
+import com.example.drones.operators.dto.MatchedOrderDto;
 import com.example.drones.orders.dto.OrderRequest;
 import com.example.drones.orders.dto.OrderResponse;
 import com.example.drones.orders.dto.OrderUpdateRequest;
@@ -32,4 +33,20 @@ public interface OrdersMapper {
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "service", ignore = true)
     void updateEntityFromRequest(OrderUpdateRequest request, @MappingTarget OrdersEntity entity);
+
+    @Mapping(target = "id", source = "entity.id")
+    @Mapping(target = "clientId", source = "entity.user.id")
+    @Mapping(target = "title", source = "entity.title")
+    @Mapping(target = "description", source = "entity.description")
+    @Mapping(target = "service", source = "entity.service.name")
+    @Mapping(target = "parameters", source = "entity.parameters")
+    @Mapping(target = "coordinates", source = "entity.coordinates")
+    @Mapping(target = "fromDate", source = "entity.fromDate")
+    @Mapping(target = "toDate", source = "entity.toDate")
+    @Mapping(target = "createdAt", source = "entity.createdAt")
+    @Mapping(target = "orderStatus", source = "entity.status")
+    @Mapping(target = "distance", source = "distance")
+    @Mapping(target = "clientStatus", source = "matchedOrder.clientStatus")
+    @Mapping(target = "operatorStatus", source = "matchedOrder.operatorStatus")
+    MatchedOrderDto toMatchedOrderDto(OrdersEntity entity, NewMatchedOrderEntity matchedOrder, Double distance);
 }

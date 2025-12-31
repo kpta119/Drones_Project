@@ -1,8 +1,5 @@
 package com.example.drones.orders;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -24,6 +21,4 @@ public interface OrdersRepository extends JpaRepository<OrdersEntity, UUID>, Jpa
                         WHERE o.id = :orderId
             """)
     Optional<OrdersEntity> findByIdWithUser(UUID orderId);
-
-    Page<OrdersEntity> findAll(Specification<OrdersEntity> spec, Pageable pageable);
 }

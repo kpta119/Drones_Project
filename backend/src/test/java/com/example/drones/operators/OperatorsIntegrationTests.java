@@ -18,6 +18,7 @@ import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
 import com.example.drones.user.UserRole;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,6 +73,8 @@ public class OperatorsIntegrationTests {
     private com.example.drones.orders.OrdersRepository ordersRepository;
     @Autowired
     private com.example.drones.orders.NewMatchedOrdersRepository newMatchedOrdersRepository;
+    @Autowired
+    private EntityManager entityManager;
 
     private UserEntity testUser;
     private String jwtToken;
@@ -779,6 +782,528 @@ public class OperatorsIntegrationTests {
         mockMvc.perform(get("/api/operators/getOperatorsInfo/{orderId}", order.getId())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void givenOperatorWithMatchedOrders_whenGetMatchedOrders_thenReturnsPagedMatchedOrders() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        testUser.setCoordinates("52.2297,21.0122");
+        testUser.setRadius(50);
+        userRepository.save(testUser);
+
+        ServicesEntity service = servicesRepository.findById("Aerial Photography").orElseThrow();
+
+        UserEntity client = UserEntity.builder()
+                .displayName("client1")
+                .name("Client")
+                .surname("User")
+                .email("client@test.com")
+                .password(passwordEncoder.encode("password123"))
+                .phoneNumber("111222333")
+                .role(UserRole.CLIENT)
+                .build();
+        client = userRepository.save(client);
+
+        OrdersEntity order1 = OrdersEntity.builder()
+                .title("Real Estate Photography")
+                .description("Need aerial photos of property")
+                .user(client)
+                .service(service)
+                .coordinates("52.2350,21.0200")
+                .status(OrderStatus.OPEN)
+                .createdAt(java.time.LocalDateTime.now())
+                .fromDate(java.time.LocalDateTime.now().plusDays(1))
+                .toDate(java.time.LocalDateTime.now().plusDays(2))
+                .build();
+        order1 = ordersRepository.save(order1);
+
+        OrdersEntity order2 = OrdersEntity.builder()
+                .title("Wedding Photography")
+                .description("Aerial shots for wedding")
+                .user(client)
+                .service(service)
+                .coordinates("52.2400,21.0300")
+                .status(OrderStatus.OPEN)
+                .createdAt(java.time.LocalDateTime.now())
+                .fromDate(java.time.LocalDateTime.now().plusDays(3))
+                .toDate(java.time.LocalDateTime.now().plusDays(4))
+                .build();
+        order2 = ordersRepository.save(order2);
+
+        NewMatchedOrderEntity match1 = NewMatchedOrderEntity.builder()
+                .order(order1)
+                .operator(testUser)
+                .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                .clientStatus(MatchedOrderStatus.PENDING)
+                .build();
+        newMatchedOrdersRepository.save(match1);
+
+        NewMatchedOrderEntity match2 = NewMatchedOrderEntity.builder()
+                .order(order2)
+                .operator(testUser)
+                .operatorStatus(MatchedOrderStatus.PENDING)
+                .clientStatus(MatchedOrderStatus.PENDING)
+                .build();
+        newMatchedOrdersRepository.save(match2);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        mockMvc.perform(get("/api/operators/getMatchedOrders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.content[0].id").exists())
+                .andExpect(jsonPath("$.content[0].client_id").exists())
+                .andExpect(jsonPath("$.content[0].title").exists())
+                .andExpect(jsonPath("$.content[0].description").exists())
+                .andExpect(jsonPath("$.content[0].service").value("Aerial Photography"))
+                .andExpect(jsonPath("$.content[0].coordinates").exists())
+                .andExpect(jsonPath("$.content[0].distance").exists())
+                .andExpect(jsonPath("$.content[0].from_date").exists())
+                .andExpect(jsonPath("$.content[0].to_date").exists())
+                .andExpect(jsonPath("$.content[0].created_at").exists())
+                .andExpect(jsonPath("$.content[0].order_status").exists())
+                .andExpect(jsonPath("$.content[0].client_status").exists())
+                .andExpect(jsonPath("$.content[0].operator_status").exists())
+                .andExpect(jsonPath("$.page.totalElements").value(2))
+                .andExpect(jsonPath("$.page.totalPages").value(1))
+                .andExpect(jsonPath("$.page.size").value(20));
+    }
+
+    @Test
+    void givenOperatorWithNoMatchedOrders_whenGetMatchedOrders_thenReturnsEmptyPage() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        testUser.setCoordinates("52.2297,21.0122");
+        testUser.setRadius(50);
+        userRepository.save(testUser);
+
+        mockMvc.perform(get("/api/operators/getMatchedOrders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(0))
+                .andExpect(jsonPath("$.page.totalElements").value(0))
+                .andExpect(jsonPath("$.page.totalPages").value(0));
+    }
+
+    @Test
+    void givenMatchedOrdersWithServiceFilter_whenGetMatchedOrders_thenReturnsFilteredResults() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        testUser.setCoordinates("52.2297,21.0122");
+        testUser.setRadius(100);
+        userRepository.save(testUser);
+
+        ServicesEntity aerialPhotography = servicesRepository.findById("Aerial Photography").orElseThrow();
+        ServicesEntity surveying = servicesRepository.findById("Surveying").orElseThrow();
+
+        UserEntity client = UserEntity.builder()
+                .displayName("client1")
+                .name("Client")
+                .surname("User")
+                .email("client@test.com")
+                .password(passwordEncoder.encode("password123"))
+                .phoneNumber("111222333")
+                .role(UserRole.CLIENT)
+                .build();
+        client = userRepository.save(client);
+
+        OrdersEntity order1 = OrdersEntity.builder()
+                .title("Photography Order")
+                .description("Photo description")
+                .user(client)
+                .service(aerialPhotography)
+                .coordinates("52.2350,21.0200")
+                .status(OrderStatus.OPEN)
+                .createdAt(java.time.LocalDateTime.now())
+                .fromDate(java.time.LocalDateTime.now().plusDays(1))
+                .toDate(java.time.LocalDateTime.now().plusDays(2))
+                .build();
+        order1 = ordersRepository.save(order1);
+
+        OrdersEntity order2 = OrdersEntity.builder()
+                .title("Surveying Order")
+                .description("Survey description")
+                .user(client)
+                .service(surveying)
+                .coordinates("52.2400,21.0300")
+                .status(OrderStatus.OPEN)
+                .createdAt(java.time.LocalDateTime.now())
+                .fromDate(java.time.LocalDateTime.now().plusDays(3))
+                .toDate(java.time.LocalDateTime.now().plusDays(4))
+                .build();
+        order2 = ordersRepository.save(order2);
+
+        NewMatchedOrderEntity match1 = NewMatchedOrderEntity.builder()
+                .order(order1)
+                .operator(testUser)
+                .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                .clientStatus(MatchedOrderStatus.PENDING)
+                .build();
+        newMatchedOrdersRepository.save(match1);
+
+        NewMatchedOrderEntity match2 = NewMatchedOrderEntity.builder()
+                .order(order2)
+                .operator(testUser)
+                .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                .clientStatus(MatchedOrderStatus.PENDING)
+                .build();
+        newMatchedOrdersRepository.save(match2);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        mockMvc.perform(get("/api/operators/getMatchedOrders")
+                        .param("service", "Aerial Photography")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].service").value("Aerial Photography"))
+                .andExpect(jsonPath("$.content[0].title").value("Photography Order"))
+                .andExpect(jsonPath("$.page.totalElements").value(1));
+    }
+
+    @Test
+    void givenMatchedOrdersWithOrderStatusFilter_whenGetMatchedOrders_thenReturnsFilteredResults() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        testUser.setCoordinates("52.2297,21.0122");
+        testUser.setRadius(100);
+        userRepository.save(testUser);
+
+        ServicesEntity service = servicesRepository.findById("Aerial Photography").orElseThrow();
+
+        UserEntity client = UserEntity.builder()
+                .displayName("client1")
+                .name("Client")
+                .surname("User")
+                .email("client@test.com")
+                .password(passwordEncoder.encode("password123"))
+                .phoneNumber("111222333")
+                .role(UserRole.CLIENT)
+                .build();
+        client = userRepository.save(client);
+
+        OrdersEntity openOrder = OrdersEntity.builder()
+                .title("Open Order")
+                .description("Open description")
+                .user(client)
+                .service(service)
+                .coordinates("52.2350,21.0200")
+                .status(OrderStatus.OPEN)
+                .createdAt(java.time.LocalDateTime.now())
+                .fromDate(java.time.LocalDateTime.now().plusDays(1))
+                .toDate(java.time.LocalDateTime.now().plusDays(2))
+                .build();
+        openOrder = ordersRepository.save(openOrder);
+
+        OrdersEntity closedOrder = OrdersEntity.builder()
+                .title("Closed Order")
+                .description("Closed description")
+                .user(client)
+                .service(service)
+                .coordinates("52.2400,21.0300")
+                .status(OrderStatus.COMPLETED)
+                .createdAt(java.time.LocalDateTime.now())
+                .fromDate(java.time.LocalDateTime.now().plusDays(3))
+                .toDate(java.time.LocalDateTime.now().plusDays(4))
+                .build();
+        closedOrder = ordersRepository.save(closedOrder);
+
+        NewMatchedOrderEntity match1 = NewMatchedOrderEntity.builder()
+                .order(openOrder)
+                .operator(testUser)
+                .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                .clientStatus(MatchedOrderStatus.PENDING)
+                .build();
+        newMatchedOrdersRepository.save(match1);
+
+        NewMatchedOrderEntity match2 = NewMatchedOrderEntity.builder()
+                .order(closedOrder)
+                .operator(testUser)
+                .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                .clientStatus(MatchedOrderStatus.ACCEPTED)
+                .build();
+        newMatchedOrdersRepository.save(match2);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        mockMvc.perform(get("/api/operators/getMatchedOrders")
+                        .param("orderStatus", "OPEN")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].title").value("Open Order"))
+                .andExpect(jsonPath("$.content[0].order_status").value("OPEN"))
+                .andExpect(jsonPath("$.page.totalElements").value(1));
+    }
+
+    @Test
+    void givenMatchedOrdersWithPagination_whenGetMatchedOrders_thenReturnsCorrectPage() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        testUser.setCoordinates("52.2297,21.0122");
+        testUser.setRadius(100);
+        userRepository.save(testUser);
+
+        ServicesEntity service = servicesRepository.findById("Aerial Photography").orElseThrow();
+
+        UserEntity client = UserEntity.builder()
+                .displayName("client1")
+                .name("Client")
+                .surname("User")
+                .email("client@test.com")
+                .password(passwordEncoder.encode("password123"))
+                .phoneNumber("111222333")
+                .role(UserRole.CLIENT)
+                .build();
+        client = userRepository.save(client);
+
+        for (int i = 1; i <= 5; i++) {
+            OrdersEntity order = OrdersEntity.builder()
+                    .title("Order " + i)
+                    .description("Description " + i)
+                    .user(client)
+                    .service(service)
+                    .coordinates("52.2350,21.0200")
+                    .status(OrderStatus.OPEN)
+                    .createdAt(java.time.LocalDateTime.now())
+                    .fromDate(java.time.LocalDateTime.now().plusDays(i))
+                    .toDate(java.time.LocalDateTime.now().plusDays(i + 1))
+                    .build();
+            order = ordersRepository.save(order);
+
+            NewMatchedOrderEntity match = NewMatchedOrderEntity.builder()
+                    .order(order)
+                    .operator(testUser)
+                    .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                    .clientStatus(MatchedOrderStatus.PENDING)
+                    .build();
+            newMatchedOrdersRepository.save(match);
+        }
+
+        entityManager.flush();
+        entityManager.clear();
+
+        mockMvc.perform(get("/api/operators/getMatchedOrders")
+                        .param("page", "0")
+                        .param("size", "2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.page.totalElements").value(5))
+                .andExpect(jsonPath("$.page.totalPages").value(3))
+                .andExpect(jsonPath("$.page.size").value(2))
+                .andExpect(jsonPath("$.page.number").value(0));
+    }
+
+    @Test
+    void givenMatchedOrdersWithCustomLocationAndRadius_whenGetMatchedOrders_thenReturnsFilteredByLocation() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        testUser.setCoordinates("52.2297,21.0122");
+        testUser.setRadius(50);
+        userRepository.save(testUser);
+
+        ServicesEntity service = servicesRepository.findById("Aerial Photography").orElseThrow();
+
+        UserEntity client = UserEntity.builder()
+                .displayName("client1")
+                .name("Client")
+                .surname("User")
+                .email("client@test.com")
+                .password(passwordEncoder.encode("password123"))
+                .phoneNumber("111222333")
+                .role(UserRole.CLIENT)
+                .build();
+        client = userRepository.save(client);
+
+        OrdersEntity nearbyOrder = OrdersEntity.builder()
+                .title("Nearby Order")
+                .description("Close order")
+                .user(client)
+                .service(service)
+                .coordinates("52.2320,21.0150")
+                .status(OrderStatus.OPEN)
+                .createdAt(java.time.LocalDateTime.now())
+                .fromDate(java.time.LocalDateTime.now().plusDays(1))
+                .toDate(java.time.LocalDateTime.now().plusDays(2))
+                .build();
+        nearbyOrder = ordersRepository.save(nearbyOrder);
+
+        OrdersEntity farOrder = OrdersEntity.builder()
+                .title("Far Order")
+                .description("Distant order")
+                .user(client)
+                .service(service)
+                .coordinates("50.0000,20.0000")
+                .status(OrderStatus.OPEN)
+                .createdAt(java.time.LocalDateTime.now())
+                .fromDate(java.time.LocalDateTime.now().plusDays(3))
+                .toDate(java.time.LocalDateTime.now().plusDays(4))
+                .build();
+        farOrder = ordersRepository.save(farOrder);
+
+        NewMatchedOrderEntity match1 = NewMatchedOrderEntity.builder()
+                .order(nearbyOrder)
+                .operator(testUser)
+                .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                .clientStatus(MatchedOrderStatus.PENDING)
+                .build();
+        newMatchedOrdersRepository.save(match1);
+
+        NewMatchedOrderEntity match2 = NewMatchedOrderEntity.builder()
+                .order(farOrder)
+                .operator(testUser)
+                .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                .clientStatus(MatchedOrderStatus.PENDING)
+                .build();
+        newMatchedOrdersRepository.save(match2);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        mockMvc.perform(get("/api/operators/getMatchedOrders")
+                        .param("location", "52.2297,21.0122")
+                        .param("radius", "10")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].title").value("Nearby Order"))
+                .andExpect(jsonPath("$.page.totalElements").value(1));
+    }
+
+    @Test
+    void givenNonOperatorUser_whenGetMatchedOrders_thenReturnsNotFound() throws Exception {
+        testUser.setRole(UserRole.CLIENT);
+        userRepository.save(testUser);
+
+        mockMvc.perform(get("/api/operators/getMatchedOrders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void givenNoAuthToken_whenGetMatchedOrders_thenReturnsForbidden() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        testUser.setCoordinates("52.2297,21.0122");
+        testUser.setRadius(50);
+        userRepository.save(testUser);
+
+        mockMvc.perform(get("/api/operators/getMatchedOrders")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void givenInvalidToken_whenGetMatchedOrders_thenReturnsUnauthorized() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        testUser.setCoordinates("52.2297,21.0122");
+        testUser.setRadius(50);
+        userRepository.save(testUser);
+
+        mockMvc.perform(get("/api/operators/getMatchedOrders")
+                        .header("X-USER-TOKEN", "Bearer invalid.token.here")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void givenMatchedOrdersFromMultipleOperators_whenGetMatchedOrders_thenReturnsOnlyOwnMatches() throws Exception {
+        testUser.setRole(UserRole.OPERATOR);
+        testUser.setCoordinates("52.2297,21.0122");
+        testUser.setRadius(100);
+        userRepository.save(testUser);
+
+        UserEntity anotherOperator = UserEntity.builder()
+                .displayName("operator2")
+                .name("Another")
+                .surname("Operator")
+                .email("another.operator@test.com")
+                .password(passwordEncoder.encode("password123"))
+                .phoneNumber("999888777")
+                .role(UserRole.OPERATOR)
+                .coordinates("52.2297,21.0122")
+                .radius(100)
+                .build();
+        anotherOperator = userRepository.save(anotherOperator);
+
+        ServicesEntity service = servicesRepository.findById("Aerial Photography").orElseThrow();
+
+        UserEntity client = UserEntity.builder()
+                .displayName("client1")
+                .name("Client")
+                .surname("User")
+                .email("client@test.com")
+                .password(passwordEncoder.encode("password123"))
+                .phoneNumber("111222333")
+                .role(UserRole.CLIENT)
+                .build();
+        client = userRepository.save(client);
+
+        OrdersEntity order1 = OrdersEntity.builder()
+                .title("Order for testUser")
+                .description("Description 1")
+                .user(client)
+                .service(service)
+                .coordinates("52.2350,21.0200")
+                .status(OrderStatus.OPEN)
+                .createdAt(java.time.LocalDateTime.now())
+                .fromDate(java.time.LocalDateTime.now().plusDays(1))
+                .toDate(java.time.LocalDateTime.now().plusDays(2))
+                .build();
+        order1 = ordersRepository.save(order1);
+
+        OrdersEntity order2 = OrdersEntity.builder()
+                .title("Order for anotherOperator")
+                .description("Description 2")
+                .user(client)
+                .service(service)
+                .coordinates("52.2400,21.0300")
+                .status(OrderStatus.OPEN)
+                .createdAt(java.time.LocalDateTime.now())
+                .fromDate(java.time.LocalDateTime.now().plusDays(3))
+                .toDate(java.time.LocalDateTime.now().plusDays(4))
+                .build();
+        order2 = ordersRepository.save(order2);
+
+        NewMatchedOrderEntity match1 = NewMatchedOrderEntity.builder()
+                .order(order1)
+                .operator(testUser)
+                .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                .clientStatus(MatchedOrderStatus.PENDING)
+                .build();
+        newMatchedOrdersRepository.save(match1);
+
+        NewMatchedOrderEntity match2 = NewMatchedOrderEntity.builder()
+                .order(order2)
+                .operator(anotherOperator)
+                .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                .clientStatus(MatchedOrderStatus.PENDING)
+                .build();
+        newMatchedOrdersRepository.save(match2);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        mockMvc.perform(get("/api/operators/getMatchedOrders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-USER-TOKEN", "Bearer " + jwtToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].title").value("Order for testUser"))
+                .andExpect(jsonPath("$.page.totalElements").value(1));
     }
 
 }

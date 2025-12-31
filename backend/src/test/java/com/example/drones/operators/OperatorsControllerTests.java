@@ -358,4 +358,66 @@ public class OperatorsControllerTests {
         verify(jwtService).extractUserId();
         verify(operatorsService).getOperatorInfo(userId, orderId);
     }
+
+    @Test
+    public void givenValidFilters_whenGetMatchedOrders_thenReturnsOk() {
+        UUID userId = UUID.randomUUID();
+        UUID order1Id = UUID.randomUUID();
+        UUID order2Id = UUID.randomUUID();
+        UUID clientId = UUID.randomUUID();
+
+        MatchedOrdersFilters filters = new MatchedOrdersFilters(
+                "52.2297,21.0122",
+                50,
+                "Aerial Photography",
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        MatchedOrderDto matchedOrder1 = MatchedOrderDto.builder()
+                .id(order1Id)
+                .clientId(clientId)
+                .title("Order 1")
+                .description("Description 1")
+                .service("Aerial Photography")
+                .coordinates("52.2300,21.0130")
+                .distance(0.5)
+                .orderStatus(com.example.drones.orders.OrderStatus.OPEN)
+                .clientStatus(com.example.drones.orders.MatchedOrderStatus.PENDING)
+                .operatorStatus(com.example.drones.orders.MatchedOrderStatus.PENDING)
+                .build();
+
+        MatchedOrderDto matchedOrder2 = MatchedOrderDto.builder()
+                .id(order2Id)
+                .clientId(clientId)
+                .title("Order 2")
+                .description("Description 2")
+                .service("Aerial Photography")
+                .coordinates("52.2400,21.0200")
+                .distance(1.2)
+                .orderStatus(com.example.drones.orders.OrderStatus.OPEN)
+                .clientStatus(com.example.drones.orders.MatchedOrderStatus.PENDING)
+                .operatorStatus(com.example.drones.orders.MatchedOrderStatus.PENDING)
+                .build();
+
+        org.springframework.data.domain.Page<MatchedOrderDto> page =
+                new org.springframework.data.domain.PageImpl<>(List.of(matchedOrder1, matchedOrder2));
+
+        when(jwtService.extractUserId()).thenReturn(userId);
+        when(operatorsService.getMatchedOrders(eq(userId), eq(filters), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(page);
+
+        ResponseEntity<org.springframework.data.domain.Page<MatchedOrderDto>> response =
+                operatorsController.getMatchedOrders(org.springframework.data.domain.Pageable.unpaged(), filters);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getContent()).hasSize(2);
+        assertThat(response.getBody().getContent()).containsExactly(matchedOrder1, matchedOrder2);
+        verify(jwtService).extractUserId();
+        verify(operatorsService).getMatchedOrders(eq(userId), eq(filters), any(org.springframework.data.domain.Pageable.class));
+    }
 }
