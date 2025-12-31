@@ -21,4 +21,6 @@ public interface OrdersRepository extends JpaRepository<OrdersEntity, UUID>, Jpa
                         WHERE o.id = :orderId
             """)
     Optional<OrdersEntity> findByIdWithUser(UUID orderId);
+
+    List<OrdersEntity> findAllByUser_IdOrderByCreatedAtDesc(UUID userId);
 }

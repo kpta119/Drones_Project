@@ -68,7 +68,13 @@ public class OrdersController {
     @GetMapping("/getOrders/{status}")
     public ResponseEntity<List<OrderResponse>> getOrders(@PathVariable String status) {
         List<OrderResponse> responses = ordersService.getOrdersByStatus(status);
-
         return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/getMyOrders")
+    public ResponseEntity<List<OrderResponse>> getMyOrders() {
+        UUID userId = jwtService.extractUserId();
+        List<OrderResponse> response = ordersService.getMyOrders(userId);
+        return ResponseEntity.ok(response);
     }
 }
