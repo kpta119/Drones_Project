@@ -1,19 +1,8 @@
 "use client";
 
-interface OperatorLayoutProps {
-  data: {
-    name: string;
-    surname: string;
-    username: string;
-    phone_number: string;
-    email: string;
-    rating: number;
-    description: string;
-    operatorServices: { id: number; serviceName: string }[];
-  };
-}
+import { OperatorDto } from "./operator_dto";
 
-export default function OperatorLayout({ data }: OperatorLayoutProps) {
+export default function OperatorLayout({ data }: { data: OperatorDto }) {
   return (
     <div
       className="grid grid-cols-2 grid-rows-2 gap-10 ps-5 pt-10 pb-10 m-auto font-montserrat w-7xl"

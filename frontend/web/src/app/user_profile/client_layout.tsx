@@ -1,20 +1,9 @@
 "use client";
 
-import { ReviewDto } from "./client_dto";
+import { ClientDto } from "./client_dto";
+import OperatorRegister from "@/src/components/operator_register";
 
-interface ClientLayoutProps {
-  data: {
-    name: string;
-    surname: string;
-    username: string;
-    phone_number: string;
-    email: string;
-    rating: number;
-    reviews: ReviewDto[];
-  };
-}
-
-export default function ClientLayout({ data }: ClientLayoutProps) {
+export default function ClientLayout({ data }: { data: ClientDto }) {
   return (
     <div
       className="grid grid-cols-2 grid-rows-1 justify-center items-center pl-10 pr-10 pt-10 pb-10 m-auto font-montserrat w-7xl"
@@ -64,6 +53,7 @@ export default function ClientLayout({ data }: ClientLayoutProps) {
               <p>{data.email}</p>
             </div>
           </div>
+          <OperatorRegister></OperatorRegister>
         </div>
       </div>
 
