@@ -211,8 +211,20 @@ public class OperatorsService {
             if (filters.service() != null) {
                 predicates.add(cb.equal(service.get("name"), filters.service()));
             }
-            if (filters.orderStatus() != null) {
-                predicates.add(cb.equal(root.get("status"), filters.orderStatus()));
+            if (filters.order_status() != null) {
+                predicates.add(cb.equal(root.get("status"), filters.order_status()));
+            }
+            if (filters.from_date() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("fromDate"), filters.from_date()));
+            }
+            if (filters.to_date() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("toDate"), filters.to_date()));
+            }
+            if (filters.client_status() != null) {
+                predicates.add(cb.equal(nmo.get("clientStatus"), filters.client_status()));
+            }
+            if (filters.operator_status() != null) {
+                predicates.add(cb.equal(nmo.get("operatorStatus"), filters.operator_status()));
             }
 
             predicates.add(createDistancePredicate(cb, root, location, radius));
