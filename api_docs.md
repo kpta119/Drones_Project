@@ -310,7 +310,7 @@ Base URL: `/api/operators`.
 **GET** `/operators/getMatchedOrders`
 
 * **Opis:** Zwraca machujące zlecenia
-* **Parametry (Query):** `location` (jeśli nie podany to jest brany z profilu operatora), `radius` (jeśli nie podany to jest brany z profilu operatora), `service`, `from_date`, `to_date`, `order_status`, `client_status`, `operator_status`
+* **Parametry (Query):** `location` (jeśli nie podany to jest brany z profilu operatora), `radius` (jeśli nie podany to jest brany z profilu operatora), `service`, `from_date` (format: rrrr-MM-ddTHH:mm:ss.nnn), `to_date` (format rrrr-MM-ddTHH:mm:ss.nnn), `order_status`, `client_status`, `operator_status`
 * **Response:** Lista obiektów zamówień.
 
     ```json
