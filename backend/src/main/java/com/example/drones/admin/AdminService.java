@@ -1,6 +1,7 @@
 package com.example.drones.admin;
 
 import com.example.drones.admin.dto.OrderDto;
+import com.example.drones.admin.dto.SystemStatsDto;
 import com.example.drones.admin.dto.UserDto;
 import com.example.drones.admin.exceptions.NoSuchUserException;
 import com.example.drones.orders.MatchedOrderStatus;
@@ -41,5 +42,41 @@ class AdminService {
                 OrderStatus.CANCELLED
         );
         return adminRepository.findAllOrders(statusesWithVisibleOperator, MatchedOrderStatus.ACCEPTED, pageable);
+    }
+
+    public SystemStatsDto getSystemStats() {
+        SystemStatsProjection stats = adminRepository.getSystemStatistics();
+
+        return SystemStatsDto.builder()
+                .users(SystemStatsDto.UsersStats.builder()
+                        .clients(stats.getClientsCount())
+                        .operators(stats.getOperatorsCount())
+                        .build())
+                .orders(SystemStatsDto.OrdersStats.builder()
+                        .active(stats.getActiveOrders())
+                        .completed(stats.getCompletedOrders())
+                        .avgPerOperator(calculateAvgPerOperator(
+                                stats.getActiveOrders(),
+                                stats.getOperatorsCount()))
+                        .build())
+                .operators(SystemStatsDto.OperatorsStats.builder()
+                        .busy(stats.getBusyOperators())
+                        .topOperator(stats.getTopOperatorId() != null
+                                ? SystemStatsDto.TopOperator.builder()
+                                .operatorId(stats.getTopOperatorId())
+                                .completedOrders(stats.getTopOperatorCompletedOrders())
+                                .build()
+                                : null)
+                        .build())
+                .reviews(SystemStatsDto.ReviewsStats.builder()
+                        .total(stats.getTotalReviews())
+                        .build())
+                .build();
+    }
+
+    private Double calculateAvgPerOperator(Long activeOrders, Long operatorsCount) {
+        return operatorsCount > 0
+                ? (double) Math.round((activeOrders.doubleValue() / operatorsCount) * 10) / 10
+                : 0.0;
     }
 }

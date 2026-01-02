@@ -1,6 +1,7 @@
 package com.example.drones.admin;
 
 import com.example.drones.admin.dto.OrderDto;
+import com.example.drones.admin.dto.SystemStatsDto;
 import com.example.drones.admin.dto.UserDto;
 import com.example.drones.orders.OrderStatus;
 import com.example.drones.user.UserRole;
@@ -140,6 +141,61 @@ public class AdminControllerTests {
         assertThat(response.getBody().getContent()).containsExactly(orderDto1, orderDto2);
         assertThat(response.getBody().getTotalElements()).isEqualTo(2);
         verify(adminService).getOrders(pageable);
+    }
+
+    @Test
+    public void whenGetStats_thenReturnsSystemStatistics() {
+        UUID topOperatorId = UUID.randomUUID();
+
+        SystemStatsDto.UsersStats usersStats = SystemStatsDto.UsersStats.builder()
+                .clients(730L)
+                .operators(270L)
+                .build();
+
+        SystemStatsDto.OrdersStats ordersStats = SystemStatsDto.OrdersStats.builder()
+                .active(52L)
+                .completed(248L)
+                .avgPerOperator(3.2)
+                .build();
+
+        SystemStatsDto.TopOperator topOperator = SystemStatsDto.TopOperator.builder()
+                .operatorId(topOperatorId)
+                .completedOrders(57L)
+                .build();
+
+        SystemStatsDto.OperatorsStats operatorsStats = SystemStatsDto.OperatorsStats.builder()
+                .busy(18L)
+                .topOperator(topOperator)
+                .build();
+
+        SystemStatsDto.ReviewsStats reviewsStats = SystemStatsDto.ReviewsStats.builder()
+                .total(415L)
+                .build();
+
+        SystemStatsDto expectedStats = SystemStatsDto.builder()
+                .users(usersStats)
+                .orders(ordersStats)
+                .operators(operatorsStats)
+                .reviews(reviewsStats)
+                .build();
+
+        when(adminService.getSystemStats()).thenReturn(expectedStats);
+
+        ResponseEntity<SystemStatsDto> response = adminController.getStats();
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getUsers().getClients()).isEqualTo(730L);
+        assertThat(response.getBody().getUsers().getOperators()).isEqualTo(270L);
+        assertThat(response.getBody().getOrders().getActive()).isEqualTo(52L);
+        assertThat(response.getBody().getOrders().getCompleted()).isEqualTo(248L);
+        assertThat(response.getBody().getOrders().getAvgPerOperator()).isEqualTo(3.2);
+        assertThat(response.getBody().getOperators().getBusy()).isEqualTo(18L);
+        assertThat(response.getBody().getOperators().getTopOperator()).isNotNull();
+        assertThat(response.getBody().getOperators().getTopOperator().getOperatorId()).isEqualTo(topOperatorId);
+        assertThat(response.getBody().getOperators().getTopOperator().getCompletedOrders()).isEqualTo(57L);
+        assertThat(response.getBody().getReviews().getTotal()).isEqualTo(415L);
+        verify(adminService).getSystemStats();
     }
 
 }

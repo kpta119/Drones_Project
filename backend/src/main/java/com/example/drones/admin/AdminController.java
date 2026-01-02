@@ -1,6 +1,7 @@
 package com.example.drones.admin;
 
 import com.example.drones.admin.dto.OrderDto;
+import com.example.drones.admin.dto.SystemStatsDto;
 import com.example.drones.admin.dto.UserDto;
 import com.example.drones.user.UserRole;
 import lombok.RequiredArgsConstructor;
@@ -40,5 +41,11 @@ class AdminController {
     ) {
         Page<OrderDto> response = adminService.getOrders(pageable);
         return ResponseEntity.ok().body(response);
+    }
+
+    @GetMapping("/getStats")
+    public ResponseEntity<SystemStatsDto> getStats() {
+        SystemStatsDto stats = adminService.getSystemStats();
+        return ResponseEntity.ok().body(stats);
     }
 }

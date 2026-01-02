@@ -1,5 +1,6 @@
 package com.example.drones.admin;
 
+import com.example.drones.admin.dto.SystemStatsDto;
 import com.example.drones.admin.dto.UserDto;
 import com.example.drones.admin.exceptions.NoSuchUserException;
 import com.example.drones.user.UserEntity;
@@ -145,5 +146,53 @@ public class AdminServiceTests {
         assertThat(bannedEntity.getRole()).isEqualTo(UserRole.BLOCKED);
         assertThat(result.role()).isEqualTo(UserRole.BLOCKED);
         verify(adminRepository).save(bannedEntity);
+    }
+
+    @Test
+    public void givenZeroOperators_whenGetSystemStats_thenAvgPerOperatorIsZero() {
+        SystemStatsProjection mockProjection = mock(SystemStatsProjection.class);
+        when(mockProjection.getClientsCount()).thenReturn(100L);
+        when(mockProjection.getOperatorsCount()).thenReturn(0L);
+        when(mockProjection.getActiveOrders()).thenReturn(50L);
+        when(mockProjection.getCompletedOrders()).thenReturn(200L);
+        when(mockProjection.getBusyOperators()).thenReturn(0L);
+        when(mockProjection.getTopOperatorId()).thenReturn(null);
+        when(mockProjection.getTotalReviews()).thenReturn(100L);
+
+        when(adminRepository.getSystemStatistics()).thenReturn(mockProjection);
+
+        SystemStatsDto stats = adminService.getSystemStats();
+
+        assertThat(stats.getOrders().getAvgPerOperator()).isEqualTo(0.0);
+        assertThat(stats.getUsers().getOperators()).isEqualTo(0L);
+        assertThat(stats.getUsers().getClients()).isEqualTo(100L);
+        verify(adminRepository).getSystemStatistics();
+    }
+
+    @Test
+    public void givenActiveOrdersAndOperators_whenGetSystemStats_thenAvgPerOperatorIsRoundedToOneDecimal() {
+        Long operatorsCount = 3L;
+        Long activeOrders = 10L;
+        Double expectedAvg = 3.3;
+        UUID topOperatorId = UUID.randomUUID();
+
+        SystemStatsProjection mockProjection = mock(SystemStatsProjection.class);
+        when(mockProjection.getClientsCount()).thenReturn(100L);
+        when(mockProjection.getOperatorsCount()).thenReturn(operatorsCount);
+        when(mockProjection.getActiveOrders()).thenReturn(activeOrders);
+        when(mockProjection.getCompletedOrders()).thenReturn(200L);
+        when(mockProjection.getBusyOperators()).thenReturn(2L);
+        when(mockProjection.getTopOperatorId()).thenReturn(topOperatorId);
+        when(mockProjection.getTopOperatorCompletedOrders()).thenReturn(50L);
+        when(mockProjection.getTotalReviews()).thenReturn(100L);
+
+        when(adminRepository.getSystemStatistics()).thenReturn(mockProjection);
+
+        SystemStatsDto stats = adminService.getSystemStats();
+
+        assertThat(stats.getOrders().getAvgPerOperator()).isEqualTo(expectedAvg);
+        assertThat(stats.getOrders().getActive()).isEqualTo(activeOrders);
+        assertThat(stats.getUsers().getOperators()).isEqualTo(operatorsCount);
+        verify(adminRepository).getSystemStatistics();
     }
 }

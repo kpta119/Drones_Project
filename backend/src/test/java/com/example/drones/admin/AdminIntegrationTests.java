@@ -1,9 +1,9 @@
 package com.example.drones.admin;
 
 import com.example.drones.common.config.auth.JwtService;
-import com.example.drones.orders.OrderStatus;
-import com.example.drones.orders.OrdersEntity;
-import com.example.drones.orders.OrdersRepository;
+import com.example.drones.orders.*;
+import com.example.drones.reviews.ReviewEntity;
+import com.example.drones.reviews.ReviewsRepository;
 import com.example.drones.services.ServicesEntity;
 import com.example.drones.services.ServicesRepository;
 import com.example.drones.user.UserEntity;
@@ -51,6 +51,12 @@ public class AdminIntegrationTests {
 
     @Autowired
     private ServicesRepository servicesRepository;
+
+    @Autowired
+    private ReviewsRepository reviewsRepository;
+
+    @Autowired
+    private NewMatchedOrdersRepository newMatchedOrdersRepository;
 
     @Autowired
     private MockMvc mockMvc;
@@ -318,6 +324,268 @@ public class AdminIntegrationTests {
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content").isEmpty())
                 .andExpect(jsonPath("$.page.totalElements").value(0));
+    }
+
+    @Test
+    void givenAdminUser_whenGetStats_thenReturnsSystemStatistics() throws Exception {
+        mockMvc.perform(get("/api/admin/getStats")
+                        .header("X-USER-TOKEN", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.users").exists())
+                .andExpect(jsonPath("$.users.clients").exists())
+                .andExpect(jsonPath("$.users.operators").exists())
+                .andExpect(jsonPath("$.orders").exists())
+                .andExpect(jsonPath("$.orders.active").exists())
+                .andExpect(jsonPath("$.orders.completed").exists())
+                .andExpect(jsonPath("$.orders.avgPerOperator").exists())
+                .andExpect(jsonPath("$.operators").exists())
+                .andExpect(jsonPath("$.operators.busy").exists())
+                .andExpect(jsonPath("$.reviews").exists())
+                .andExpect(jsonPath("$.reviews.total").exists());
+    }
+
+    @Test
+    void givenSystemWithData_whenGetStats_thenReturnsCorrectCounts() throws Exception {
+        UserEntity client2 = UserEntity.builder()
+                .displayName("client2")
+                .name("Alice")
+                .surname("Johnson")
+                .email("alice@example.com")
+                .password(passwordEncoder.encode("password123"))
+                .phoneNumber("444444444")
+                .role(UserRole.CLIENT)
+                .build();
+        userRepository.saveAndFlush(client2);
+
+        UserEntity operator2 = UserEntity.builder()
+                .displayName("operator2")
+                .name("Bob")
+                .surname("Brown")
+                .email("bob@example.com")
+                .password(passwordEncoder.encode("password123"))
+                .phoneNumber("555555555")
+                .role(UserRole.OPERATOR)
+                .build();
+        userRepository.saveAndFlush(operator2);
+
+        ServicesEntity service = new ServicesEntity("Photography");
+        servicesRepository.saveAndFlush(service);
+
+        OrdersEntity openOrder = OrdersEntity.builder()
+                .title("Open Order")
+                .description("Description")
+                .service(service)
+                .coordinates("52.23,21.01")
+                .fromDate(java.time.LocalDateTime.now().plusDays(1))
+                .toDate(java.time.LocalDateTime.now().plusDays(2))
+                .status(OrderStatus.OPEN)
+                .user(clientUser)
+                .createdAt(java.time.LocalDateTime.now())
+                .build();
+        ordersRepository.saveAndFlush(openOrder);
+
+        OrdersEntity inProgressOrder = OrdersEntity.builder()
+                .title("In Progress Order")
+                .description("Description")
+                .service(service)
+                .coordinates("52.23,21.01")
+                .fromDate(java.time.LocalDateTime.now().plusDays(1))
+                .toDate(java.time.LocalDateTime.now().plusDays(2))
+                .status(OrderStatus.IN_PROGRESS)
+                .user(clientUser)
+                .createdAt(java.time.LocalDateTime.now())
+                .build();
+        ordersRepository.saveAndFlush(inProgressOrder);
+
+        OrdersEntity completedOrder = OrdersEntity.builder()
+                .title("Completed Order")
+                .description("Description")
+                .service(service)
+                .coordinates("52.23,21.01")
+                .fromDate(java.time.LocalDateTime.now().minusDays(2))
+                .toDate(java.time.LocalDateTime.now().minusDays(1))
+                .status(OrderStatus.COMPLETED)
+                .user(clientUser)
+                .createdAt(java.time.LocalDateTime.now().minusDays(3))
+                .build();
+        ordersRepository.saveAndFlush(completedOrder);
+
+        NewMatchedOrderEntity matchedInProgress = NewMatchedOrderEntity.builder()
+                .operator(operatorUser)
+                .order(inProgressOrder)
+                .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                .clientStatus(MatchedOrderStatus.ACCEPTED)
+                .build();
+        newMatchedOrdersRepository.saveAndFlush(matchedInProgress);
+
+        NewMatchedOrderEntity matchedCompleted = NewMatchedOrderEntity.builder()
+                .operator(operatorUser)
+                .order(completedOrder)
+                .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                .clientStatus(MatchedOrderStatus.ACCEPTED)
+                .build();
+        newMatchedOrdersRepository.saveAndFlush(matchedCompleted);
+
+        ReviewEntity review = ReviewEntity.builder()
+                .order(completedOrder)
+                .author(clientUser)
+                .target(operatorUser)
+                .body("Great work!")
+                .stars(5)
+                .build();
+        reviewsRepository.saveAndFlush(review);
+
+        mockMvc.perform(get("/api/admin/getStats")
+                        .header("X-USER-TOKEN", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.users.clients").value(2))  // clientUser + client2
+                .andExpect(jsonPath("$.users.operators").value(2))  // operatorUser + operator2
+                .andExpect(jsonPath("$.orders.active").value(2))  // open + in_progress
+                .andExpect(jsonPath("$.orders.completed").value(1))
+                .andExpect(jsonPath("$.operators.busy").value(1))  // operatorUser with in_progress
+                .andExpect(jsonPath("$.operators.topOperator").exists())
+                .andExpect(jsonPath("$.operators.topOperator.operatorId").value(operatorUser.getId().toString()))
+                .andExpect(jsonPath("$.operators.topOperator.completedOrders").value(1))
+                .andExpect(jsonPath("$.reviews.total").value(1));
+    }
+
+    @Test
+    void givenNoOperators_whenGetStats_thenAvgPerOperatorIsZero() throws Exception {
+        userRepository.delete(operatorUser);
+        userRepository.flush();
+
+        mockMvc.perform(get("/api/admin/getStats")
+                        .header("X-USER-TOKEN", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.users.operators").value(0))
+                .andExpect(jsonPath("$.orders.avgPerOperator").value(0.0));
+    }
+
+    @Test
+    void givenOperatorsWithActiveOrders_whenGetStats_thenCalculatesAvgPerOperatorCorrectly() throws Exception {
+        ServicesEntity service = new ServicesEntity("Surveying");
+        servicesRepository.saveAndFlush(service);
+
+        for (int i = 0; i < 3; i++) {
+            OrdersEntity order = OrdersEntity.builder()
+                    .title("Order " + i)
+                    .description("Description " + i)
+                    .service(service)
+                    .coordinates("52.23,21.01")
+                    .fromDate(java.time.LocalDateTime.now().plusDays(1))
+                    .toDate(java.time.LocalDateTime.now().plusDays(2))
+                    .status(OrderStatus.OPEN)
+                    .user(clientUser)
+                    .createdAt(java.time.LocalDateTime.now())
+                    .build();
+            ordersRepository.saveAndFlush(order);
+        }
+
+        mockMvc.perform(get("/api/admin/getStats")
+                        .header("X-USER-TOKEN", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.users.operators").value(1))  // operatorUser
+                .andExpect(jsonPath("$.orders.active").value(3))
+                .andExpect(jsonPath("$.orders.avgPerOperator").value(3.0));  // 3 orders / 1 operator
+    }
+
+    @Test
+    void givenNoCompletedOrders_whenGetStats_thenTopOperatorIsNull() throws Exception {
+        mockMvc.perform(get("/api/admin/getStats")
+                        .header("X-USER-TOKEN", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.orders.completed").value(0))
+                .andExpect(jsonPath("$.operators.topOperator").doesNotExist());
+    }
+
+    @Test
+    void givenMultipleOperatorsWithCompletedOrders_whenGetStats_thenReturnsOperatorWithMostCompleted() throws Exception {
+        UserEntity operator2 = UserEntity.builder()
+                .displayName("operator2")
+                .name("Charlie")
+                .surname("Davis")
+                .email("charlie@example.com")
+                .password(passwordEncoder.encode("password123"))
+                .phoneNumber("666666666")
+                .role(UserRole.OPERATOR)
+                .build();
+        operator2 = userRepository.saveAndFlush(operator2);
+
+        ServicesEntity service = new ServicesEntity("Inspection");
+        servicesRepository.saveAndFlush(service);
+
+        for (int i = 0; i < 2; i++) {
+            OrdersEntity order = OrdersEntity.builder()
+                    .title("Completed Order " + i)
+                    .description("Description")
+                    .service(service)
+                    .coordinates("52.23,21.01")
+                    .fromDate(java.time.LocalDateTime.now().minusDays(2))
+                    .toDate(java.time.LocalDateTime.now().minusDays(1))
+                    .status(OrderStatus.COMPLETED)
+                    .user(clientUser)
+                    .createdAt(java.time.LocalDateTime.now().minusDays(3))
+                    .build();
+            order = ordersRepository.saveAndFlush(order);
+
+            NewMatchedOrderEntity matched = NewMatchedOrderEntity.builder()
+                    .operator(operatorUser)
+                    .order(order)
+                    .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                    .clientStatus(MatchedOrderStatus.ACCEPTED)
+                    .build();
+            newMatchedOrdersRepository.saveAndFlush(matched);
+        }
+
+        OrdersEntity order2 = OrdersEntity.builder()
+                .title("Completed Order for Operator 2")
+                .description("Description")
+                .service(service)
+                .coordinates("52.23,21.01")
+                .fromDate(java.time.LocalDateTime.now().minusDays(2))
+                .toDate(java.time.LocalDateTime.now().minusDays(1))
+                .status(OrderStatus.COMPLETED)
+                .user(clientUser)
+                .createdAt(java.time.LocalDateTime.now().minusDays(3))
+                .build();
+        order2 = ordersRepository.saveAndFlush(order2);
+
+        NewMatchedOrderEntity matched2 = NewMatchedOrderEntity.builder()
+                .operator(operator2)
+                .order(order2)
+                .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                .clientStatus(MatchedOrderStatus.ACCEPTED)
+                .build();
+        newMatchedOrdersRepository.saveAndFlush(matched2);
+
+        mockMvc.perform(get("/api/admin/getStats")
+                        .header("X-USER-TOKEN", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.orders.completed").value(3))
+                .andExpect(jsonPath("$.operators.topOperator").exists())
+                .andExpect(jsonPath("$.operators.topOperator.operatorId").value(operatorUser.getId().toString()))
+                .andExpect(jsonPath("$.operators.topOperator.completedOrders").value(2));
+    }
+
+    @Test
+    void givenNonAdminUser_whenGetStats_thenReturnsForbidden() throws Exception {
+        mockMvc.perform(get("/api/admin/getStats")
+                        .header("X-USER-TOKEN", "Bearer " + clientToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void givenUnauthenticatedUser_whenGetStats_thenReturnsForbidden() throws Exception {
+        mockMvc.perform(get("/api/admin/getStats")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
     }
 
 }

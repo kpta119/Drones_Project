@@ -63,4 +63,32 @@ interface AdminRepository extends JpaRepository<UserEntity, UUID> {
             Pageable pageable
     );
 
+    @Query(value = """
+    WITH top_operator AS (
+        SELECT nmo.operator_id, COUNT(*) as completed_count
+        FROM new_matched_orders nmo
+        JOIN orders o ON nmo.order_id = o.id
+        WHERE nmo.operator_status = 'ACCEPTED'::matched_order_status
+        AND nmo.client_status = 'ACCEPTED'::matched_order_status
+        AND o.status = 'COMPLETED'::order_status
+        GROUP BY nmo.operator_id
+        ORDER BY COUNT(*) DESC
+        LIMIT 1
+    )
+    SELECT
+        (SELECT COUNT(*) FROM users WHERE role = 'CLIENT'::user_role) as clientsCount,
+        (SELECT COUNT(*) FROM users WHERE role = 'OPERATOR'::user_role) as operatorsCount,
+        (SELECT COUNT(*) FROM orders WHERE status IN ('OPEN'::order_status, 'AWAITING_OPERATOR'::order_status, 'IN_PROGRESS'::order_status)) as activeOrders,
+        (SELECT COUNT(*) FROM orders WHERE status = 'COMPLETED'::order_status) as completedOrders,
+        (SELECT COUNT(DISTINCT nmo.operator_id)
+         FROM new_matched_orders nmo
+         JOIN orders o ON nmo.order_id = o.id
+         WHERE nmo.operator_status = 'ACCEPTED'::matched_order_status
+         AND nmo.client_status = 'ACCEPTED'::matched_order_status
+         AND o.status = 'IN_PROGRESS'::order_status) as busyOperators,
+        (SELECT operator_id FROM top_operator) as topOperatorId,
+        COALESCE((SELECT completed_count FROM top_operator), 0) as topOperatorCompletedOrders,
+        (SELECT COUNT(*) FROM reviews) as totalReviews
+    """, nativeQuery = true)
+    SystemStatsProjection getSystemStatistics();
 }
