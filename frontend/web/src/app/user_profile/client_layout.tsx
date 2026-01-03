@@ -116,13 +116,7 @@ export default function ClientLayout({ data }: { data: ClientDto }) {
 
       {showRegister && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
-          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative animate-scaleIn">
-            <button
-              onClick={() => setShowRegister(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl font-bold"
-            >
-              ✕
-            </button>
+          <div className="bg-white rounded-2xl p-12 w-4/5 h-4/5 overflow-y-auto relative animate-scaleIn">
             <OperatorRegisterModule onClose={() => setShowRegister(false)} />
           </div>
         </div>
