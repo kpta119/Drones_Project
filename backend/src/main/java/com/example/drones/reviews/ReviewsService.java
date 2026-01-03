@@ -4,8 +4,6 @@ import com.example.drones.common.config.exceptions.UserNotFoundException;
 import com.example.drones.orders.OrderStatus;
 import com.example.drones.orders.OrdersEntity;
 import com.example.drones.orders.OrdersRepository;
-import com.example.drones.orders.exceptions.IllegalOrderStateException;
-import com.example.drones.orders.exceptions.IllegalOrderStatusException;
 import com.example.drones.orders.exceptions.OrderNotFoundException;
 import com.example.drones.reviews.dto.ReviewRequest;
 import com.example.drones.reviews.dto.ReviewResponse;

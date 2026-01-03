@@ -32,7 +32,7 @@ public class UserService {
 
     @Transactional
     @CacheEvict(value = "users", key = "@jwtService.extractUserId()")
-    public UserResponse editUserData(UserUpdateRequest request){
+    public UserResponse editUserData(UserUpdateRequest request) {
         UUID userId = jwtService.extractUserId();
 
         UserEntity userEntity = userRepository.findById(userId)

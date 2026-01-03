@@ -106,15 +106,15 @@ public class ReviewsIntegrationTests {
         return response.getBody().token();
     }
 
-    private UserEntity createTestOperator(String username, String coords, int radius, ServicesEntity service) {
+    private UserEntity createTestOperator(String username, ServicesEntity service) {
         UserEntity operator = UserEntity.builder()
                 .displayName(username)
                 .email(username + "@op.pl")
                 .password(passwordEncoder.encode("pass"))
                 .role(UserRole.OPERATOR)
                 .name("Op").surname("Erator")
-                .coordinates(coords)
-                .radius(radius)
+                .coordinates("52.2200, 21.0100")
+                .radius(20)
                 .build();
 
         userRepository.save(operator);
@@ -145,7 +145,7 @@ public class ReviewsIntegrationTests {
         return headers;
     }
 
-    private OrdersEntity createCompletedOrder(UserEntity client, UserEntity operator) {
+    private OrdersEntity createCompletedOrder(UserEntity client) {
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
 
         OrdersEntity order = OrdersEntity.builder()
@@ -162,7 +162,7 @@ public class ReviewsIntegrationTests {
         return ordersRepository.save(order);
     }
 
-    private OrdersEntity createInProgressOrder(UserEntity client, UserEntity operator) {
+    private OrdersEntity createInProgressOrder(UserEntity client) {
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
 
         OrdersEntity order = OrdersEntity.builder()
@@ -202,9 +202,9 @@ public class ReviewsIntegrationTests {
         UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
 
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
-        UserEntity operator = createTestOperator("operator1", "52.2200, 21.0100", 20, service);
+        UserEntity operator = createTestOperator("operator1", service);
 
-        OrdersEntity order = createCompletedOrder(client, operator);
+        OrdersEntity order = createCompletedOrder(client);
 
         // When: Klient tworzy recenzję dla operatora
         ReviewRequest reviewRequest = ReviewRequest.builder()
@@ -231,7 +231,7 @@ public class ReviewsIntegrationTests {
         // Weryfikacja w bazie danych
         List<ReviewEntity> reviews = reviewsRepository.findAll();
         assertThat(reviews).hasSize(1);
-        ReviewEntity savedReview = reviews.get(0);
+        ReviewEntity savedReview = reviews.getFirst();
         assertThat(savedReview.getStars()).isEqualTo(5);
         assertThat(savedReview.getAuthor().getId()).isEqualTo(client.getId());
         assertThat(savedReview.getTarget().getId()).isEqualTo(operator.getId());
@@ -241,13 +241,13 @@ public class ReviewsIntegrationTests {
     @Test
     void givenCompletedOrder_whenOperatorCreatesReviewForClient_thenReviewIsCreated() {
         // Given: Zarejestrowany klient i operator z ukończonym zamówieniem
-        String clientToken = registerAndLoginClient();
+        registerAndLoginClient();
         UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
 
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
-        UserEntity operator = createTestOperator("operator2", "52.2200, 21.0100", 20, service);
+        UserEntity operator = createTestOperator("operator2", service);
 
-        OrdersEntity order = createCompletedOrder(client, operator);
+        OrdersEntity order = createCompletedOrder(client);
 
         String operatorToken = loginAsOperator("operator2@op.pl");
 
@@ -276,7 +276,7 @@ public class ReviewsIntegrationTests {
         // Weryfikacja w bazie danych
         List<ReviewEntity> reviews = reviewsRepository.findAll();
         assertThat(reviews).hasSize(1);
-        ReviewEntity savedReview = reviews.get(0);
+        ReviewEntity savedReview = reviews.getFirst();
         assertThat(savedReview.getStars()).isEqualTo(4);
         assertThat(savedReview.getAuthor().getId()).isEqualTo(operator.getId());
         assertThat(savedReview.getTarget().getId()).isEqualTo(client.getId());
@@ -289,9 +289,9 @@ public class ReviewsIntegrationTests {
         UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
 
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
-        UserEntity operator = createTestOperator("operator3", "52.2200, 21.0100", 20, service);
+        UserEntity operator = createTestOperator("operator3", service);
 
-        OrdersEntity order = createInProgressOrder(client, operator);
+        OrdersEntity order = createInProgressOrder(client);
 
         // When: Klient tworzy recenzję dla zamówienia w trakcie
         ReviewRequest reviewRequest = ReviewRequest.builder()
@@ -320,7 +320,7 @@ public class ReviewsIntegrationTests {
         UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
 
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
-        UserEntity operator = createTestOperator("operator4", "52.2200, 21.0100", 20, service);
+        UserEntity operator = createTestOperator("operator4", service);
 
         OrdersEntity order = createOpenOrder(client);
 
@@ -353,9 +353,9 @@ public class ReviewsIntegrationTests {
         UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
 
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
-        UserEntity operator = createTestOperator("operator5", "52.2200, 21.0100", 20, service);
+        createTestOperator("operator5", service);
 
-        OrdersEntity order = createCompletedOrder(client, operator);
+        OrdersEntity order = createCompletedOrder(client);
 
         // When: Klient próbuje utworzyć recenzję dla samego siebie
         ReviewRequest reviewRequest = ReviewRequest.builder()
@@ -386,9 +386,9 @@ public class ReviewsIntegrationTests {
         UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
 
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
-        UserEntity operator = createTestOperator("operator6", "52.2200, 21.0100", 20, service);
+        UserEntity operator = createTestOperator("operator6", service);
 
-        OrdersEntity order = createCompletedOrder(client, operator);
+        OrdersEntity order = createCompletedOrder(client);
 
         // Tworzymy pierwszą recenzję
         ReviewRequest reviewRequest1 = ReviewRequest.builder()
@@ -426,17 +426,17 @@ public class ReviewsIntegrationTests {
         // Weryfikacja że jest tylko jedna recenzja
         List<ReviewEntity> reviews = reviewsRepository.findAll();
         assertThat(reviews).hasSize(1);
-        assertThat(reviews.get(0).getBody()).isEqualTo("First review");
+        assertThat(reviews.getFirst().getBody()).isEqualTo("First review");
     }
 
     @Test
     void givenNonExistentOrder_whenUserCreatesReview_thenReturnsNotFound() {
         // Given: Zarejestrowany klient
         String clientToken = registerAndLoginClient();
-        UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
+        userRepository.findByEmail("client@example.com").orElseThrow();
 
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
-        UserEntity operator = createTestOperator("operator7", "52.2200, 21.0100", 20, service);
+        UserEntity operator = createTestOperator("operator7", service);
 
         UUID nonExistentOrderId = UUID.randomUUID();
 
@@ -469,9 +469,9 @@ public class ReviewsIntegrationTests {
         UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
 
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
-        UserEntity operator = createTestOperator("operator8", "52.2200, 21.0100", 20, service);
+        createTestOperator("operator8", service);
 
-        OrdersEntity order = createCompletedOrder(client, operator);
+        OrdersEntity order = createCompletedOrder(client);
 
         UUID nonExistentUserId = UUID.randomUUID();
 
@@ -504,9 +504,9 @@ public class ReviewsIntegrationTests {
         UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
 
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
-        UserEntity operator = createTestOperator("operator9", "52.2200, 21.0100", 20, service);
+        UserEntity operator = createTestOperator("operator9", service);
 
-        OrdersEntity order = createCompletedOrder(client, operator);
+        OrdersEntity order = createCompletedOrder(client);
 
         // When: Klient próbuje utworzyć recenzję z nieprawidłową oceną (0 lub 6)
         ReviewRequest reviewRequest = ReviewRequest.builder()
@@ -533,13 +533,13 @@ public class ReviewsIntegrationTests {
     @Test
     void givenUnauthenticatedUser_whenCreatingReview_thenReturnsUnauthorized() {
         // Given: Nieuwierzytelniony użytkownik
-        String clientToken = registerAndLoginClient();
+        registerAndLoginClient();
         UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
 
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
-        UserEntity operator = createTestOperator("operator10", "52.2200, 21.0100", 20, service);
+        UserEntity operator = createTestOperator("operator10", service);
 
-        OrdersEntity order = createCompletedOrder(client, operator);
+        OrdersEntity order = createCompletedOrder(client);
 
         // When: Próba utworzenia recenzji bez tokenu
         ReviewRequest reviewRequest = ReviewRequest.builder()
@@ -573,9 +573,9 @@ public class ReviewsIntegrationTests {
         UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
 
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
-        UserEntity operator = createTestOperator("operator11", "52.2200, 21.0100", 20, service);
+        UserEntity operator = createTestOperator("operator11", service);
 
-        OrdersEntity order = createCompletedOrder(client, operator);
+        OrdersEntity order = createCompletedOrder(client);
 
         String operatorToken = loginAsOperator("operator11@op.pl");
 
@@ -634,9 +634,9 @@ public class ReviewsIntegrationTests {
         UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
 
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
-        UserEntity operator = createTestOperator("operator12", "52.2200, 21.0100", 20, service);
+        UserEntity operator = createTestOperator("operator12", service);
 
-        OrdersEntity order = createCompletedOrder(client, operator);
+        OrdersEntity order = createCompletedOrder(client);
 
         // When: Klient tworzy recenzję bez treści (tylko ocena)
         ReviewRequest reviewRequest = ReviewRequest.builder()
@@ -670,11 +670,11 @@ public class ReviewsIntegrationTests {
         UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
 
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
-        UserEntity operator1 = createTestOperator("operator_reviews1", "52.2200, 21.0100", 20, service);
-        UserEntity operator2 = createTestOperator("operator_reviews2", "52.2200, 21.0100", 20, service);
+        createTestOperator("operator_reviews1", service);
+        createTestOperator("operator_reviews2", service);
 
-        OrdersEntity order1 = createCompletedOrder(client, operator1);
-        OrdersEntity order2 = createCompletedOrder(client, operator2);
+        OrdersEntity order1 = createCompletedOrder(client);
+        OrdersEntity order2 = createCompletedOrder(client);
 
         // Operator 1 tworzy recenzję dla klienta
         String operator1Token = loginAsOperator("operator_reviews1@op.pl");
@@ -776,13 +776,13 @@ public class ReviewsIntegrationTests {
     void givenOperatorWithReviews_whenGetUserReviews_thenReturnsAllReviewsForOperator() {
         // Given: Operator z recenzjami od różnych klientów
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
-        UserEntity operator = createTestOperator("operator_reviews3", "52.2200, 21.0100", 20, service);
+        UserEntity operator = createTestOperator("operator_reviews3", service);
 
         // Pierwszy klient
         String client1Token = registerAndLoginClient();
         UserEntity client1 = userRepository.findByEmail("client@example.com").orElseThrow();
 
-        OrdersEntity order1 = createCompletedOrder(client1, operator);
+        OrdersEntity order1 = createCompletedOrder(client1);
 
         ReviewRequest review1 = ReviewRequest.builder()
                 .stars(5)
@@ -816,11 +816,12 @@ public class ReviewsIntegrationTests {
 
         ResponseEntity<LoginResponse> login2Response = testRestTemplate.postForEntity(
                 "/api/auth/login", client2Login, LoginResponse.class);
+        Assertions.assertNotNull(login2Response.getBody());
         String client2Token = login2Response.getBody().token();
 
         UserEntity client2 = userRepository.findByEmail("client2@example.com").orElseThrow();
 
-        OrdersEntity order2 = createCompletedOrder(client2, operator);
+        OrdersEntity order2 = createCompletedOrder(client2);
 
         ReviewRequest review2 = ReviewRequest.builder()
                 .stars(3)
@@ -868,9 +869,9 @@ public class ReviewsIntegrationTests {
         UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
 
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
-        UserEntity operator = createTestOperator("operator_reviews4", "52.2200, 21.0100", 20, service);
+        UserEntity operator = createTestOperator("operator_reviews4", service);
 
-        OrdersEntity order = createCompletedOrder(client, operator);
+        OrdersEntity order = createCompletedOrder(client);
 
         // Operator tworzy recenzję dla klienta (klient jest target)
         String operatorToken = loginAsOperator("operator_reviews4@op.pl");
@@ -915,7 +916,7 @@ public class ReviewsIntegrationTests {
         assertThat(getResponse.getBody()).isNotNull();
         assertThat(getResponse.getBody()).hasSize(1);
 
-        com.example.drones.reviews.dto.UserReviewResponse review = getResponse.getBody().get(0);
+        com.example.drones.reviews.dto.UserReviewResponse review = getResponse.getBody().getFirst();
         assertThat(review.getStars()).isEqualTo(5);
         assertThat(review.getBody()).isEqualTo("Great client!");
     }
@@ -924,14 +925,14 @@ public class ReviewsIntegrationTests {
     void givenUserWithMultipleReviewsWithDifferentRatings_whenGetUserReviews_thenReturnsAllWithCorrectData() {
         // Given: Operator z różnymi ocenami od klientów
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
-        UserEntity operator = createTestOperator("operator_reviews5", "52.2200, 21.0100", 20, service);
+        UserEntity operator = createTestOperator("operator_reviews5", service);
 
         String clientToken = registerAndLoginClient();
         UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
 
         // Tworzenie 5 recenzji z różnymi ocenami
         for (int i = 1; i <= 5; i++) {
-            OrdersEntity order = createCompletedOrder(client, operator);
+            OrdersEntity order = createCompletedOrder(client);
 
             ReviewRequest review = ReviewRequest.builder()
                     .stars(i)
@@ -975,7 +976,7 @@ public class ReviewsIntegrationTests {
     @Test
     void givenUnauthenticatedUser_whenGetUserReviews_thenReturnsUnauthorized() {
         // Given: Nieuwierzytelniony użytkownik
-        String clientToken = registerAndLoginClient();
+        registerAndLoginClient();
         UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
 
         // When: Próba pobrania recenzji bez tokenu
@@ -1001,9 +1002,9 @@ public class ReviewsIntegrationTests {
         UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
 
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
-        UserEntity operator = createTestOperator("operator_reviews6", "52.2200, 21.0100", 20, service);
+        createTestOperator("operator_reviews6", service);
 
-        OrdersEntity order = createCompletedOrder(client, operator);
+        OrdersEntity order = createCompletedOrder(client);
 
         // Operator tworzy recenzję bez treści
         String operatorToken = loginAsOperator("operator_reviews6@op.pl");
@@ -1033,7 +1034,7 @@ public class ReviewsIntegrationTests {
         assertThat(getResponse.getBody()).isNotNull();
         assertThat(getResponse.getBody()).hasSize(1);
 
-        com.example.drones.reviews.dto.UserReviewResponse reviewResponse = getResponse.getBody().get(0);
+        com.example.drones.reviews.dto.UserReviewResponse reviewResponse = getResponse.getBody().getFirst();
         assertThat(reviewResponse.getStars()).isEqualTo(5);
         assertThat(reviewResponse.getBody()).isNullOrEmpty();
     }

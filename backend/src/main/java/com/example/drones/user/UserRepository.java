@@ -22,20 +22,20 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
     Optional<UserEntity> findByIdWithPortfolio(UUID userId);
 
     @Query(value = """
-        SELECT u.* FROM users u
-        JOIN operator_service os ON u.id = os.operator_id
-        WHERE u.role = 'OPERATOR'
-          AND os.service_name = :serviceName
-          AND u.coordinates IS NOT NULL
-          AND u.radius IS NOT NULL
-          AND (
-              6371 * acos(
-                  cos(radians(:orderLat)) * cos(radians(CAST(SPLIT_PART(u.coordinates, ',', 1) AS DOUBLE PRECISION))) *
-                  cos(radians(CAST(SPLIT_PART(u.coordinates, ',', 2) AS DOUBLE PRECISION)) - radians(:orderLon)) +
-                  sin(radians(:orderLat)) * sin(radians(CAST(SPLIT_PART(u.coordinates, ',', 1) AS DOUBLE PRECISION)))
-              )
-          ) <= u.radius
-        """, nativeQuery = true)
+            SELECT u.* FROM users u
+            JOIN operator_service os ON u.id = os.operator_id
+            WHERE u.role = 'OPERATOR'
+              AND os.service_name = :serviceName
+              AND u.coordinates IS NOT NULL
+              AND u.radius IS NOT NULL
+              AND (
+                  6371 * acos(
+                      cos(radians(:orderLat)) * cos(radians(CAST(SPLIT_PART(u.coordinates, ',', 1) AS DOUBLE PRECISION))) *
+                      cos(radians(CAST(SPLIT_PART(u.coordinates, ',', 2) AS DOUBLE PRECISION)) - radians(:orderLon)) +
+                      sin(radians(:orderLat)) * sin(radians(CAST(SPLIT_PART(u.coordinates, ',', 1) AS DOUBLE PRECISION)))
+                  )
+              ) <= u.radius
+            """, nativeQuery = true)
     List<UserEntity> findMatchingOperators(
             @Param("serviceName") String serviceName,
             @Param("orderLat") double orderLat,

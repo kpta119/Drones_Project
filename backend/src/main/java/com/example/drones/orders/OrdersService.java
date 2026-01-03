@@ -6,11 +6,11 @@ import com.example.drones.orders.dto.OrderRequest;
 import com.example.drones.orders.dto.OrderResponse;
 import com.example.drones.orders.dto.OrderUpdateRequest;
 import com.example.drones.orders.exceptions.*;
+import com.example.drones.services.ServicesEntity;
+import com.example.drones.services.ServicesRepository;
 import com.example.drones.services.exceptions.ServiceNotFoundException;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
-import com.example.drones.services.ServicesEntity;
-import com.example.drones.services.ServicesRepository;
 import com.example.drones.user.UserRole;
 import com.example.drones.user.exceptions.NotOperatorException;
 import lombok.RequiredArgsConstructor;
@@ -86,13 +86,13 @@ public class OrdersService {
     @CacheEvict(value = "orders", allEntries = true)
     public OrderResponse acceptOrder(UUID orderId, UUID operatorIdParam, UUID currentUserId) {
         UserEntity currentUser = userRepository.findById(currentUserId)
-                .orElseThrow( UserNotFoundException::new);
+                .orElseThrow(UserNotFoundException::new);
 
         OrdersEntity foundOrder = ordersRepository.findById(orderId)
                 .orElseThrow(OrderNotFoundException::new);
 
         NewMatchedOrderEntity match;
-        if (operatorIdParam == null){
+        if (operatorIdParam == null) {
             // Operator accepts
             if (currentUser.getRole() != UserRole.OPERATOR) {
                 throw new NotOperatorException();
