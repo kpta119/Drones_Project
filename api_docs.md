@@ -152,7 +152,7 @@ Base URL: `/api/user`.
     {
       "id": 123,
       "title": "Inspekcja dachu kamienicy",
-      "clientId": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
+      "client_id": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
       "description": "Potrzebuję nagrania inspekcyjnego dachu.",
       "service": "Kopanie rowów",
       "parameters": { "cecha": "wartość_cechy" },
@@ -185,7 +185,7 @@ Base URL: `/api/user`.
     {
       "id": 123,
       "title": "Inspekcja dachu kamienicy",
-      "clientId": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
+      "client_id": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
       "description": "Zaktualizowany opis zlecenia...", // zmiana
       "service": "Kopanie rowów",
       "status": "open",
@@ -210,7 +210,7 @@ Base URL: `/api/user`.
     {
       "id": 123,
       "title": "Inspekcja dachu kamienicy",
-      "clientId": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
+      "client_id": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
       "status": "in_progress", // "in_progress" jeśli zaakceptował klient, "awaiting_operator" jeśli zaakceptował operator
       "operator_id": 55,
       // ...pozostałe pola
@@ -242,7 +242,7 @@ Odrzucenie operatora przez zleceniodawce i na odwrót nie wpływa na staus zlece
     {
       "id": 123,
       "title": "Inspekcja dachu kamienicy",
-      "clientId": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
+      "client_id": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
       "status": "cancelled",
       // ...pozostałe pola
     }
@@ -263,7 +263,7 @@ Odrzucenie operatora przez zleceniodawce i na odwrót nie wpływa na staus zlece
       {
         "id": 123,
         "title": "Inspekcja dachu kamienicy",
-        "clientId": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
+        "client_id": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
         "description": "Potrzebuję nagrania inspekcyjnego dachu.",
         "service": "Kopanie rowów",
         "parameters": {
@@ -286,7 +286,7 @@ Zwraca zlecenia użytkownika o `userId` zawartym w `JWT tokenie`
       {
         "id": 10,
         "title": "Inspekcja dachu kamienicy",
-        "clientId": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
+        "client_id": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
         "description": "Potrzebuję nagrania inspekcyjnego dachu.",
         "service": "Kopanie rowów",
         "parameters": {
