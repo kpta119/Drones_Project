@@ -250,34 +250,7 @@ Odrzucenie operatora przez zleceniodawce i na odwrót nie wpływa na staus zlece
 
 ---
 
-### Pobierz listę zamówień
-
-**GET** `/getOrders/:status`
-
-* **Dostępne statusy:** `open`, `awaiting_operator`, `in_progress`, `completed`, `cancelled`.
-
-* **Response (200 OK):**
-
-    ```json
-    [
-      {
-        "id": 123,
-        "title": "Inspekcja dachu kamienicy",
-        "client_id": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
-        "description": "Potrzebuję nagrania inspekcyjnego dachu.",
-        "service": "Kopanie rowów",
-        "parameters": {
-          "cecha": "wartość_cechy"
-        },
-        "coordinates": "52.2300,21.0100",
-        "from_date": "2025-06-10T10:00:00",
-        "to_date": "2025-06-10T12:00:00",
-        "status": "open"
-      }
-    ]
-    ```
-
-### Pobierz listę zleceń uzytkownika
+### Pobierz listę zleceń użytkownika
 **GET** `/getMyOrders`
 * **Response (200 OK):**
 Zwraca zlecenia użytkownika o `userId` zawartym w `JWT tokenie`
