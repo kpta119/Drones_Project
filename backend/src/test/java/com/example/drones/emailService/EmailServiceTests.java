@@ -13,10 +13,17 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.test.context.ContextConfiguration;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -25,8 +32,28 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@ActiveProfiles("test")
+@ContextConfiguration(classes = EmailServiceTests.TestConfig.class)
 public class EmailServiceTests {
+
+    @Configuration
+    @EnableAutoConfiguration(exclude = {
+        DataSourceAutoConfiguration.class,
+        HibernateJpaAutoConfiguration.class
+    })
+    static class TestConfig {
+        @Bean
+        public JavaMailSender javaMailSender() {
+            JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+            mailSender.setHost("localhost");
+            mailSender.setPort(3025);
+            return mailSender;
+        }
+
+        @Bean
+        public EmailService emailService(JavaMailSender mailSender) {
+            return new EmailService(mailSender);
+        }
+    }
 
     @RegisterExtension
     static GreenMailExtension greenMail = new GreenMailExtension(ServerSetupTest.SMTP)
@@ -43,6 +70,7 @@ public class EmailServiceTests {
 
     @BeforeEach
     void setUp() {
+
         testService = new ServicesEntity();
         testService.setName("Laser Scanning");
 
