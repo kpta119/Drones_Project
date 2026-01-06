@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import OrderCard from "@/src/components/order_card";
 import { OrderDTO } from "@/src/dto/order_dto";
 
@@ -15,10 +15,11 @@ export default function OrdersPage() {
     const [fromDate, setFromDate] = useState("");
     const [toDate, setToDate] = useState("");
 
-    async function fetchOrders() {
+    const fetchOrders = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
+
             const token = localStorage.getItem("token");
             if (!token) throw new Error("Brak tokenu JWT w localStorage");
 
@@ -29,7 +30,7 @@ export default function OrdersPage() {
             if (fromDate) params.append("from_date", new Date(fromDate).toISOString());
             if (toDate) params.append("to_date", new Date(toDate).toISOString());
 
-            const response = await fetch('/api/operators/getMatchedOrders?${params.toString()}', {
+            const response = await fetch(`/api/operators/getMatchedOrders?${params.toString()}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
@@ -43,19 +44,21 @@ export default function OrdersPage() {
 
             const data = await response.json();
             setOrders(data.content || []);
-        } catch (err: any) {
-            setError(err.message || "Nieznany błąd");
+        } catch (err: unknown) {
+            if (err instanceof Error) setError(err.message);
+            else setError("Nieznany błąd");
         } finally {
             setLoading(false);
         }
-    }
+    }, [location, radius, service, fromDate, toDate]);
 
     useEffect(() => {
         fetchOrders();
-    }, []);
+    }, [fetchOrders]);
 
     return (
         <div className="p-4 space-y-4">
+            {/* Filter Section */}
             <div className="bg-white p-4 rounded-md shadow-md space-y-4">
                 <h2 className="text-lg font-semibold">Filtruj zlecenia</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -109,11 +112,14 @@ export default function OrdersPage() {
                 </button>
             </div>
 
+            {/* Loading / Error / Empty States */}
             {loading && <p className="text-gray-700">Ładowanie zleceń...</p>}
             {error && <p className="text-red-600">{error}</p>}
             {!loading && orders.length === 0 && !error && (
                 <p className="text-gray-500">Brak dopasowanych zleceń.</p>
             )}
+
+            {/* Orders List */}
             <div className="space-y-4">
                 {orders.map((order) => (
                     <OrderCard key={order.id} order={order} />

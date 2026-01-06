@@ -6,6 +6,11 @@ import { OrderDTO, OrderStatus } from "@/src/dto/order_dto";
 import { getMatchedOrders } from "./operator_orders";
 import OrderCard from "@/src/components/order_card";
 
+type ViewState =
+    | { status: "loading" }
+    | { status: "error"; message: string }
+    | { status: "ready"; orders: OrderDTO[] };
+
 const STATUS_LABELS: Record<OrderStatus, string> = {
     open: "Otwarte",
     awaiting_operator: "Oczekujące na operatora",
@@ -20,67 +25,66 @@ const VISIBLE_STATUSES: OrderStatus[] = [
     "completed",
 ];
 
-export default function OrdersPage() {
+export default function OperatorPanelPage() {
     const router = useRouter();
-
-    const [orders, setOrders] = useState<OrderDTO[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [viewState, setViewState] = useState<ViewState>({ status: "loading" });
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
+        const fetchOrdersAsync = async () => {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                setViewState({
+                    status: "error",
+                    message: "Brak tokenu JWT w localStorage",
+                });
+                return;
+            }
+            try {
+                const orders: OrderDTO[] = await getMatchedOrders(token);
+                setViewState({ status: "ready", orders });
+            } catch {
+                setViewState({
+                    status: "error",
+                    message: "Błąd pobierania zleceń",
+                });
+            }
+        };
 
-        if (!token) {
-            setError("Brak tokenu JWT w localStorage");
-            setLoading(false);
-            return;
-        }
+        void fetchOrdersAsync(); // wywołanie asynchroniczne bez synchronizacji
+    }, []); // brak dependency na fetchOrders
 
-        getMatchedOrders(token)
-            .then(setOrders)
-            .catch(() => setError("Błąd pobierania zleceń"))
-            .finally(() => setLoading(false));
-    }, []);
-
-    if (loading) {
+    if (viewState.status === "loading") {
         return <p className="p-4">Ładowanie...</p>;
     }
 
-    if (error) {
-        return <p className="p-4 text-red-600">{error}</p>;
+    if (viewState.status === "error") {
+        return <p className="p-4 text-red-600">{viewState.message}</p>;
     }
 
-    const groupedOrders = orders.reduce<Record<OrderStatus, OrderDTO[]>>(
-        (acc, order) => {
-            acc[order.status].push(order);
-            return acc;
-        },
-        {
-            open: [],
-            awaiting_operator: [],
-            in_progress: [],
-            completed: [],
-            cancelled: [],
-        }
-    );
+    const groupedOrders: Record<OrderStatus, OrderDTO[]> = {
+        open: [],
+        awaiting_operator: [],
+        in_progress: [],
+        completed: [],
+        cancelled: [],
+    };
+
+    for (const order of viewState.orders) {
+        groupedOrders[order.status].push(order);
+    }
 
     return (
         <div className="space-y-8 p-6">
-            {/* Przycisk nawigacji */}
-            <div>
-                <button
-                    onClick={() => router.push("/orders")}
-                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
-                >
-                    Znajdź nowe zlecenie
-                </button>
-            </div>
+            <button
+                onClick={() => router.push("/orders")}
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+                Znajdź nowe zlecenie
+            </button>
 
-            {VISIBLE_STATUSES.map(status => (
+            {VISIBLE_STATUSES.map((status) => (
                 <section key={status}>
-                    <h1 className="mb-4 text-xl font-bold">
-                        {STATUS_LABELS[status]}
-                    </h1>
+                    <h1 className="mb-4 text-xl font-bold">{STATUS_LABELS[status]}</h1>
 
                     {groupedOrders[status].length === 0 ? (
                         <p className="text-sm text-gray-500">
@@ -88,11 +92,8 @@ export default function OrdersPage() {
                         </p>
                     ) : (
                         <div className="grid gap-4">
-                            {groupedOrders[status].map(order => (
-                                <OrderCard
-                                    key={order.id.toString()}
-                                    order={order}
-                                />
+                            {groupedOrders[status].map((order) => (
+                                <OrderCard key={order.id.toString()} order={order} />
                             ))}
                         </div>
                     )}
