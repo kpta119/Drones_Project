@@ -24,7 +24,7 @@ public interface OrdersMapper {
     OrdersEntity toEntity(OrderRequest request, ServicesEntity serviceEntity);
 
     @Mapping(target = "service", source = "service.name")
-    @Mapping(source = "user.id", target = "clientId")
+    @Mapping(source = "user.id", target = "client_id")
     OrderResponse toResponse(OrdersEntity entity);
 
     @Mapping(target = "id", ignore = true)

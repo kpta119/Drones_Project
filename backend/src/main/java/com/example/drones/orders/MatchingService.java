@@ -17,6 +17,7 @@ public class MatchingService {
 
     private final UserRepository userRepository;
     private final NewMatchedOrdersRepository newMatchedOrdersRepository;
+    private final EmailService emailService;
 
     @Async
     @Transactional
@@ -49,7 +50,9 @@ public class MatchingService {
 
             newMatchedOrdersRepository.saveAll(matches);
 
-            // Tutaj można dodać wysyłanie powiadomień do operatorów
+            matchingOperators.forEach(operator ->
+                    emailService.sendNewOrderNotification(operator, order)
+            );
 
         } catch (Exception e) {
             log.error("Error during matching operators for order {}", order.getId(), e);
