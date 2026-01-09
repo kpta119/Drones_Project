@@ -15,7 +15,8 @@ CREATE TYPE user_role AS ENUM (
     'CLIENT',
     'OPERATOR',
     'ADMIN',
-    'BLOCKED'
+    'BLOCKED',
+    'INCOMPLETE'
     );
 
 CREATE TYPE order_status AS ENUM (
@@ -32,21 +33,19 @@ CREATE TYPE matched_order_status AS ENUM (
     'REJECTED'
     );
 
-
-
 CREATE TABLE users
 (
     id                  UUID PRIMARY KEY             DEFAULT gen_random_uuid(),
     role                user_role           NOT NULL DEFAULT 'CLIENT',
-    username            VARCHAR(255)        NOT NULL,
+    username            VARCHAR(255),
     name                VARCHAR(255)        NOT NULL,
     surname             VARCHAR(255)        NOT NULL,
-    password            VARCHAR(255)        NOT NULL,
+    password            VARCHAR(255),
     email               VARCHAR(255) UNIQUE NOT NULL,
     phone_number        VARCHAR(20),
     created_at          TIMESTAMP                    DEFAULT NOW(),
-    google_user_id      VARCHAR(255),
-    google_access_token VARCHAR(255),
+    provider_user_id      VARCHAR(255) UNIQUE,
+    provider_refresh_token TEXT,
     coordinates         VARCHAR(255), -- Np. "52.2297,21.0122"
     radius              INTEGER,
     certificates        JSONB         -- np. ['cert1', 'cert2']

@@ -1768,7 +1768,8 @@ public class OrdersIntegrationTests {
                 "/api/orders/getMyOrders",
                 HttpMethod.GET,
                 getEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -1798,7 +1799,8 @@ public class OrdersIntegrationTests {
                 "/api/orders/getMyOrders",
                 HttpMethod.GET,
                 getEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -1873,7 +1875,8 @@ public class OrdersIntegrationTests {
                 "/api/orders/getMyOrders",
                 HttpMethod.GET,
                 getEntity1,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         assertThat(getResponse1.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -1886,7 +1889,8 @@ public class OrdersIntegrationTests {
                 "/api/orders/getMyOrders",
                 HttpMethod.GET,
                 getEntity2,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         assertThat(getResponse2.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -2002,7 +2006,8 @@ public class OrdersIntegrationTests {
                 "/api/orders/getMyOrders",
                 HttpMethod.GET,
                 getEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -2033,7 +2038,7 @@ public class OrdersIntegrationTests {
                 String.class
         );
 
-        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
@@ -2089,7 +2094,8 @@ public class OrdersIntegrationTests {
                 "/api/orders/getMyOrders",
                 HttpMethod.GET,
                 getEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);

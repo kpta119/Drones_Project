@@ -1,25 +1,36 @@
 package com.example.drones.auth;
 
 import com.example.drones.common.config.auth.JwtService;
-import com.example.drones.user.UserService;
+import com.example.drones.user.UserEntity;
+import com.example.drones.user.UserRepository;
+import com.example.drones.user.UserRole;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtService jwtService;
-    private final UserService userService;
+    private final OAuth2AuthorizedClientRepository authorizedClientRepository;
+    private final UserRepository userRepository;
     @Value("${app.frontend_url}")
     private String frontendUrl;
 
@@ -32,25 +43,88 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
 
-        String email = oAuth2User.getAttribute("email");
-        String name = oAuth2User.getAttribute("name");
+        OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+        OAuth2AuthorizedClient client = authorizedClientRepository.loadAuthorizedClient(
+                oauthToken.getAuthorizedClientRegistrationId(),
+                oauthToken,
+                request
+        );
+
+        // Spotbugs wants 2 ifs
+        String refreshToken = null;
+        if (client != null) {
+            var tokenObject = client.getRefreshToken();
+
+            if (tokenObject != null) {
+                refreshToken = tokenObject.getTokenValue();
+            }
+        }
+
         String providerId = oAuth2User.getAttribute("sub");
+        String email = oAuth2User.getAttribute("email");
 
-        System.out.println("Email: " + email);
-        System.out.println("Name: " + name);
-        System.out.println("Provider ID: " + providerId);
+        Optional<UserEntity> newUser = userRepository.findByProviderUserId(providerId);
+        UserEntity user;
+        if (newUser.isPresent()) {
+            UserEntity oldProviderUser = newUser.get();
+            if (refreshToken != null) {
+                oldProviderUser.setProviderRefreshToken(refreshToken);
+                userRepository.save(oldProviderUser);
+            }
+            user = oldProviderUser;
+            log.info("Existing user logged in: {}", oldProviderUser.getEmail());
+        } else {
+            newUser = userRepository.findByEmail(email);
+            if (newUser.isPresent()) {
+                UserEntity oldUser = newUser.get();
+                oldUser.setProviderUserId(providerId);
+                oldUser.setProviderRefreshToken(refreshToken);
+                userRepository.save(oldUser);
+                user = oldUser;
+                log.info("User with email {} already exists", email);
+            } else {
+                String name = oAuth2User.getAttribute("given_name");
+                String surname = oAuth2User.getAttribute("family_name");
+                UserEntity newProviderUser = UserEntity.builder()
+                        .email(email)
+                        .providerUserId(providerId)
+                        .providerRefreshToken(refreshToken)
+                        .name(name)
+                        .surname(surname)
+                        .role(UserRole.INCOMPLETE)
+                        .build();
+                userRepository.save(newProviderUser);
+                user = newProviderUser;
+                log.info("New user created: {}", email);
+            }
+        }
+        String token = jwtService.generateToken(user.getId());
+        String role = user.getRole().name();
+        String userId = user.getId().toString();
+        String username = (user.getDisplayName() != null) ? user.getDisplayName() : email;
 
-        // TODO: create user
+        addHandoffCookie(response, "auth_token", token);
+        addHandoffCookie(response, "auth_role", role);
+        addHandoffCookie(response, "auth_userid", userId);
+        addHandoffCookie(response, "auth_email", email);
+        addHandoffCookie(response, "auth_username", username);
 
-        String targetUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/auth/callback")
-                .queryParam("token", "DEMO_TOKEN")
-                .queryParam("role", "DEMO_ROLE")
-                .queryParam("userId", "DEMO_USER_ID")
-                .queryParam("email", email)
-                .queryParam("username", "DEMO_USERNAME")
-                .build()
-                .toUriString();
-
+        String targetUrl = frontendUrl + "/auth/callback";
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
+    }
+
+
+    private void addHandoffCookie(HttpServletResponse response, String name, String value) {
+        if (value == null) return;
+
+        String encodedValue = URLEncoder.encode(value, StandardCharsets.UTF_8);
+
+        Cookie cookie = new Cookie(name, encodedValue);
+        cookie.setPath("/");
+        cookie.setMaxAge(30);
+        cookie.setSecure(true);
+        cookie.setHttpOnly(false);
+
+        response.addCookie(cookie);
     }
 }

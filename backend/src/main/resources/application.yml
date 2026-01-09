@@ -23,7 +23,11 @@ spring:
               - profile
               - email
               - openid
+              - https://www.googleapis.com/auth/calendar.events
             redirect-uri: "{baseUrl}/api/auth/oauth2/callback/{registrationId}"
+        provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline
   threads:
     virtual:
       enabled: true

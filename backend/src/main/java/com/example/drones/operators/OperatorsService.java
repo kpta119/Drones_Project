@@ -5,7 +5,6 @@ import com.example.drones.common.config.exceptions.UserNotFoundException;
 import com.example.drones.operators.dto.*;
 import com.example.drones.operators.exceptions.NoSuchOperatorException;
 import com.example.drones.operators.exceptions.NoSuchPortfolioException;
-import com.example.drones.operators.exceptions.OperatorAlreadyExistsException;
 import com.example.drones.operators.exceptions.PortfolioAlreadyExistsException;
 import com.example.drones.orders.*;
 import com.example.drones.orders.exceptions.OrderNotFoundException;
@@ -46,9 +45,7 @@ public class OperatorsService {
     public OperatorProfileDto createProfile(UUID userId, CreateOperatorProfileDto operatorDto) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
-        if (user.getRole() == UserRole.OPERATOR) {
-            throw new OperatorAlreadyExistsException();
-        }
+
         user.setCoordinates(operatorDto.coordinates());
         user.setRadius(operatorDto.radius());
         user.setCertificates(operatorDto.certificates());
@@ -64,9 +61,6 @@ public class OperatorsService {
     public OperatorProfileDto editProfile(UUID userId, OperatorProfileDto operatorDto) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
-        if (user.getRole() != UserRole.OPERATOR) {
-            throw new NoSuchOperatorException();
-        }
 
         if (operatorDto.coordinates() != null) {
             user.setCoordinates(operatorDto.coordinates());
@@ -93,9 +87,6 @@ public class OperatorsService {
     public OperatorPortfolioDto createPortfolio(UUID userId, CreatePortfolioDto portfolioDto) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
-        if (user.getRole() != UserRole.OPERATOR) {
-            throw new NoSuchOperatorException();
-        }
 
         Optional<PortfolioEntity> oldPortfolio = portfolioRepository.findByOperatorId(user.getId());
         if (oldPortfolio.isPresent()) {
@@ -116,9 +107,6 @@ public class OperatorsService {
     public OperatorPortfolioDto editPortfolio(UUID userId, UpdatePortfolioDto portfolioDto) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
-        if (user.getRole() != UserRole.OPERATOR) {
-            throw new NoSuchOperatorException();
-        }
         PortfolioEntity portfolio = portfolioRepository.findByOperatorId(user.getId())
                 .orElseThrow(NoSuchPortfolioException::new);
 
@@ -163,9 +151,6 @@ public class OperatorsService {
     public Page<MatchedOrderDto> getMatchedOrders(UUID userId, MatchedOrdersFilters filters, Pageable pageable) {
         UserEntity operator = userRepository.findByIdWithPortfolio(userId)
                 .orElseThrow(UserNotFoundException::new);
-        if (operator.getRole() != UserRole.OPERATOR) {
-            throw new NoSuchOperatorException();
-        }
 
         String location = filters.location() != null ? filters.location() : operator.getCoordinates();
         Integer radius = filters.radius() != null ? filters.radius() : operator.getRadius();
