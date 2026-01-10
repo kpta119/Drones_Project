@@ -9,10 +9,21 @@ import { RegistrationData } from "./operator_register_module";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
+interface LeafletImage {
+  src: string;
+}
+
 if (typeof window !== "undefined") {
-  let DefaultIcon = L.icon({
-    iconUrl: (markerIcon as any).src || markerIcon,
-    shadowUrl: (markerShadow as any).src || markerShadow,
+  const iconUrl =
+    (markerIcon as unknown as LeafletImage).src ||
+    (markerIcon as unknown as string);
+  const shadowUrl =
+    (markerShadow as unknown as LeafletImage).src ||
+    (markerShadow as unknown as string);
+
+  const DefaultIcon = L.icon({
+    iconUrl,
+    shadowUrl,
     iconSize: [25, 41],
     iconAnchor: [12, 41],
   });
@@ -117,7 +128,7 @@ export function LocationInputModule({
             />
           </MapContainer>
           <div className="absolute bottom-2 left-2 z-1000 bg-white/80 backdrop-blur-sm px-3 py-1 text-xs rounded border shadow-sm pointer-events-none">
-            Aby zmienić lokalizację, przesuń pinezkę.
+            Przesuń pinezkę, aby zmienić lokalizację środka.
           </div>
         </div>
       </div>
