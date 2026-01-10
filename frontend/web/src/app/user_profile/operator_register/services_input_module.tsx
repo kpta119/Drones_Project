@@ -26,7 +26,7 @@ export function ServicesInputModule({
         });
         const resData = await response.json();
         setAvailableServices(Array.isArray(resData) ? resData : []);
-      } catch (err) {
+      } catch {
         setAvailableServices([]);
       } finally {
         setLoading(false);
@@ -47,34 +47,37 @@ export function ServicesInputModule({
       <div className="flex-1">
         <h2 className="text-2xl font-bold mb-6">Wybierz usługi</h2>
         {loading ? (
-          <p>Ładowanie...</p>
+          <p className="text-gray-600 italic">Ładowanie dostępnych usług...</p>
         ) : (
           <div className="space-y-3">
             {availableServices.map((service) => (
               <label
                 key={service}
-                className="flex items-center gap-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50"
+                className="flex items-center gap-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <input
                   type="checkbox"
                   checked={data.services.includes(service)}
                   onChange={() => toggleService(service)}
-                  className="w-5 h-5"
+                  className="w-5 h-5 accent-primary-600"
                 />
-                <span>{service}</span>
+                <span className="text-gray-700">{service}</span>
               </label>
             ))}
           </div>
         )}
       </div>
       <div className="flex justify-between gap-4 pt-8 border-t">
-        <button onClick={onPrev} className="px-6 py-2 bg-gray-300 rounded-lg">
+        <button
+          onClick={onPrev}
+          className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+        >
           Wróć
         </button>
         <button
           onClick={onNext}
           disabled={data.services.length === 0}
-          className="px-6 py-2 bg-primary-600 text-white rounded-lg disabled:opacity-50"
+          className="px-6 py-2 bg-primary-600 text-white rounded-lg disabled:opacity-50 font-bold hover:bg-primary-700"
         >
           Dalej
         </button>

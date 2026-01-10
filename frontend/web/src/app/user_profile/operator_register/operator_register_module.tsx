@@ -54,7 +54,7 @@ export default function OperatorRegisterModule({
 
     const token = localStorage.getItem("token");
     if (!token) {
-      setError("Error acquiring token");
+      setError("Błąd autoryzacji");
       setIsSubmitting(false);
       return;
     }
@@ -81,10 +81,10 @@ export default function OperatorRegisterModule({
         window.location.reload();
       } else {
         const errorData = await response.json().catch(() => ({}));
-        setError(errorData.message || `Server error: ${response.status}`);
+        setError(errorData.message || `Błąd serwera: ${response.status}`);
       }
-    } catch (err) {
-      setError("Connection error");
+    } catch {
+      setError("Błąd połączenia");
     } finally {
       setIsSubmitting(false);
     }
@@ -97,6 +97,7 @@ export default function OperatorRegisterModule({
     { number: 3, label: "Lokalizacja" },
     { number: 4, label: "Podsumowanie" },
   ];
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 h-full p-4 lg:p-8 overflow-y-auto">
       <div className="lg:col-span-2 relative flex flex-col h-full">
@@ -137,24 +138,31 @@ export default function OperatorRegisterModule({
           )}
           {step === 4 && (
             <div className="flex flex-col items-center justify-center h-full text-center p-4">
-              <h2 className="text-2xl lg:text-3xl font-bold mb-4">
+              <h2 className="text-2xl lg:text-3xl font-bold mb-4 text-black">
                 Finalizacja
               </h2>
               <p className="text-gray-600 mb-8">
                 Czy wszystkie dane są poprawne?
               </p>
+
+              {error && (
+                <p className="text-red-500 mb-6 font-medium">{error}</p>
+              )}
+
               <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
                 <button
                   onClick={() => setStep(3)}
-                  className="px-8 py-3 bg-gray-200 rounded-xl"
+                  disabled={isSubmitting}
+                  className="px-8 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold disabled:opacity-50"
                 >
                   Wróć
                 </button>
                 <button
                   onClick={handleSubmit}
-                  className="px-8 py-3 bg-primary-600 text-white rounded-xl font-bold"
+                  disabled={isSubmitting}
+                  className="px-8 py-3 bg-primary-600 text-white rounded-xl font-bold disabled:opacity-50 transition-all"
                 >
-                  Zatwierdź
+                  {isSubmitting ? "Wysyłanie..." : "Zatwierdź"}
                 </button>
               </div>
             </div>
@@ -164,7 +172,7 @@ export default function OperatorRegisterModule({
 
       <div className="flex flex-col justify-start lg:justify-center border-t lg:border-t-0 lg:border-l border-gray-100 pt-6 lg:pt-0 lg:pl-8">
         <h4 className="text-xs font-bold uppercase text-gray-400 mb-4 lg:hidden">
-          Postęp rejestracji:
+          Postęp:
         </h4>
         <ol className="flex flex-row lg:flex-col gap-2 lg:space-y-3 overflow-x-auto pb-4 lg:pb-0">
           {steps.map((s) => (

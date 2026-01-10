@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useEffect } from "react";
+import { useMemo, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Circle } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -34,9 +34,12 @@ export function LocationInputModule({
 }: LocationInputModuleProps) {
   const markerRef = useRef<L.Marker>(null);
 
-  const updateCoords = (lat: number, lng: number) => {
-    setData({ ...data, coordinates: { lat, lng } });
-  };
+  const updateCoords = useCallback(
+    (lat: number, lng: number) => {
+      setData({ ...data, coordinates: { lat, lng } });
+    },
+    [data, setData]
+  );
 
   const updateRadius = (newRadius: number) => {
     setData({ ...data, radius: Math.max(100, newRadius) });
@@ -52,14 +55,13 @@ export function LocationInputModule({
         }
       },
     }),
-    [data, setData]
+    [updateCoords]
   );
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1">
         <h2 className="text-2xl font-bold mb-4">Ustaw lokalizację i zasięg</h2>
-
         <div className="grid grid-cols-4 gap-4 mb-4">
           <div className="col-span-1">
             <label className="block text-sm font-medium mb-1">
@@ -87,7 +89,6 @@ export function LocationInputModule({
             />
           </div>
         </div>
-
         <div className="h-[400px] w-full rounded-xl overflow-hidden border relative shadow-inner">
           <MapContainer
             center={[data.coordinates.lat, data.coordinates.lng]}
@@ -98,14 +99,12 @@ export function LocationInputModule({
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-
             <Marker
               draggable={true}
               eventHandlers={centerEventHandlers}
               position={[data.coordinates.lat, data.coordinates.lng]}
               ref={markerRef}
             />
-
             <Circle
               center={[data.coordinates.lat, data.coordinates.lng]}
               radius={data.radius}
@@ -117,13 +116,11 @@ export function LocationInputModule({
               }}
             />
           </MapContainer>
-
           <div className="absolute bottom-2 left-2 z-1000 bg-white/80 backdrop-blur-sm px-3 py-1 text-xs rounded border shadow-sm pointer-events-none">
             Aby zmienić lokalizację, przesuń pinezkę.
           </div>
         </div>
       </div>
-
       <div className="flex justify-between gap-4 pt-8 border-t mt-4">
         <button
           onClick={onPrev}
