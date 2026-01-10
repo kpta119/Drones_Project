@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
+import { RegistrationData } from "./operator_register_module";
 
 interface ServicesInputModuleProps {
   onNext: () => void;
   onPrev: () => void;
-  data: { certificates: string[]; services: string[] };
-  setData: (data: { certificates: string[]; services: string[] }) => void;
+  data: RegistrationData;
+  setData: (data: RegistrationData) => void;
 }
 
 export function ServicesInputModule({
@@ -21,51 +22,32 @@ export function ServicesInputModule({
       try {
         const token = localStorage.getItem("token");
         const response = await fetch("/api/services/getServices", {
-          headers: {
-            "X-USER-TOKEN": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+          headers: { "X-USER-TOKEN": `Bearer ${token}` },
         });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("Fetched services:", data);
-        setAvailableServices(Array.isArray(data) ? data : []);
+        const resData = await response.json();
+        setAvailableServices(Array.isArray(resData) ? resData : []);
       } catch (err) {
-        console.error("Failed to fetch services:", err);
         setAvailableServices([]);
       } finally {
         setLoading(false);
       }
     };
-
     fetchServices();
   }, []);
 
   const toggleService = (service: string) => {
-    if (data.services.includes(service)) {
-      setData({
-        ...data,
-        services: data.services.filter((s) => s !== service),
-      });
-    } else {
-      setData({
-        ...data,
-        services: [...data.services, service],
-      });
-    }
+    const services = data.services.includes(service)
+      ? data.services.filter((s) => s !== service)
+      : [...data.services, service];
+    setData({ ...data, services });
   };
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1">
         <h2 className="text-2xl font-bold mb-6">Wybierz usługi</h2>
-
         {loading ? (
-          <p className="text-gray-600">Ładowanie usług...</p>
+          <p>Ładowanie...</p>
         ) : (
           <div className="space-y-3">
             {availableServices.map((service) => (
@@ -79,42 +61,20 @@ export function ServicesInputModule({
                   onChange={() => toggleService(service)}
                   className="w-5 h-5"
                 />
-                <span className="text-gray-700">{service}</span>
+                <span>{service}</span>
               </label>
             ))}
           </div>
         )}
-
-        {data.services.length > 0 && (
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <p className="text-sm font-semibold text-blue-900 mb-2">
-              Wybrane usługi:
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {data.services.map((service) => (
-                <span
-                  key={service}
-                  className="inline-block bg-blue-200 text-blue-900 px-3 py-1 rounded"
-                >
-                  {service}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
-
       <div className="flex justify-between gap-4 pt-8 border-t">
-        <button
-          onClick={onPrev}
-          className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all"
-        >
+        <button onClick={onPrev} className="px-6 py-2 bg-gray-300 rounded-lg">
           Wróć
         </button>
         <button
           onClick={onNext}
-          className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all disabled:opacity-50"
           disabled={data.services.length === 0}
+          className="px-6 py-2 bg-primary-600 text-white rounded-lg disabled:opacity-50"
         >
           Dalej
         </button>

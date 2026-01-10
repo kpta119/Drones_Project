@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { checkInput } from "./operator_register_module";
+import { checkInput, RegistrationData } from "./operator_register_module";
+
 interface CertificatesInputModuleProps {
   onNext: () => void;
   onPrev: () => void;
-  data: { certificates: string[]; services: string[] };
-  setData: (data: { certificates: string[]; services: string[] }) => void;
+  data: RegistrationData;
+  setData: (data: RegistrationData) => void;
 }
 
 export function CertificatesInputModule({
@@ -28,7 +29,9 @@ export function CertificatesInputModule({
   const removeCertificate = (index: number) => {
     setData({
       ...data,
-      certificates: data.certificates.filter((_, i) => i !== index),
+      certificates: data.certificates.filter(
+        (_: string, i: number) => i !== index
+      ),
     });
   };
 
@@ -40,10 +43,8 @@ export function CertificatesInputModule({
           <input
             value={inputValue}
             onChange={(e) => setInputValue(checkInput(e.target.value))}
-            onKeyPress={(e) => {
-              if (e.key === "Enter") {
-                addCertificate();
-              }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") addCertificate();
             }}
             placeholder="Nazwa certyfikatu"
             className="flex-1 px-3 py-2 border rounded-lg"
@@ -55,16 +56,16 @@ export function CertificatesInputModule({
             Dodaj
           </button>
         </div>
-        <div className="space-y-2">
+        <div className="flex flex-wrap gap-2">
           {data.certificates.map((c, i) => (
             <div
               key={i}
-              className="inline-block bg-gray-200 px-3 py-1 rounded mr-2"
+              className="bg-gray-200 px-3 py-1 rounded flex items-center"
             >
               {c}
               <button
                 onClick={() => removeCertificate(i)}
-                className="ml-2 font-bold cursor-pointer"
+                className="ml-2 font-bold"
               >
                 ✕
               </button>

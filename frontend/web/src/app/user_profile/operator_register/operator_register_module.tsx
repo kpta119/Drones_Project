@@ -4,32 +4,42 @@ import { useState } from "react";
 import { CertificatesInputModule } from "./cert_input_module";
 import { OperatorRegisterIntroModule } from "./intro_module";
 import { ServicesInputModule } from "./services_input_module";
+import { LocationInputModule } from "./location_module";
 
-export const checkInput = (value: string) => {
+export interface RegistrationData {
+  certificates: string[];
+  services: string[];
+  coordinates: { lat: number; lng: number };
+  radius: number;
+}
+
+export const checkInput = (value: string): string => {
   const pattern = /[^a-zA-Z0-9\s\-]/g;
   return value.replace(pattern, "");
 };
 
-interface OperatorRegisterModuleItems {
+interface OperatorRegisterModuleProps {
   onClose: () => void;
-}
-
-interface RegistrationData {
-  certificates: string[];
-  services: string[];
 }
 
 export default function OperatorRegisterModule({
   onClose,
-}: OperatorRegisterModuleItems) {
+}: OperatorRegisterModuleProps) {
   const [step, setStep] = useState(0);
 
   const [data, setData] = useState<RegistrationData>({
     certificates: [],
     services: [],
+    coordinates: { lat: 52.237, lng: 21.017 },
+    radius: 5000,
   });
 
   const handleSubmit = async () => {
+    const finalPayload = {
+      ...data,
+      coordinates: `${data.coordinates.lat},${data.coordinates.lng}`,
+    };
+    console.log(finalPayload);
     onClose();
   };
 
@@ -42,11 +52,11 @@ export default function OperatorRegisterModule({
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-12 h-full">
-      <div className="col-span-2">
+    <div className="grid grid-cols-3 gap-12 h-full p-8">
+      <div className="col-span-2 relative">
         <button
           onClick={onClose}
-          className="absolute top-8 right-8 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+          className="absolute top-0 right-0 text-gray-500 hover:text-gray-700 text-2xl font-bold"
         >
           ✕
         </button>
@@ -70,8 +80,25 @@ export default function OperatorRegisterModule({
             setData={setData}
           />
         )}
-        {step === 3 && <div>Step 3</div>}
-        {step === 4 && <button onClick={handleSubmit}>Zatwierdź</button>}
+        {step === 3 && (
+          <LocationInputModule
+            onNext={() => setStep(4)}
+            onPrev={() => setStep(2)}
+            data={data}
+            setData={setData}
+          />
+        )}
+        {step === 4 && (
+          <div className="flex flex-col items-center justify-center h-full">
+            <h2 className="text-2xl font-bold mb-8">Gotowe do wysłania</h2>
+            <button
+              onClick={handleSubmit}
+              className="px-12 py-4 bg-primary-600 text-white rounded-xl font-bold text-lg hover:bg-primary-700 transition-all"
+            >
+              Zatwierdź i wyślij zgłoszenie
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col justify-center">
