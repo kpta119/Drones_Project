@@ -6,6 +6,7 @@ import com.example.drones.auth.dto.RegisterRequest;
 import com.example.drones.common.config.exceptions.ErrorResponse;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
+import com.example.drones.user.UserRole;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -167,6 +168,24 @@ public class AuthIntegrationTests {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         Assertions.assertNotNull(response.getBody());
         assertThat(response.getBody().message()).isEqualTo("The provided credentials are invalid.");
+
+    }
+
+    @Test
+    void givenBlockedUser_whenLogin_thenReturnsUserAccountLockedException() {
+        RegisterRequest registerRequest = validRegister;
+        LoginRequest loginRequest = validLogin;
+
+        testRestTemplate.postForEntity("/api/auth/register", registerRequest, Void.class);
+        UserEntity user = userRepository.findByEmail(registerRequest.email()).orElseThrow();
+        user.setRole(UserRole.BLOCKED);
+        userRepository.save(user);
+
+        ResponseEntity<ErrorResponse> response = testRestTemplate.postForEntity("/api/auth/login", loginRequest, ErrorResponse.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        Assertions.assertNotNull(response.getBody());
+        assertThat(response.getBody().message()).isEqualTo("Account has been banned");
+
 
     }
 }
