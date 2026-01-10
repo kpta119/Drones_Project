@@ -1,0 +1,119 @@
+package com.example.drones.calendar;
+
+import com.example.drones.common.config.exceptions.UserNotFoundException;
+import com.example.drones.orders.OrdersEntity;
+import com.example.drones.orders.OrdersRepository;
+import com.example.drones.user.UserEntity;
+import com.example.drones.user.UserRepository;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.client.util.DateTime;
+import com.google.api.services.calendar.Calendar;
+import com.google.api.services.calendar.model.Event;
+import com.google.api.services.calendar.model.EventDateTime;
+import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.auth.oauth2.UserCredentials;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.time.LocalDate;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class CalendarService {
+    private static final GsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
+
+    private final UserRepository userRepository;
+    private final OrdersRepository ordersRepository;
+
+    @Value("${spring.security.oauth2.client.registration.google.client-id}")
+    private String clientId;
+
+    @Value("${spring.security.oauth2.client.registration.google.client-secret}")
+    private String clientSecret;
+
+    @Value("${app.frontend_url}")
+    private String frontendUrl;
+
+    public String addEvent(UUID operatorId, UUID orderId) {
+        UserEntity user = userRepository.findById(operatorId)
+                .orElseThrow(UserNotFoundException::new);
+        String userRefreshToken = user.getProviderRefreshToken();
+
+        OrdersEntity order = ordersRepository.findInProgressOrderByOperatorId(orderId, operatorId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        if (userRefreshToken == null) {
+            throw new RuntimeException("Brak refresh tokenu");
+        }
+        return addEventWithRefreshToken(userRefreshToken, order);
+    }
+
+    public String addEventWithRefreshToken(String userRefreshToken, OrdersEntity order) {
+        String googleEventId = "order" + order.getId().toString().replace("-", "");
+        Event event = prepareEventObject(order, googleEventId);
+
+        try {
+            Calendar service = buildCalendarService(userRefreshToken);
+
+            try {
+                return service.events()
+                        .insert("primary", event)
+                        .execute()
+                        .getHtmlLink();
+
+            } catch (GoogleJsonResponseException e) {
+                if (e.getStatusCode() == 409) {
+                    log.info("Wydarzenie {} już istnieje. Aktualizuję.", googleEventId);
+                    return service.events()
+                            .update("primary", googleEventId, event)
+                            .execute()
+                            .getHtmlLink();
+                }
+                throw e;
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Nie udało się zsynchronizować kalendarza dla zamówienia: " + order.getTitle(), e);
+        }
+    }
+
+
+    private Calendar buildCalendarService(String refreshToken) throws GeneralSecurityException, IOException {
+        UserCredentials credentials = UserCredentials.newBuilder()
+                .setClientId(clientId)
+                .setClientSecret(clientSecret)
+                .setRefreshToken(refreshToken)
+                .build();
+
+        return new Calendar.Builder(
+                GoogleNetHttpTransport.newTrustedTransport(),
+                JSON_FACTORY,
+                new HttpCredentialsAdapter(credentials)
+        )
+                .setApplicationName("DRONEX")
+                .build();
+    }
+
+    private Event prepareEventObject(OrdersEntity order, String googleEventId) {
+        LocalDate eventDate = LocalDate.from(order.getToDate());
+
+        Event event = new Event()
+                .setId(googleEventId)
+                .setSummary("DEADLINE: " + order.getTitle())
+                .setDescription("Szczegóły na: " + frontendUrl)
+                .setColorId("11")
+                .setTransparency("transparent");
+
+        event.setStart(new EventDateTime().setDate(new DateTime(eventDate.toString())));
+        event.setEnd(new EventDateTime().setDate(new DateTime(eventDate.plusDays(1).toString())));
+
+        return event;
+    }
+}

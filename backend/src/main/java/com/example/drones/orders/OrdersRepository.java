@@ -23,4 +23,14 @@ public interface OrdersRepository extends JpaRepository<OrdersEntity, UUID>, Jpa
     Optional<OrdersEntity> findByIdWithUser(UUID orderId);
 
     List<OrdersEntity> findAllByUser_IdOrderByCreatedAtDesc(UUID userId);
+
+    @Query("""
+            SELECT o
+            FROM OrdersEntity o
+            INNER JOIN o.matchedOrders nmo
+            WHERE o.id = :orderId
+            AND o.status = 'IN_PROGRESS'
+            AND nmo.operator.id = :operatorId
+            """)
+    Optional<OrdersEntity> findInProgressOrderByOperatorId(UUID orderId, UUID operatorId);
 }
