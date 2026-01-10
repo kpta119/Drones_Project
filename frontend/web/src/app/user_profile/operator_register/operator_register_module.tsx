@@ -1,10 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { CertificatesInputModule } from "./cert_input_module";
 import { OperatorRegisterIntroModule } from "./intro_module";
 import { ServicesInputModule } from "./services_input_module";
-import { LocationInputModule } from "./location_module";
+
+const LocationInputModule = dynamic(
+  () => import("./location_module").then((mod) => mod.LocationInputModule),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[400px] w-full bg-gray-100 animate-pulse flex items-center justify-center">
+        Ładowanie mapy...
+      </div>
+    ),
+  }
+);
 
 export interface RegistrationData {
   certificates: string[];
@@ -26,6 +38,8 @@ export default function OperatorRegisterModule({
   onClose,
 }: OperatorRegisterModuleProps) {
   const [step, setStep] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [data, setData] = useState<RegistrationData>({
     certificates: [],
@@ -35,12 +49,45 @@ export default function OperatorRegisterModule({
   });
 
   const handleSubmit = async () => {
-    const finalPayload = {
-      ...data,
+    setIsSubmitting(true);
+    setError(null);
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setError("Error acquiring token");
+      setIsSubmitting(false);
+      return;
+    }
+
+    const payload = {
+      certificates: data.certificates,
+      services: data.services,
       coordinates: `${data.coordinates.lat},${data.coordinates.lng}`,
+      radius: data.radius,
     };
-    console.log(finalPayload);
-    onClose();
+
+    try {
+      const response = await fetch("/api/operators/createOperatorProfile", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-USER-TOKEN": `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        onClose();
+        window.location.reload();
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        setError(errorData.message || `Server error: ${response.status}`);
+      }
+    } catch (err) {
+      setError("Connection error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const steps = [
@@ -64,6 +111,7 @@ export default function OperatorRegisterModule({
         {step === 0 && (
           <OperatorRegisterIntroModule onNext={() => setStep(1)} />
         )}
+
         {step === 1 && (
           <CertificatesInputModule
             onNext={() => setStep(2)}
@@ -72,6 +120,7 @@ export default function OperatorRegisterModule({
             setData={setData}
           />
         )}
+
         {step === 2 && (
           <ServicesInputModule
             onNext={() => setStep(3)}
@@ -80,6 +129,7 @@ export default function OperatorRegisterModule({
             setData={setData}
           />
         )}
+
         {step === 3 && (
           <LocationInputModule
             onNext={() => setStep(4)}
@@ -88,15 +138,36 @@ export default function OperatorRegisterModule({
             setData={setData}
           />
         )}
+
         {step === 4 && (
-          <div className="flex flex-col items-center justify-center h-full">
-            <h2 className="text-2xl font-bold mb-8">Gotowe do wysłania</h2>
-            <button
-              onClick={handleSubmit}
-              className="px-12 py-4 bg-primary-600 text-white rounded-xl font-bold text-lg hover:bg-primary-700 transition-all"
-            >
-              Zatwierdź i wyślij zgłoszenie
-            </button>
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <h2 className="text-3xl font-bold mb-4">Finalizacja</h2>
+            <p className="text-gray-600 mb-8">
+              Czy wszystkie dane są poprawne?
+            </p>
+
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 text-red-600 border border-red-200 rounded-lg">
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-4">
+              <button
+                onClick={() => setStep(3)}
+                disabled={isSubmitting}
+                className="px-8 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold"
+              >
+                Wróć
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="px-12 py-3 bg-primary-600 text-white rounded-xl font-bold text-lg hover:bg-primary-700 disabled:opacity-50 transition-all"
+              >
+                {isSubmitting ? "Wysyłanie..." : "Zatwierdź i zarejestruj"}
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -117,7 +188,7 @@ export default function OperatorRegisterModule({
                 </h3>
                 {step > s.number && (
                   <svg
-                    className="w-5 h-5 shrink-0"
+                    className="w-5 h-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
