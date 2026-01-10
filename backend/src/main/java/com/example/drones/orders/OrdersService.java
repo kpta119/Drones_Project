@@ -105,11 +105,20 @@ public class OrdersService {
             match = newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, currentUserId)
                     .orElseThrow(MatchedOrderNotFoundException::new);
             match.setOperatorStatus(MatchedOrderStatus.ACCEPTED);
-            foundOrder.setStatus(OrderStatus.AWAITING_OPERATOR);
+            if (foundOrder.getStatus() == OrderStatus.OPEN) {
+                foundOrder.setStatus(OrderStatus.AWAITING_OPERATOR);
+            }
         } else {
             // Client accepts
             if (!foundOrder.getUser().getId().equals(currentUserId)) {
                 throw new NotOwnerOfOrderException();
+            }
+
+            boolean alreadyAcceptedSomeone = newMatchedOrdersRepository
+                    .existsByOrderIdAndClientStatus(orderId, MatchedOrderStatus.ACCEPTED);
+
+            if (alreadyAcceptedSomeone){
+                throw new OrderAlreadyHasAcceptedOperatorException();
             }
 
             match = newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operatorIdParam)
