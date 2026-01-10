@@ -128,7 +128,7 @@ export function LocationInputModule({
             />
           </MapContainer>
           <div className="absolute bottom-2 left-2 z-1000 bg-white/80 backdrop-blur-sm px-3 py-1 text-xs rounded border shadow-sm pointer-events-none">
-            Przesuń pinezkę, aby zmienić lokalizację środka.
+            Aby zmienić lokalizację, przesuń pinezkę.
           </div>
         </div>
       </div>
