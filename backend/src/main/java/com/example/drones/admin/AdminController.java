@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -20,6 +21,7 @@ class AdminController {
     private final AdminService adminService;
 
     @GetMapping("/getUsers")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<UserDto>> getUsers(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) UserRole role,
@@ -30,12 +32,14 @@ class AdminController {
     }
 
     @PatchMapping("/banUser/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDto> banUser(@PathVariable UUID userId) {
         UserDto bannedUser = adminService.banUser(userId);
         return ResponseEntity.ok().body(bannedUser);
     }
 
     @GetMapping("/getOrders")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<OrderDto>> getOrder(
             @PageableDefault(size = 20) Pageable pageable
     ) {
@@ -44,6 +48,7 @@ class AdminController {
     }
 
     @GetMapping("/getStats")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<SystemStatsDto> getStats() {
         SystemStatsDto stats = adminService.getSystemStats();
         return ResponseEntity.ok().body(stats);

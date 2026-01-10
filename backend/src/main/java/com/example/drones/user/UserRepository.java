@@ -41,4 +41,6 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
             @Param("orderLat") double orderLat,
             @Param("orderLon") double orderLon
     );
+
+    Optional<UserEntity> findByProviderUserId(String providerUserId);
 }

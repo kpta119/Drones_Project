@@ -3,6 +3,7 @@ package com.example.drones.services;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,11 +16,13 @@ public class ServicesController {
     private final ServicesService servicesService;
 
     @GetMapping("/getServices")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'CLIENT', 'ADMIN')")
     public ResponseEntity<List<String>> getServices() {
         return ResponseEntity.ok(servicesService.getAllServices());
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<String>> addServices(@RequestBody List<String> serviceNames) {
         List<String> createdServices = servicesService.addServices(serviceNames);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdServices);

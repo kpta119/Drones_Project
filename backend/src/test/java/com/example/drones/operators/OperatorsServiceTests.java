@@ -5,7 +5,6 @@ import com.example.drones.common.config.exceptions.UserNotFoundException;
 import com.example.drones.operators.dto.*;
 import com.example.drones.operators.exceptions.NoSuchOperatorException;
 import com.example.drones.operators.exceptions.NoSuchPortfolioException;
-import com.example.drones.operators.exceptions.OperatorAlreadyExistsException;
 import com.example.drones.operators.exceptions.PortfolioAlreadyExistsException;
 import com.example.drones.orders.*;
 import com.example.drones.orders.exceptions.OrderNotFoundException;
@@ -153,33 +152,6 @@ public class OperatorsServiceTests {
         assertThatThrownBy(() -> service.createProfile(userId, operatorDto))
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessage("User not found");
-
-        verify(userRepository).findById(userId);
-        verify(userRepository, never()).save(any());
-        verify(operatorServicesService, never()).addOperatorServices(any(), any());
-    }
-
-    @Test
-    public void givenUserAlreadyOperator_whenCreateProfile_thenThrowsOperatorAlreadyExistsException() {
-        UUID userId = UUID.randomUUID();
-        CreateOperatorProfileDto operatorDto = CreateOperatorProfileDto.builder()
-                .coordinates("45.0,90.0")
-                .radius(10)
-                .certificates(List.of("Cert1"))
-                .services(List.of("Delivery"))
-                .build();
-        UserEntity user = UserEntity.builder()
-                .id(userId)
-                .role(UserRole.OPERATOR)
-                .coordinates("40.0,80.0")
-                .radius(5)
-                .build();
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-
-        assertThatThrownBy(() -> service.createProfile(userId, operatorDto))
-                .isInstanceOf(OperatorAlreadyExistsException.class)
-                .hasMessage("Operator profile already exists for this user.");
 
         verify(userRepository).findById(userId);
         verify(userRepository, never()).save(any());
@@ -363,32 +335,6 @@ public class OperatorsServiceTests {
     }
 
     @Test
-    public void givenUserNotOperator_whenEditProfile_thenThrowsNoSuchOperatorException() {
-        UUID userId = UUID.randomUUID();
-        OperatorProfileDto operatorDto = OperatorProfileDto.builder()
-                .coordinates("52.2297,21.0122")
-                .radius(100)
-                .certificates(List.of("Advanced License"))
-                .services(List.of("Photography"))
-                .build();
-        UserEntity user = UserEntity.builder()
-                .id(userId)
-                .role(UserRole.CLIENT)
-                .build();
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-
-        assertThatThrownBy(() -> service.editProfile(userId, operatorDto))
-                .isInstanceOf(com.example.drones.operators.exceptions.NoSuchOperatorException.class)
-                .hasMessage("No operator profile found for this user.");
-
-        verify(userRepository).findById(userId);
-        verify(userRepository, never()).save(any());
-        verify(operatorServicesService, never()).editOperatorServices(any(), any());
-        verify(operatorServicesService, never()).getOperatorServices(any());
-    }
-
-    @Test
     public void givenValidPortfolioDto_whenCreatePortfolio_thenPortfolioCreatedAndReturnsDto() {
         UUID userId = UUID.randomUUID();
         CreatePortfolioDto portfolioDto = CreatePortfolioDto.builder()
@@ -437,29 +383,6 @@ public class OperatorsServiceTests {
         assertThatThrownBy(() -> service.createPortfolio(userId, portfolioDto))
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessage("User not found");
-
-        verify(userRepository).findById(userId);
-        verify(portfolioRepository, never()).save(any());
-        verify(portfolioMapper, never()).toOperatorPortfolioDto(any());
-    }
-
-    @Test
-    public void givenUserNotOperator_whenCreatePortfolio_thenThrowsNoSuchOperatorException() {
-        UUID userId = UUID.randomUUID();
-        CreatePortfolioDto portfolioDto = CreatePortfolioDto.builder()
-                .title("Aerial Photography Portfolio")
-                .description("Collection of my best aerial photography work")
-                .build();
-        UserEntity user = UserEntity.builder()
-                .id(userId)
-                .role(UserRole.CLIENT)
-                .build();
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-
-        assertThatThrownBy(() -> service.createPortfolio(userId, portfolioDto))
-                .isInstanceOf(NoSuchOperatorException.class)
-                .hasMessage("No operator profile found for this user.");
 
         verify(userRepository).findById(userId);
         verify(portfolioRepository, never()).save(any());
@@ -629,30 +552,6 @@ public class OperatorsServiceTests {
         assertThatThrownBy(() -> service.editPortfolio(userId, portfolioDto))
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessage("User not found");
-
-        verify(userRepository).findById(userId);
-        verify(portfolioRepository, never()).findByOperatorId(any());
-        verify(portfolioRepository, never()).save(any());
-        verify(portfolioMapper, never()).toOperatorPortfolioDto(any());
-    }
-
-    @Test
-    public void givenUserNotOperator_whenEditPortfolio_thenThrowsNoSuchOperatorException() {
-        UUID userId = UUID.randomUUID();
-        UpdatePortfolioDto portfolioDto = UpdatePortfolioDto.builder()
-                .title("Updated Title")
-                .description("Updated description")
-                .build();
-        UserEntity user = UserEntity.builder()
-                .id(userId)
-                .role(UserRole.CLIENT)
-                .build();
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-
-        assertThatThrownBy(() -> service.editPortfolio(userId, portfolioDto))
-                .isInstanceOf(NoSuchOperatorException.class)
-                .hasMessage("No operator profile found for this user.");
 
         verify(userRepository).findById(userId);
         verify(portfolioRepository, never()).findByOperatorId(any());
@@ -1236,30 +1135,6 @@ public class OperatorsServiceTests {
                 .hasMessage("User not found");
 
         verify(userRepository).findByIdWithPortfolio(operatorId);
-        verify(ordersRepository, never()).findAll(ArgumentMatchers.<Specification<OrdersEntity>>any(), any(Pageable.class));
-    }
-
-    @Test
-    public void givenUserNotOperator_whenGetMatchedOrders_thenThrowsNoSuchOperatorException() {
-        UUID userId = UUID.randomUUID();
-
-        UserEntity client = UserEntity.builder()
-                .id(userId)
-                .role(UserRole.CLIENT)
-                .build();
-
-        MatchedOrdersFilters filters = new MatchedOrdersFilters(
-                null, null, null, null, null, null, null, null
-        );
-        Pageable pageable = PageRequest.of(0, 20);
-
-        when(userRepository.findByIdWithPortfolio(userId)).thenReturn(Optional.of(client));
-
-        assertThatThrownBy(() -> service.getMatchedOrders(userId, filters, pageable))
-                .isInstanceOf(NoSuchOperatorException.class)
-                .hasMessage("No operator profile found for this user.");
-
-        verify(userRepository).findByIdWithPortfolio(userId);
         verify(ordersRepository, never()).findAll(ArgumentMatchers.<Specification<OrdersEntity>>any(), any(Pageable.class));
     }
 

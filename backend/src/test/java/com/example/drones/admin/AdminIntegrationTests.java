@@ -162,7 +162,7 @@ public class AdminIntegrationTests {
     void givenUnauthenticatedUser_whenGetUsers_thenReturnsForbidden() throws Exception {
         mockMvc.perform(get("/api/admin/getUsers")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -207,7 +207,7 @@ public class AdminIntegrationTests {
 
         mockMvc.perform(patch("/api/admin/banUser/{userId}", clientId)
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
 
@@ -309,7 +309,7 @@ public class AdminIntegrationTests {
     void givenUnauthenticatedUser_whenGetOrders_thenReturnsForbidden() throws Exception {
         mockMvc.perform(get("/api/admin/getOrders")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -585,7 +585,7 @@ public class AdminIntegrationTests {
     void givenUnauthenticatedUser_whenGetStats_thenReturnsForbidden() throws Exception {
         mockMvc.perform(get("/api/admin/getStats")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
 }

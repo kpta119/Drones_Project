@@ -6,12 +6,13 @@ import com.example.drones.user.dto.UserUpdateRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
 @RestController
-@RequestMapping("api/user")
+@RequestMapping("/api/user")
 @RequiredArgsConstructor
 public class UserController {
 
@@ -19,6 +20,7 @@ public class UserController {
     private final JwtService jwtService;
 
     @GetMapping("/getUserData")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'CLIENT', 'ADMIN')")
     public ResponseEntity<UserResponse> getUserData(
             @RequestParam(name = "user_id", required = false) UUID userId
     ) {
@@ -28,6 +30,7 @@ public class UserController {
     }
 
     @PatchMapping("/editUserData")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'CLIENT', 'ADMIN', 'INCOMPLETE')")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public UserResponse editUserData(@RequestBody UserUpdateRequest request) {
         return userService.editUserData(request);

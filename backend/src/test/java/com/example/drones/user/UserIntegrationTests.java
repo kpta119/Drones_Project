@@ -132,9 +132,10 @@ public class UserIntegrationTests {
     void givenValidPatchRequest_whenEditUserData_thenUpdatesOnlyProvidedFields() {
         String token = registerAndLogin(user1Register, user1Login);
 
-        UserUpdateRequest updateRequest = new UserUpdateRequest();
-        updateRequest.setName("Janusz");
-        updateRequest.setPhoneNumber("000000000");
+        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+                .name("Janusz")
+                .phoneNumber("000000000")
+                .build();
 
         HttpEntity<UserUpdateRequest> requestEntity = new HttpEntity<>(updateRequest, getHeaders(token));
 
@@ -159,18 +160,19 @@ public class UserIntegrationTests {
     }
 
     @Test
-    void givenNoToken_whenGetUserData_thenReturnsForbidden() {
+    void givenNoToken_whenGetUserData_thenReturnsUnauthorized() {
         ResponseEntity<Void> response = testRestTemplate.getForEntity("/api/user/getUserData", Void.class);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
     void givenClientUser_whenTryToChangeRole_thenReturnsForbidden() {
         String token = registerAndLogin(user1Register, user1Login);
 
-        UserUpdateRequest updateRequest = new UserUpdateRequest();
-        updateRequest.setRole(UserRole.ADMIN);
+        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+                .role(UserRole.ADMIN)
+                .build();
 
         HttpEntity<UserUpdateRequest> requestEntity = new HttpEntity<>(updateRequest, getHeaders(token));
         ResponseEntity<String> response = testRestTemplate.exchange(
@@ -203,8 +205,9 @@ public class UserIntegrationTests {
         Assertions.assertNotNull(loginResponse.getBody());
         String adminToken = loginResponse.getBody().token();
 
-        UserUpdateRequest updateRequest = new UserUpdateRequest();
-        updateRequest.setRole(UserRole.OPERATOR);
+        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+                .role(UserRole.OPERATOR)
+                .build();
 
         HttpEntity<UserUpdateRequest> requestEntity = new HttpEntity<>(updateRequest, getHeaders(adminToken));
 
@@ -221,6 +224,43 @@ public class UserIntegrationTests {
 
         UserEntity updatedUserInDb = userRepository.findByEmail(user1Register.email()).orElseThrow();
         assertThat(updatedUserInDb.getRole()).isEqualTo(UserRole.OPERATOR);
+    }
+
+    @Test
+    void givenIncompleteUser_whenEditUserData_thenRoleChangesToClient() {
+        testRestTemplate.postForEntity("/api/auth/register", user1Register, Void.class);
+
+        UserEntity userEntity = userRepository.findByEmail(user1Register.email()).orElseThrow();
+        userEntity.setRole(UserRole.INCOMPLETE);
+        userRepository.save(userEntity);
+
+        ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
+                "/api/auth/login",
+                user1Login,
+                LoginResponse.class
+        );
+        Assertions.assertNotNull(loginResponse.getBody());
+        String userToken = loginResponse.getBody().token();
+
+        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+                .name("UpdatedName")
+                .build();
+
+        HttpEntity<UserUpdateRequest> requestEntity = new HttpEntity<>(updateRequest, getHeaders(userToken));
+
+        ResponseEntity<UserResponse> response = testRestTemplate.exchange(
+                "/api/user/editUserData",
+                HttpMethod.PATCH,
+                requestEntity,
+                UserResponse.class
+        );
+
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        Assertions.assertNotNull(response.getBody());
+        assertThat(response.getBody().getRole()).isEqualTo("CLIENT");
+
+        UserEntity updatedUserInDb = userRepository.findByEmail(user1Register.email()).orElseThrow();
+        assertThat(updatedUserInDb.getRole()).isEqualTo(UserRole.CLIENT);
     }
 
 }

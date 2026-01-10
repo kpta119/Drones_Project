@@ -37,7 +37,7 @@ public class UserService {
 
         UserEntity userEntity = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
-        if (request.getRole() != null) {
+        if (request.role() != null) {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             boolean isAdmin = auth.getAuthorities().stream()
                     .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
@@ -45,7 +45,10 @@ public class UserService {
             if (!isAdmin) {
                 throw new InvalidCredentialsException();
             }
-            userEntity.setRole(request.getRole());
+            userEntity.setRole(request.role());
+        }
+        if (userEntity.getRole() == UserRole.INCOMPLETE) {
+            userEntity.setRole(UserRole.CLIENT);
         }
 
         userMapper.updateEntityFromRequest(request, userEntity);

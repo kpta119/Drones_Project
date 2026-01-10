@@ -158,7 +158,7 @@ public class PhotosIntegrationTests {
     }
 
     @Test
-    void givenNoAuthToken_whenAddPhotos_thenReturnsForbidden() throws Exception {
+    void givenNoAuthToken_whenAddPhotos_thenReturnsUnauthorized() throws Exception {
         MockMultipartFile image = new MockMultipartFile(
                 "images",
                 "photo.jpg",
@@ -169,7 +169,7 @@ public class PhotosIntegrationTests {
         mockMvc.perform(multipart("/api/photos/addPortfolioPhotos")
                         .file(image)
                         .param("names", "Photo Name"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         List<PhotoEntity> savedPhotos = photosRepository.findAll();
         assertThat(savedPhotos).isEmpty();
@@ -328,7 +328,7 @@ public class PhotosIntegrationTests {
     }
 
     @Test
-    void givenNoAuthToken_whenDeletePhotos_thenReturnsForbidden() throws Exception {
+    void givenNoAuthToken_whenDeletePhotos_thenReturnsUnauthorized() throws Exception {
         PhotoEntity photo = PhotoEntity.builder()
                 .name("Photo 1")
                 .url("https://fakeStorage.com/photo1.jpg")
@@ -339,7 +339,7 @@ public class PhotosIntegrationTests {
         mockMvc.perform(delete("/api/photos/deletePhotos")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("[" + photo.getId() + "]"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         List<PhotoEntity> remainingPhotos = photosRepository.findAll();
         assertThat(remainingPhotos).hasSize(1);

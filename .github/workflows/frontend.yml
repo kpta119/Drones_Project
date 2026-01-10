@@ -6,7 +6,11 @@ on:
     paths:
         - 'frontend/**'
         - '.github/workflows/frontend.yml'
-
+  push:
+    branches: ['frontend_development', 'main', 'backend_development']
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
 defaults:
   run:
     working-directory: ./frontend/web

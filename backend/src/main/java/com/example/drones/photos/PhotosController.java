@@ -5,6 +5,7 @@ import com.example.drones.photos.dto.PhotosDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,6 +21,7 @@ public class PhotosController {
     private final JwtService jwtService;
 
     @PostMapping("/addPortfolioPhotos")
+    @PreAuthorize("hasRole('OPERATOR')")
     public ResponseEntity<PhotosDto> addPhotos(
             @RequestParam("images") List<MultipartFile> images,
             @RequestParam("names") List<String> names
@@ -30,6 +32,7 @@ public class PhotosController {
     }
 
     @DeleteMapping("/deletePhotos")
+    @PreAuthorize("hasRole('OPERATOR')")
     public ResponseEntity<Void> deletePhotos(@RequestBody List<Integer> photoIds) {
         UUID userId = jwtService.extractUserId();
         photosService.deletePhotos(userId, photoIds);

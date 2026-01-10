@@ -35,10 +35,10 @@ public class CustomUserDetailsService implements UserDetailsService {
         if (user.getRole() == UserRole.BLOCKED) {
             throw new LockedException("User account is blocked");
         }
-
+        String password = user.getPassword() != null ? user.getPassword() : "OAUTH2_USER_NO_PASSWORD";
         return new User(
                 user.getId().toString(),
-                user.getPassword(),
+                password,
                 List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
         );
     }

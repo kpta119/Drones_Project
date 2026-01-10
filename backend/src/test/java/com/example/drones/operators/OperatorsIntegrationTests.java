@@ -153,7 +153,7 @@ public class OperatorsIntegrationTests {
         mockMvc.perform(post("/api/operators/createOperatorProfile")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(operatorDto)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         UserEntity unchangedUser = userRepository.findById(testUser.getId()).orElseThrow();
         assertThat(unchangedUser.getRole()).isEqualTo(UserRole.CLIENT);
@@ -212,7 +212,7 @@ public class OperatorsIntegrationTests {
     }
 
     @Test
-    void givenNoAuthToken_whenEditOperatorProfile_thenReturnsForbidden() throws Exception {
+    void givenNoAuthToken_whenEditOperatorProfile_thenReturnsUnauthorized() throws Exception {
         testUser.setRole(UserRole.OPERATOR);
         userRepository.save(testUser);
 
@@ -227,7 +227,7 @@ public class OperatorsIntegrationTests {
         mockMvc.perform(patch("/api/operators/editOperatorProfile")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(operatorDto)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -277,7 +277,7 @@ public class OperatorsIntegrationTests {
     }
 
     @Test
-    void givenNoAuthToken_whenAddPortfolio_thenReturnsForbidden() throws Exception {
+    void givenNoAuthToken_whenAddPortfolio_thenReturnsUnauthorized() throws Exception {
         testUser.setRole(UserRole.OPERATOR);
         userRepository.save(testUser);
 
@@ -289,7 +289,7 @@ public class OperatorsIntegrationTests {
         mockMvc.perform(post("/api/operators/addPortfolio")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(portfolioDto)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         var portfolios = portfolioRepository.findAll();
         assertThat(portfolios).isEmpty();
@@ -398,7 +398,7 @@ public class OperatorsIntegrationTests {
     }
 
     @Test
-    void givenNoAuthToken_whenEditPortfolio_thenReturnsForbidden() throws Exception {
+    void givenNoAuthToken_whenEditPortfolio_thenReturnsUnauthorized() throws Exception {
         testUser.setRole(UserRole.OPERATOR);
         userRepository.save(testUser);
 
@@ -417,7 +417,7 @@ public class OperatorsIntegrationTests {
         mockMvc.perform(patch("/api/operators/editPortfolio")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDto)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         var portfolios = portfolioRepository.findAll();
         assertThat(portfolios).hasSize(1);
@@ -763,7 +763,7 @@ public class OperatorsIntegrationTests {
     }
 
     @Test
-    void givenNoAuthToken_whenGetOperatorsInfo_thenReturnsForbidden() throws Exception {
+    void givenNoAuthToken_whenGetOperatorsInfo_thenReturnsUnauthorized() throws Exception {
         ServicesEntity service = servicesRepository.findById("Aerial Photography").orElseThrow();
 
         OrdersEntity order = OrdersEntity.builder()
@@ -781,7 +781,7 @@ public class OperatorsIntegrationTests {
 
         mockMvc.perform(get("/api/operators/getOperatorsInfo/{orderId}", order.getId())
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -1183,18 +1183,18 @@ public class OperatorsIntegrationTests {
     }
 
     @Test
-    void givenNonOperatorUser_whenGetMatchedOrders_thenReturnsNotFound() throws Exception {
+    void givenNonOperatorUser_whenGetMatchedOrders_thenReturnsForbidden() throws Exception {
         testUser.setRole(UserRole.CLIENT);
         userRepository.save(testUser);
 
         mockMvc.perform(get("/api/operators/getMatchedOrders")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-USER-TOKEN", "Bearer " + jwtToken))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isForbidden());
     }
 
     @Test
-    void givenNoAuthToken_whenGetMatchedOrders_thenReturnsForbidden() throws Exception {
+    void givenNoAuthToken_whenGetMatchedOrders_thenReturnsUnauthorized() throws Exception {
         testUser.setRole(UserRole.OPERATOR);
         testUser.setCoordinates("52.2297,21.0122");
         testUser.setRadius(50);
@@ -1202,7 +1202,7 @@ public class OperatorsIntegrationTests {
 
         mockMvc.perform(get("/api/operators/getMatchedOrders")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
