@@ -14,7 +14,7 @@ export default function AuthCallbackPage() {
     const role = Cookies.get('auth_role');
     // const userId = Cookies.get('auth_userid');
     const username = Cookies.get('auth_username');
-    const email = Cookies.get('auth_email');
+    // const email = Cookies.get('auth_email');
 
     const decodedUsername = (username || '').replaceAll('+', ' ');
     localStorage.setItem('token', token || '');
@@ -33,7 +33,6 @@ export default function AuthCallbackPage() {
 
     } catch (error) {
       console.error("Błąd przetwarzania logowania:", error);
-      setStatus('Wystąpił błąd podczas logowania.');
     }
   }, [router]);
 
