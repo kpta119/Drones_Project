@@ -9,12 +9,12 @@ export default function AuthCallbackPage() {
   const [status, setStatus] = useState('Przetwarzanie logowania...');
 
   useEffect(() => {
+    // all data from cookies
     const token = Cookies.get('auth_token');
     const role = Cookies.get('auth_role');
     const userId = Cookies.get('auth_userid');
     const username = Cookies.get('auth_username');
     const email = Cookies.get('auth_email');
-    console.log('Odebrane ciasteczka:', { token, role, userId, username, email });
 
     if (!token) {
       setStatus('Błąd: Brak tokena logowania. Spróbuj ponownie.');
@@ -22,23 +22,20 @@ export default function AuthCallbackPage() {
       return;
     }
 
+    localStorage.setItem('token', token);
+    localStorage.setItem('role', role || '');
+
     try {
-      localStorage.setItem('token', token);
-      localStorage.setItem('role', role || '');
-      localStorage.setItem('user', JSON.stringify({
-        id: userId,
-        email: email,
-        username: username
-      }));
       ['auth_token', 'auth_role', 'auth_userid', 'auth_email', 'auth_username']
         .forEach(cookieName => Cookies.remove(cookieName));
 
       if (role === 'INCOMPLETE') {
-        console.log('Nowy użytkownik - przekierowanie do formularza');
+        localStorage.setItem('name', email || ''); // tymczasowo ustawiamy email jako nazwę
         router.push('/complete-profile');
       } else {
-        console.log('Logowanie udane - witamy z powrotem');
-        router.push('/');
+        const decodedUsername = (username || '').replaceAll('+', ' ');
+        localStorage.setItem('name', decodedUsername);
+        router.push('/user_profile');
       }
 
     } catch (error) {

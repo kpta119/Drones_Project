@@ -42,6 +42,7 @@ public class OperatorsService {
     private final OrdersMapper ordersMapper;
 
     @Transactional
+    @CacheEvict(value = "users", key = "#userId")
     public OperatorProfileDto createProfile(UUID userId, CreateOperatorProfileDto operatorDto) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);

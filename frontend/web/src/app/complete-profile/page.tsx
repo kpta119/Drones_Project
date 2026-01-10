@@ -38,14 +38,12 @@ export default function CompleteProfilePage() {
       });
 
       if (res.ok) {
-        const contentType = res.headers.get("content-type");
-        if (contentType && contentType.indexOf("application/json") !== -1) {
-            const data = await res.json();
-            localStorage.setItem('username', data.username);
-            localStorage.setItem('role', data.role);
-        }
+        const data = await res.json();
 
-        router.push('/');
+        localStorage.setItem('name', data.username);
+        localStorage.setItem('role', data.role);
+        window.location.href = '/user_profile';
+        return;
       } else {
         const errorText = await res.text();
         console.error("Błąd backendu:", errorText);
