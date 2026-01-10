@@ -161,7 +161,10 @@ public class OperatorsService {
 
         List<MatchedOrderDto> dtos = orders.getContent().stream()
                 .map(order -> {
-                    NewMatchedOrderEntity matchedOrder = order.getMatchedOrders().getFirst();
+                    NewMatchedOrderEntity matchedOrder = order.getMatchedOrders().stream()
+                            .filter(mo -> mo.getOperator().getId().equals(userId))
+                            .findFirst()
+                            .orElseThrow();
                     Double distance = Precision.round(calculateDistance(location, order.getCoordinates()), 2);
 
                     return ordersMapper.toMatchedOrderDto(order, matchedOrder, distance);
