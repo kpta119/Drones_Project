@@ -97,98 +97,91 @@ export default function OperatorRegisterModule({
     { number: 3, label: "Lokalizacja" },
     { number: 4, label: "Podsumowanie" },
   ];
-
   return (
-    <div className="grid grid-cols-3 gap-12 h-full p-8">
-      <div className="col-span-2 relative">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 h-full p-4 lg:p-8 overflow-y-auto">
+      <div className="lg:col-span-2 relative flex flex-col h-full">
         <button
           onClick={onClose}
-          className="absolute top-0 right-0 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+          className="absolute -top-2 -right-2 lg:top-0 lg:right-0 text-gray-500 hover:text-gray-700 text-2xl font-bold z-50"
         >
           ✕
         </button>
 
-        {step === 0 && (
-          <OperatorRegisterIntroModule onNext={() => setStep(1)} />
-        )}
-
-        {step === 1 && (
-          <CertificatesInputModule
-            onNext={() => setStep(2)}
-            onPrev={() => setStep(0)}
-            data={data}
-            setData={setData}
-          />
-        )}
-
-        {step === 2 && (
-          <ServicesInputModule
-            onNext={() => setStep(3)}
-            onPrev={() => setStep(1)}
-            data={data}
-            setData={setData}
-          />
-        )}
-
-        {step === 3 && (
-          <LocationInputModule
-            onNext={() => setStep(4)}
-            onPrev={() => setStep(2)}
-            data={data}
-            setData={setData}
-          />
-        )}
-
-        {step === 4 && (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <h2 className="text-3xl font-bold mb-4">Finalizacja</h2>
-            <p className="text-gray-600 mb-8">
-              Czy wszystkie dane są poprawne?
-            </p>
-
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 text-red-600 border border-red-200 rounded-lg">
-                {error}
+        <div className="flex-1 mt-8 lg:mt-0">
+          {step === 0 && (
+            <OperatorRegisterIntroModule onNext={() => setStep(1)} />
+          )}
+          {step === 1 && (
+            <CertificatesInputModule
+              onNext={() => setStep(2)}
+              onPrev={() => setStep(0)}
+              data={data}
+              setData={setData}
+            />
+          )}
+          {step === 2 && (
+            <ServicesInputModule
+              onNext={() => setStep(3)}
+              onPrev={() => setStep(1)}
+              data={data}
+              setData={setData}
+            />
+          )}
+          {step === 3 && (
+            <LocationInputModule
+              onNext={() => setStep(4)}
+              onPrev={() => setStep(2)}
+              data={data}
+              setData={setData}
+            />
+          )}
+          {step === 4 && (
+            <div className="flex flex-col items-center justify-center h-full text-center p-4">
+              <h2 className="text-2xl lg:text-3xl font-bold mb-4">
+                Finalizacja
+              </h2>
+              <p className="text-gray-600 mb-8">
+                Czy wszystkie dane są poprawne?
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
+                <button
+                  onClick={() => setStep(3)}
+                  className="px-8 py-3 bg-gray-200 rounded-xl"
+                >
+                  Wróć
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  className="px-8 py-3 bg-primary-600 text-white rounded-xl font-bold"
+                >
+                  Zatwierdź
+                </button>
               </div>
-            )}
-
-            <div className="flex gap-4">
-              <button
-                onClick={() => setStep(3)}
-                disabled={isSubmitting}
-                className="px-8 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold"
-              >
-                Wróć
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="px-12 py-3 bg-primary-600 text-white rounded-xl font-bold text-lg hover:bg-primary-700 disabled:opacity-50 transition-all"
-              >
-                {isSubmitting ? "Wysyłanie..." : "Zatwierdź i zarejestruj"}
-              </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      <div className="flex flex-col justify-center">
-        <ol className="space-y-3">
+      <div className="flex flex-col justify-start lg:justify-center border-t lg:border-t-0 lg:border-l border-gray-100 pt-6 lg:pt-0 lg:pl-8">
+        <h4 className="text-xs font-bold uppercase text-gray-400 mb-4 lg:hidden">
+          Postęp rejestracji:
+        </h4>
+        <ol className="flex flex-row lg:flex-col gap-2 lg:space-y-3 overflow-x-auto pb-4 lg:pb-0">
           {steps.map((s) => (
-            <li key={s.number}>
+            <li key={s.number} className="shrink-0 lg:w-full">
               <div
-                className={`w-full p-4 border-2 rounded-lg flex items-center justify-between transition-all ${
+                className={`p-3 lg:p-4 border-2 rounded-lg flex items-center gap-3 transition-all ${
                   step >= s.number
                     ? "bg-green-50 border-green-400 text-green-800"
                     : "bg-white border-gray-300 text-gray-600"
                 }`}
               >
-                <h3 className="font-semibold text-sm">
+                <span className="text-xs lg:text-sm font-semibold whitespace-nowrap">
                   {s.number + 1}. {s.label}
-                </h3>
+                </span>
                 {step > s.number && (
                   <svg
-                    className="w-5 h-5"
+                    className="w-4 h-4 hidden lg:block"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
