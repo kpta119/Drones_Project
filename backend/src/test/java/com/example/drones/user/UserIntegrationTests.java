@@ -226,4 +226,41 @@ public class UserIntegrationTests {
         assertThat(updatedUserInDb.getRole()).isEqualTo(UserRole.OPERATOR);
     }
 
+    @Test
+    void givenIncompleteUser_whenEditUserData_thenRoleChangesToClient() {
+        testRestTemplate.postForEntity("/api/auth/register", user1Register, Void.class);
+
+        UserEntity userEntity = userRepository.findByEmail(user1Register.email()).orElseThrow();
+        userEntity.setRole(UserRole.INCOMPLETE);
+        userRepository.save(userEntity);
+
+        ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
+                "/api/auth/login",
+                user1Login,
+                LoginResponse.class
+        );
+        Assertions.assertNotNull(loginResponse.getBody());
+        String userToken = loginResponse.getBody().token();
+
+        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+                .name("UpdatedName")
+                .build();
+
+        HttpEntity<UserUpdateRequest> requestEntity = new HttpEntity<>(updateRequest, getHeaders(userToken));
+
+        ResponseEntity<UserResponse> response = testRestTemplate.exchange(
+                "/api/user/editUserData",
+                HttpMethod.PATCH,
+                requestEntity,
+                UserResponse.class
+        );
+
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        Assertions.assertNotNull(response.getBody());
+        assertThat(response.getBody().getRole()).isEqualTo("CLIENT");
+
+        UserEntity updatedUserInDb = userRepository.findByEmail(user1Register.email()).orElseThrow();
+        assertThat(updatedUserInDb.getRole()).isEqualTo(UserRole.CLIENT);
+    }
+
 }

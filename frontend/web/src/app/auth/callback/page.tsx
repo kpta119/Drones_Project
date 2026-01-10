@@ -12,29 +12,22 @@ export default function AuthCallbackPage() {
     // all data from cookies
     const token = Cookies.get('auth_token');
     const role = Cookies.get('auth_role');
-    const userId = Cookies.get('auth_userid');
+    // const userId = Cookies.get('auth_userid');
     const username = Cookies.get('auth_username');
     const email = Cookies.get('auth_email');
 
-    if (!token) {
-      setStatus('Błąd: Brak tokena logowania. Spróbuj ponownie.');
-      setTimeout(() => router.push('/login'), 3000);
-      return;
-    }
-
-    localStorage.setItem('token', token);
+    const decodedUsername = (username || '').replaceAll('+', ' ');
+    localStorage.setItem('token', token || '');
     localStorage.setItem('role', role || '');
+    localStorage.setItem('name', decodedUsername); // username or email if new user
 
     try {
       ['auth_token', 'auth_role', 'auth_userid', 'auth_email', 'auth_username']
         .forEach(cookieName => Cookies.remove(cookieName));
 
       if (role === 'INCOMPLETE') {
-        localStorage.setItem('name', email || ''); // tymczasowo ustawiamy email jako nazwę
         router.push('/complete-profile');
       } else {
-        const decodedUsername = (username || '').replaceAll('+', ' ');
-        localStorage.setItem('name', decodedUsername);
         router.push('/user_profile');
       }
 
