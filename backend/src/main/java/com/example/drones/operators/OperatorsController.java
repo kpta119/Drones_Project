@@ -4,10 +4,14 @@ import com.example.drones.common.config.auth.JwtService;
 import com.example.drones.operators.dto.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -50,6 +54,23 @@ public class OperatorsController {
     @GetMapping("/getOperatorProfile/{userId}")
     public ResponseEntity<OperatorDto> getOperatorProfile(@PathVariable UUID userId) {
         OperatorDto response = operatorsService.getOperatorProfile(userId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/getOperatorsInfo/{orderId}")
+    public ResponseEntity<List<MatchingOperatorDto>> getOperatorsInfo(@PathVariable UUID orderId) {
+        UUID userId = jwtService.extractUserId();
+        List<MatchingOperatorDto> response = operatorsService.getOperatorInfo(userId, orderId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/getMatchedOrders")
+    public ResponseEntity<Page<MatchedOrderDto>> getMatchedOrders(
+            @PageableDefault(size = 20) Pageable pageable,
+            @ModelAttribute MatchedOrdersFilters filters
+    ) {
+        UUID userId = jwtService.extractUserId();
+        Page<MatchedOrderDto> response = operatorsService.getMatchedOrders(userId, filters, pageable);
         return ResponseEntity.ok(response);
     }
 }

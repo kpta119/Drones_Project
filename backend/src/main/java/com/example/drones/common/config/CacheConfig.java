@@ -21,7 +21,8 @@ public class CacheConfig {
         cacheManager.setCaches(List.of(
                 buildCache("operators", 60, 1000),
                 buildCache("services", 1440, 100),
-                buildCache("users", 30, 5000)
+                buildCache("users", 30, 5000),
+                buildCache("orders", 10, 2000)
         ));
         return cacheManager;
     }

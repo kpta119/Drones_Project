@@ -1,22 +1,33 @@
 package com.example.drones.operators;
 
+import com.example.drones.auth.exceptions.InvalidCredentialsException;
 import com.example.drones.common.config.exceptions.UserNotFoundException;
 import com.example.drones.operators.dto.*;
 import com.example.drones.operators.exceptions.NoSuchOperatorException;
 import com.example.drones.operators.exceptions.NoSuchPortfolioException;
 import com.example.drones.operators.exceptions.OperatorAlreadyExistsException;
 import com.example.drones.operators.exceptions.PortfolioAlreadyExistsException;
+import com.example.drones.orders.*;
+import com.example.drones.orders.exceptions.OrderNotFoundException;
 import com.example.drones.services.OperatorServicesService;
+import com.example.drones.services.ServicesEntity;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserMapper;
 import com.example.drones.user.UserRepository;
 import com.example.drones.user.UserRole;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,6 +50,12 @@ public class OperatorsServiceTests {
     private UserMapper operatorMapper;
     @Mock
     private PortfolioMapper portfolioMapper;
+    @Mock
+    private OrdersRepository ordersRepository;
+    @Mock
+    private NewMatchedOrdersRepository newMatchedOrdersRepository;
+    @Mock
+    private OrdersMapper ordersMapper;
 
     @InjectMocks
     private OperatorsService service;
@@ -844,6 +861,554 @@ public class OperatorsServiceTests {
         verify(operatorServicesService).getOperatorServices(operator);
         verify(portfolioMapper).toOperatorPortfolioDto(null);
         verify(operatorMapper).toOperatorDto(operator, emptyServices, null);
+    }
+
+    @Test
+    public void givenValidOrderAndUser_whenGetOperatorInfo_thenReturnsListOfMatchingOperators() {
+        UUID userId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+        UUID operator1Id = UUID.randomUUID();
+        UUID operator2Id = UUID.randomUUID();
+
+        UserEntity client = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.CLIENT)
+                .build();
+
+        OrdersEntity order = OrdersEntity.builder()
+                .id(orderId)
+                .user(client)
+                .build();
+
+        UserEntity operator1 = UserEntity.builder()
+                .id(operator1Id)
+                .name("John")
+                .surname("Smith")
+                .displayName("operator1")
+                .role(UserRole.OPERATOR)
+                .certificates(List.of("UAV License", "Commercial Pilot"))
+                .build();
+
+        UserEntity operator2 = UserEntity.builder()
+                .id(operator2Id)
+                .name("Jane")
+                .surname("Doe")
+                .displayName("operator2")
+                .role(UserRole.OPERATOR)
+                .certificates(List.of("Basic UAV License"))
+                .build();
+
+        List<UserEntity> matchedOperators = List.of(operator1, operator2);
+
+        MatchingOperatorDto matchingDto1 = new MatchingOperatorDto(
+                operator1Id,
+                "operator1",
+                "John",
+                "Smith",
+                List.of("UAV License", "Commercial Pilot")
+        );
+
+        MatchingOperatorDto matchingDto2 = new MatchingOperatorDto(
+                operator2Id,
+                "operator2",
+                "Jane",
+                "Doe",
+                List.of("Basic UAV License")
+        );
+
+        when(ordersRepository.findByIdWithUser(orderId)).thenReturn(Optional.of(order));
+        when(newMatchedOrdersRepository.findInterestedOperatorByOrderId(orderId)).thenReturn(matchedOperators);
+        when(operatorMapper.toMatchingOperatorDto(operator1)).thenReturn(matchingDto1);
+        when(operatorMapper.toMatchingOperatorDto(operator2)).thenReturn(matchingDto2);
+
+        List<MatchingOperatorDto> result = service.getOperatorInfo(userId, orderId);
+
+        assertThat(result).hasSize(2);
+        assertThat(result).containsExactly(matchingDto1, matchingDto2);
+        verify(ordersRepository).findByIdWithUser(orderId);
+        verify(newMatchedOrdersRepository).findInterestedOperatorByOrderId(orderId);
+        verify(operatorMapper).toMatchingOperatorDto(operator1);
+        verify(operatorMapper).toMatchingOperatorDto(operator2);
+    }
+
+    @Test
+    public void givenValidOrderWithNoMatchedOperators_whenGetOperatorInfo_thenReturnsEmptyList() {
+        UUID userId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+
+        UserEntity client = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.CLIENT)
+                .build();
+
+        OrdersEntity order = OrdersEntity.builder()
+                .id(orderId)
+                .user(client)
+                .build();
+
+        List<UserEntity> emptyMatchedOperators = List.of();
+
+        when(ordersRepository.findByIdWithUser(orderId)).thenReturn(Optional.of(order));
+        when(newMatchedOrdersRepository.findInterestedOperatorByOrderId(orderId)).thenReturn(emptyMatchedOperators);
+
+        List<MatchingOperatorDto> result = service.getOperatorInfo(userId, orderId);
+
+        assertThat(result).isEmpty();
+        verify(ordersRepository).findByIdWithUser(orderId);
+        verify(newMatchedOrdersRepository).findInterestedOperatorByOrderId(orderId);
+        verify(operatorMapper, never()).toMatchingOperatorDto(any());
+    }
+
+    @Test
+    public void givenOrderNotFound_whenGetOperatorInfo_thenThrowsOrderNotFoundException() {
+        UUID userId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+
+        when(ordersRepository.findByIdWithUser(orderId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getOperatorInfo(userId, orderId))
+                .isInstanceOf(OrderNotFoundException.class);
+
+        verify(ordersRepository).findByIdWithUser(orderId);
+        verify(newMatchedOrdersRepository, never()).findInterestedOperatorByOrderId(any());
+        verify(operatorMapper, never()).toMatchingOperatorDto(any());
+    }
+
+    @Test
+    public void givenOrderBelongsToAnotherUser_whenGetOperatorInfo_thenThrowsInvalidCredentialsException() {
+        UUID userId = UUID.randomUUID();
+        UUID anotherUserId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+
+        UserEntity anotherClient = UserEntity.builder()
+                .id(anotherUserId)
+                .role(UserRole.CLIENT)
+                .build();
+
+        OrdersEntity order = OrdersEntity.builder()
+                .id(orderId)
+                .user(anotherClient)
+                .build();
+
+        when(ordersRepository.findByIdWithUser(orderId)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> service.getOperatorInfo(userId, orderId))
+                .isInstanceOf(InvalidCredentialsException.class);
+
+        verify(ordersRepository).findByIdWithUser(orderId);
+        verify(newMatchedOrdersRepository, never()).findInterestedOperatorByOrderId(any());
+        verify(operatorMapper, never()).toMatchingOperatorDto(any());
+    }
+
+    @Test
+    public void givenValidOrderWithSingleOperator_whenGetOperatorInfo_thenReturnsSingleOperator() {
+        UUID userId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+        UUID operatorId = UUID.randomUUID();
+
+        UserEntity client = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.CLIENT)
+                .build();
+
+        OrdersEntity order = OrdersEntity.builder()
+                .id(orderId)
+                .user(client)
+                .build();
+
+        UserEntity operator = UserEntity.builder()
+                .id(operatorId)
+                .name("Alice")
+                .surname("Operator")
+                .displayName("alice_operator")
+                .role(UserRole.OPERATOR)
+                .certificates(List.of("Advanced Drone License", "Night Flight Certification"))
+                .build();
+
+        List<UserEntity> matchedOperators = List.of(operator);
+
+        MatchingOperatorDto matchingDto = new MatchingOperatorDto(
+                operatorId,
+                "alice_operator",
+                "Alice",
+                "Operator",
+                List.of("Advanced Drone License", "Night Flight Certification")
+        );
+
+        when(ordersRepository.findByIdWithUser(orderId)).thenReturn(Optional.of(order));
+        when(newMatchedOrdersRepository.findInterestedOperatorByOrderId(orderId)).thenReturn(matchedOperators);
+        when(operatorMapper.toMatchingOperatorDto(operator)).thenReturn(matchingDto);
+
+        List<MatchingOperatorDto> result = service.getOperatorInfo(userId, orderId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst()).isEqualTo(matchingDto);
+        assertThat(result.getFirst().userId()).isEqualTo(operatorId);
+        assertThat(result.getFirst().displayName()).isEqualTo("alice_operator");
+        assertThat(result.getFirst().name()).isEqualTo("Alice");
+        assertThat(result.getFirst().surname()).isEqualTo("Operator");
+        assertThat(result.getFirst().certificates()).hasSize(2);
+        verify(ordersRepository).findByIdWithUser(orderId);
+        verify(newMatchedOrdersRepository).findInterestedOperatorByOrderId(orderId);
+        verify(operatorMapper).toMatchingOperatorDto(operator);
+    }
+
+    @Test
+    public void givenValidOperatorWithFilters_whenGetMatchedOrders_thenReturnsFilteredOrders() {
+        UUID operatorId = UUID.randomUUID();
+        UUID orderId1 = UUID.randomUUID();
+        UUID orderId2 = UUID.randomUUID();
+        UUID clientId = UUID.randomUUID();
+
+        UserEntity operator = UserEntity.builder()
+                .id(operatorId)
+                .role(UserRole.OPERATOR)
+                .coordinates("52.2297,21.0122")
+                .radius(50)
+                .build();
+
+        ServicesEntity serviceEntity = new ServicesEntity("Aerial Photography");
+
+        UserEntity client = UserEntity.builder()
+                .id(clientId)
+                .name("Client")
+                .surname("User")
+                .build();
+
+        NewMatchedOrderEntity matchedOrder1 = NewMatchedOrderEntity.builder()
+                .id(1)
+                .operator(operator)
+                .operatorStatus(MatchedOrderStatus.PENDING)
+                .clientStatus(MatchedOrderStatus.PENDING)
+                .build();
+
+        NewMatchedOrderEntity matchedOrder2 = NewMatchedOrderEntity.builder()
+                .id(2)
+                .operator(operator)
+                .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                .clientStatus(MatchedOrderStatus.PENDING)
+                .build();
+
+        OrdersEntity order1 = OrdersEntity.builder()
+                .id(orderId1)
+                .title("Order 1")
+                .description("Description 1")
+                .service(serviceEntity)
+                .coordinates("52.2300,21.0130")
+                .status(OrderStatus.OPEN)
+                .user(client)
+                .matchedOrders(List.of(matchedOrder1))
+                .build();
+
+        OrdersEntity order2 = OrdersEntity.builder()
+                .id(orderId2)
+                .title("Order 2")
+                .description("Description 2")
+                .service(serviceEntity)
+                .coordinates("52.2400,21.0200")
+                .status(OrderStatus.OPEN)
+                .user(client)
+                .matchedOrders(List.of(matchedOrder2))
+                .build();
+
+        MatchedOrdersFilters filters = new MatchedOrdersFilters(
+                null, null, "Aerial Photography", null, null, OrderStatus.OPEN, null, null
+        );
+
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<OrdersEntity> ordersPage =
+                new PageImpl<>(List.of(order1, order2), pageable, 2);
+
+        MatchedOrderDto dto1 = MatchedOrderDto.builder()
+                .id(orderId1)
+                .clientId(clientId)
+                .title("Order 1")
+                .service("Aerial Photography")
+                .coordinates("52.2300,21.0130")
+                .distance(0.08)
+                .orderStatus(OrderStatus.OPEN)
+                .clientStatus(MatchedOrderStatus.PENDING)
+                .operatorStatus(MatchedOrderStatus.PENDING)
+                .build();
+
+        MatchedOrderDto dto2 = MatchedOrderDto.builder()
+                .id(orderId2)
+                .clientId(clientId)
+                .title("Order 2")
+                .service("Aerial Photography")
+                .coordinates("52.2400,21.0200")
+                .distance(1.38)
+                .orderStatus(OrderStatus.OPEN)
+                .clientStatus(MatchedOrderStatus.PENDING)
+                .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                .build();
+
+        when(userRepository.findByIdWithPortfolio(operatorId)).thenReturn(Optional.of(operator));
+        when(ordersRepository.findAll(ArgumentMatchers.<Specification<OrdersEntity>>any(), eq(pageable)))
+                .thenReturn(ordersPage);
+        when(ordersMapper.toMatchedOrderDto(eq(order1), eq(matchedOrder1), any(Double.class))).thenReturn(dto1);
+        when(ordersMapper.toMatchedOrderDto(eq(order2), eq(matchedOrder2), any(Double.class))).thenReturn(dto2);
+
+        org.springframework.data.domain.Page<MatchedOrderDto> result = this.service.getMatchedOrders(operatorId, filters, pageable);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getTotalElements()).isEqualTo(2);
+        assertThat(result.getContent()).containsExactly(dto1, dto2);
+        verify(userRepository).findByIdWithPortfolio(operatorId);
+        verify(ordersRepository).findAll(ArgumentMatchers.<Specification<OrdersEntity>>any(), eq(pageable));
+    }
+
+    @Test
+    public void givenOperatorWithCustomLocationAndRadius_whenGetMatchedOrders_thenUsesProvidedValues() {
+        UUID operatorId = UUID.randomUUID();
+
+        UserEntity operator = UserEntity.builder()
+                .id(operatorId)
+                .role(UserRole.OPERATOR)
+                .coordinates("52.2297,21.0122")
+                .radius(50)
+                .build();
+
+        MatchedOrdersFilters filters = new MatchedOrdersFilters(
+                "50.0614,19.9383", 100, null, null, null, null, null, null
+        );
+
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<OrdersEntity> emptyPage =
+                new PageImpl<>(List.of(), pageable, 0);
+
+        when(userRepository.findByIdWithPortfolio(operatorId)).thenReturn(Optional.of(operator));
+        when(ordersRepository.findAll(ArgumentMatchers.<Specification<OrdersEntity>>any(), eq(pageable)))
+                .thenReturn(emptyPage);
+
+        Page<MatchedOrderDto> result = service.getMatchedOrders(operatorId, filters, pageable);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).isEmpty();
+        assertThat(result.getTotalElements()).isEqualTo(0);
+        verify(userRepository).findByIdWithPortfolio(operatorId);
+        verify(ordersRepository).findAll(ArgumentMatchers.<Specification<OrdersEntity>>any(), eq(pageable));
+    }
+
+    @Test
+    public void givenOperatorWithNullLocationInFilters_whenGetMatchedOrders_thenUsesOperatorLocation() {
+        UUID operatorId = UUID.randomUUID();
+
+        UserEntity operator = UserEntity.builder()
+                .id(operatorId)
+                .role(UserRole.OPERATOR)
+                .coordinates("52.2297,21.0122")
+                .radius(50)
+                .build();
+
+        MatchedOrdersFilters filters = new MatchedOrdersFilters(
+                null, null, null, null, null, null, null, null
+        );
+
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 20);
+        Page<OrdersEntity> emptyPage =
+                new PageImpl<>(List.of(), pageable, 0);
+
+        when(userRepository.findByIdWithPortfolio(operatorId)).thenReturn(Optional.of(operator));
+        when(ordersRepository.findAll(ArgumentMatchers.<Specification<OrdersEntity>>any(), eq(pageable)))
+                .thenReturn(emptyPage);
+
+        Page<MatchedOrderDto> result = service.getMatchedOrders(operatorId, filters, pageable);
+
+        assertThat(result).isNotNull();
+        verify(userRepository).findByIdWithPortfolio(operatorId);
+        verify(ordersRepository).findAll(ArgumentMatchers.<Specification<OrdersEntity>>any(), eq(pageable));
+    }
+
+    @Test
+    public void givenUserNotFound_whenGetMatchedOrders_thenThrowsUserNotFoundException() {
+        UUID operatorId = UUID.randomUUID();
+        MatchedOrdersFilters filters = new MatchedOrdersFilters(
+                null, null, null, null, null, null, null, null
+        );
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(userRepository.findByIdWithPortfolio(operatorId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getMatchedOrders(operatorId, filters, pageable))
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessage("User not found");
+
+        verify(userRepository).findByIdWithPortfolio(operatorId);
+        verify(ordersRepository, never()).findAll(ArgumentMatchers.<Specification<OrdersEntity>>any(), any(Pageable.class));
+    }
+
+    @Test
+    public void givenUserNotOperator_whenGetMatchedOrders_thenThrowsNoSuchOperatorException() {
+        UUID userId = UUID.randomUUID();
+
+        UserEntity client = UserEntity.builder()
+                .id(userId)
+                .role(UserRole.CLIENT)
+                .build();
+
+        MatchedOrdersFilters filters = new MatchedOrdersFilters(
+                null, null, null, null, null, null, null, null
+        );
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(userRepository.findByIdWithPortfolio(userId)).thenReturn(Optional.of(client));
+
+        assertThatThrownBy(() -> service.getMatchedOrders(userId, filters, pageable))
+                .isInstanceOf(NoSuchOperatorException.class)
+                .hasMessage("No operator profile found for this user.");
+
+        verify(userRepository).findByIdWithPortfolio(userId);
+        verify(ordersRepository, never()).findAll(ArgumentMatchers.<Specification<OrdersEntity>>any(), any(Pageable.class));
+    }
+
+    @Test
+    public void givenEmptyOrdersList_whenGetMatchedOrders_thenReturnsEmptyPage() {
+        UUID operatorId = UUID.randomUUID();
+
+        UserEntity operator = UserEntity.builder()
+                .id(operatorId)
+                .role(UserRole.OPERATOR)
+                .coordinates("52.2297,21.0122")
+                .radius(50)
+                .build();
+
+        MatchedOrdersFilters filters = new MatchedOrdersFilters(
+                null, null, null, null, null, null, null, null
+        );
+
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<OrdersEntity> emptyPage =
+                new PageImpl<>(List.of(), pageable, 0);
+
+        when(userRepository.findByIdWithPortfolio(operatorId)).thenReturn(Optional.of(operator));
+        when(ordersRepository.findAll(ArgumentMatchers.<Specification<OrdersEntity>>any(), eq(pageable)))
+                .thenReturn(emptyPage);
+
+        Page<MatchedOrderDto> result = service.getMatchedOrders(operatorId, filters, pageable);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).isEmpty();
+        assertThat(result.getTotalElements()).isEqualTo(0);
+        verify(userRepository).findByIdWithPortfolio(operatorId);
+        verify(ordersRepository).findAll(ArgumentMatchers.<Specification<OrdersEntity>>any(), eq(pageable));
+    }
+
+    @Test
+    public void givenValidCoordinates_whenCalculateDistance_thenReturnsCorrectDistance() throws Exception {
+        String location1 = "52.2297,21.0122";
+        String location2 = "50.0614,19.9383";
+
+        Method method = OperatorsService.class.getDeclaredMethod(
+                "calculateDistance", String.class, String.class);
+        method.setAccessible(true);
+
+        Double distance = (Double) method.invoke(service, location1, location2);
+
+        assertThat(distance).isNotNull();
+        assertThat(distance).isGreaterThan(250.0);
+        assertThat(distance).isLessThan(260.0);
+    }
+
+    @Test
+    public void givenSameCoordinates_whenCalculateDistance_thenReturnsZero() throws Exception {
+        String location1 = "52.2297,21.0122";
+        String location2 = "52.2297,21.0122";
+
+        Method method = OperatorsService.class.getDeclaredMethod(
+                "calculateDistance", String.class, String.class);
+        method.setAccessible(true);
+
+        Double distance = (Double) method.invoke(service, location1, location2);
+
+        assertThat(distance).isNotNull();
+        assertThat(distance.isNaN() || distance < 0.1).isTrue();
+    }
+
+    @Test
+    public void givenNullLocation1_whenCalculateDistance_thenReturnsNull() throws Exception {
+        String location2 = "52.2297,21.0122";
+
+        Method method = OperatorsService.class.getDeclaredMethod(
+                "calculateDistance", String.class, String.class);
+        method.setAccessible(true);
+
+        Double distance = (Double) method.invoke(service, null, location2);
+
+        assertThat(distance).isNull();
+    }
+
+    @Test
+    public void givenNullLocation2_whenCalculateDistance_thenReturnsNull() throws Exception {
+        String location1 = "52.2297,21.0122";
+
+        Method method = OperatorsService.class.getDeclaredMethod(
+                "calculateDistance", String.class, String.class);
+        method.setAccessible(true);
+
+        Double distance = (Double) method.invoke(service, location1, null);
+
+        assertThat(distance).isNull();
+    }
+
+    @Test
+    public void givenInvalidCoordinatesFormat_whenCalculateDistance_thenReturnsNull() throws Exception {
+        String location1 = "52.2297";
+        String location2 = "52.2297,21.0122";
+
+        Method method = OperatorsService.class.getDeclaredMethod(
+                "calculateDistance", String.class, String.class);
+        method.setAccessible(true);
+
+        Double distance = (Double) method.invoke(service, location1, location2);
+
+        assertThat(distance).isNull();
+    }
+
+    @Test
+    public void givenEmptyCoordinates_whenCalculateDistance_thenReturnsNull() throws Exception {
+        String location1 = "";
+        String location2 = "52.2297,21.0122";
+
+        Method method = OperatorsService.class.getDeclaredMethod(
+                "calculateDistance", String.class, String.class);
+        method.setAccessible(true);
+
+        Double distance = (Double) method.invoke(service, location1, location2);
+
+        assertThat(distance).isNull();
+    }
+
+    @Test
+    public void givenCoordinatesWithSpaces_whenCalculateDistance_thenCalculatesCorrectly() throws Exception {
+        String location1 = " 52.2297 , 21.0122 ";
+        String location2 = " 50.0614 , 19.9383 ";
+
+        Method method = OperatorsService.class.getDeclaredMethod(
+                "calculateDistance", String.class, String.class);
+        method.setAccessible(true);
+
+        Double distance = (Double) method.invoke(service, location1, location2);
+
+        assertThat(distance).isNotNull();
+        assertThat(distance).isGreaterThan(250.0);
+        assertThat(distance).isLessThan(260.0);
+    }
+
+    @Test
+    public void givenCloseCoordinates_whenCalculateDistance_thenReturnsSmallDistance() throws Exception {
+        String location1 = "52.2297,21.0122";
+        String location2 = "52.2300,21.0130";
+
+        Method method = OperatorsService.class.getDeclaredMethod(
+                "calculateDistance", String.class, String.class);
+        method.setAccessible(true);
+
+        Double distance = (Double) method.invoke(service, location1, location2);
+
+        assertThat(distance).isNotNull();
+        assertThat(distance).isLessThan(1.0);
     }
 }
 

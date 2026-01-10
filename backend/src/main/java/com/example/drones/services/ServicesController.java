@@ -1,11 +1,8 @@
 package com.example.drones.services;
 
-import com.example.drones.services.ServicesService;
-import com.example.drones.services.dto.ServiceRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

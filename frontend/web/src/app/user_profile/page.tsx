@@ -26,6 +26,9 @@ export default function ProfilePage() {
           },
         });
 
+        console.log("USERRESPONSE");
+        console.log(userResponse);
+
         if (!userResponse.ok) {
           throw new Error("Failed to get user data");
         }
@@ -74,7 +77,6 @@ export default function ProfilePage() {
       </div>
     );
   }
-
   return isOperator ? (
     <OperatorLayout data={profileData as OperatorDto} />
   ) : (
