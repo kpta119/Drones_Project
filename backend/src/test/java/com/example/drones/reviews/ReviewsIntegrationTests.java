@@ -3,9 +3,7 @@ package com.example.drones.reviews;
 import com.example.drones.auth.dto.LoginRequest;
 import com.example.drones.auth.dto.LoginResponse;
 import com.example.drones.auth.dto.RegisterRequest;
-import com.example.drones.orders.OrderStatus;
-import com.example.drones.orders.OrdersEntity;
-import com.example.drones.orders.OrdersRepository;
+import com.example.drones.orders.*;
 import com.example.drones.reviews.dto.ReviewRequest;
 import com.example.drones.reviews.dto.ReviewResponse;
 import com.example.drones.services.OperatorServicesEntity;
@@ -63,6 +61,9 @@ public class ReviewsIntegrationTests {
     private OperatorServicesRepository operatorServicesRepository;
 
     @Autowired
+    private NewMatchedOrdersRepository newMatchedOrdersRepository;
+
+    @Autowired
     private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     private RegisterRequest clientRegister;
@@ -95,6 +96,7 @@ public class ReviewsIntegrationTests {
     @AfterEach
     void tearDown() {
         reviewsRepository.deleteAll();
+        newMatchedOrdersRepository.deleteAll();
         ordersRepository.deleteAll();
         userRepository.deleteAll();
     }
@@ -196,6 +198,16 @@ public class ReviewsIntegrationTests {
         return ordersRepository.save(order);
     }
 
+    private void createAcceptedMatch(OrdersEntity order, UserEntity operator) {
+        NewMatchedOrderEntity match = NewMatchedOrderEntity.builder()
+                .order(order)
+                .operator(operator)
+                .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                .clientStatus(MatchedOrderStatus.ACCEPTED)
+                .build();
+        newMatchedOrdersRepository.save(match);
+    }
+
     @Test
     void givenCompletedOrder_whenClientCreatesReviewForOperator_thenReviewIsCreated() {
         String clientToken = registerAndLoginClient();
@@ -205,6 +217,7 @@ public class ReviewsIntegrationTests {
         UserEntity operator = createTestOperator("operator1", service);
 
         OrdersEntity order = createCompletedOrder(client);
+        createAcceptedMatch(order, operator);
 
         // When: Klient tworzy recenzję dla operatora
         ReviewRequest reviewRequest = ReviewRequest.builder()
@@ -248,6 +261,7 @@ public class ReviewsIntegrationTests {
         UserEntity operator = createTestOperator("operator2", service);
 
         OrdersEntity order = createCompletedOrder(client);
+        createAcceptedMatch(order, operator);
 
         String operatorToken = loginAsOperator("operator2@op.pl");
 
@@ -283,7 +297,7 @@ public class ReviewsIntegrationTests {
     }
 
     @Test
-    void givenInProgressOrder_whenClientCreatesReview_thenReviewIsCreated() {
+    void givenInProgressOrder_whenClientCreatesReview_thenReturnsBadRequest() {
         // Given: Zamówienie w trakcie realizacji
         String clientToken = registerAndLoginClient();
         UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
@@ -292,25 +306,28 @@ public class ReviewsIntegrationTests {
         UserEntity operator = createTestOperator("operator3", service);
 
         OrdersEntity order = createInProgressOrder(client);
+        createAcceptedMatch(order, operator);
 
-        // When: Klient tworzy recenzję dla zamówienia w trakcie
+        // When: Klient próbuje utworzyć recenzję dla zamówienia w trakcie
         ReviewRequest reviewRequest = ReviewRequest.builder()
                 .stars(5)
                 .body("Great service so far!")
                 .build();
 
         HttpEntity<ReviewRequest> requestEntity = new HttpEntity<>(reviewRequest, getHeaders(clientToken));
-        ResponseEntity<ReviewResponse> response = testRestTemplate.exchange(
+        ResponseEntity<String> response = testRestTemplate.exchange(
                 "/api/reviews/createReview/" + order.getId() + "/" + operator.getId(),
                 HttpMethod.POST,
                 requestEntity,
-                ReviewResponse.class
+                String.class
         );
 
-        // Then: Recenzja została utworzona (IN_PROGRESS jest dozwolone)
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getStars()).isEqualTo(5);
+        // Then: Zwrócony błąd - tylko COMPLETED zamówienia mogą być recenzowane
+        assertThat(response.getStatusCode().is4xxClientError()).isTrue();
+
+        // Weryfikacja że recenzja nie została utworzona
+        List<ReviewEntity> reviews = reviewsRepository.findAll();
+        assertThat(reviews).isEmpty();
     }
 
     @Test
@@ -389,6 +406,7 @@ public class ReviewsIntegrationTests {
         UserEntity operator = createTestOperator("operator6", service);
 
         OrdersEntity order = createCompletedOrder(client);
+        createAcceptedMatch(order, operator);
 
         // Tworzymy pierwszą recenzję
         ReviewRequest reviewRequest1 = ReviewRequest.builder()
@@ -507,6 +525,7 @@ public class ReviewsIntegrationTests {
         UserEntity operator = createTestOperator("operator9", service);
 
         OrdersEntity order = createCompletedOrder(client);
+        createAcceptedMatch(order, operator);
 
         // When: Klient próbuje utworzyć recenzję z nieprawidłową oceną (0 lub 6)
         ReviewRequest reviewRequest = ReviewRequest.builder()
@@ -540,6 +559,7 @@ public class ReviewsIntegrationTests {
         UserEntity operator = createTestOperator("operator10", service);
 
         OrdersEntity order = createCompletedOrder(client);
+        createAcceptedMatch(order, operator);
 
         // When: Próba utworzenia recenzji bez tokenu
         ReviewRequest reviewRequest = ReviewRequest.builder()
@@ -559,7 +579,7 @@ public class ReviewsIntegrationTests {
         );
 
         // Then: Zwrócony błąd autoryzacji
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
 
         // Weryfikacja że recenzja nie została utworzona
         List<ReviewEntity> reviews = reviewsRepository.findAll();
@@ -576,6 +596,7 @@ public class ReviewsIntegrationTests {
         UserEntity operator = createTestOperator("operator11", service);
 
         OrdersEntity order = createCompletedOrder(client);
+        createAcceptedMatch(order, operator);
 
         String operatorToken = loginAsOperator("operator11@op.pl");
 
@@ -637,6 +658,7 @@ public class ReviewsIntegrationTests {
         UserEntity operator = createTestOperator("operator12", service);
 
         OrdersEntity order = createCompletedOrder(client);
+        createAcceptedMatch(order, operator);
 
         // When: Klient tworzy recenzję bez treści (tylko ocena)
         ReviewRequest reviewRequest = ReviewRequest.builder()
@@ -670,11 +692,13 @@ public class ReviewsIntegrationTests {
         UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
 
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
-        createTestOperator("operator_reviews1", service);
-        createTestOperator("operator_reviews2", service);
+        UserEntity operator1 = createTestOperator("operator_reviews1", service);
+        UserEntity operator2 = createTestOperator("operator_reviews2", service);
 
         OrdersEntity order1 = createCompletedOrder(client);
+        createAcceptedMatch(order1, operator1);
         OrdersEntity order2 = createCompletedOrder(client);
+        createAcceptedMatch(order2, operator2);
 
         // Operator 1 tworzy recenzję dla klienta
         String operator1Token = loginAsOperator("operator_reviews1@op.pl");
@@ -712,7 +736,8 @@ public class ReviewsIntegrationTests {
                 "/api/reviews/getUserReviews/" + client.getId(),
                 HttpMethod.GET,
                 getEntity,
-                new org.springframework.core.ParameterizedTypeReference<>() {}
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                }
         );
 
         // Then: Zwrócone są obie recenzje
@@ -744,7 +769,8 @@ public class ReviewsIntegrationTests {
                 "/api/reviews/getUserReviews/" + client.getId(),
                 HttpMethod.GET,
                 getEntity,
-                new org.springframework.core.ParameterizedTypeReference<>() {}
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                }
         );
 
         // Then: Zwrócona jest pusta lista
@@ -783,6 +809,7 @@ public class ReviewsIntegrationTests {
         UserEntity client1 = userRepository.findByEmail("client@example.com").orElseThrow();
 
         OrdersEntity order1 = createCompletedOrder(client1);
+        createAcceptedMatch(order1, operator);
 
         ReviewRequest review1 = ReviewRequest.builder()
                 .stars(5)
@@ -822,6 +849,7 @@ public class ReviewsIntegrationTests {
         UserEntity client2 = userRepository.findByEmail("client2@example.com").orElseThrow();
 
         OrdersEntity order2 = createCompletedOrder(client2);
+        createAcceptedMatch(order2, operator);
 
         ReviewRequest review2 = ReviewRequest.builder()
                 .stars(3)
@@ -842,7 +870,8 @@ public class ReviewsIntegrationTests {
                 "/api/reviews/getUserReviews/" + operator.getId(),
                 HttpMethod.GET,
                 getEntity,
-                new org.springframework.core.ParameterizedTypeReference<>() {}
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                }
         );
 
         // Then: Zwrócone są obie recenzje
@@ -872,6 +901,7 @@ public class ReviewsIntegrationTests {
         UserEntity operator = createTestOperator("operator_reviews4", service);
 
         OrdersEntity order = createCompletedOrder(client);
+        createAcceptedMatch(order, operator);
 
         // Operator tworzy recenzję dla klienta (klient jest target)
         String operatorToken = loginAsOperator("operator_reviews4@op.pl");
@@ -908,7 +938,8 @@ public class ReviewsIntegrationTests {
                 "/api/reviews/getUserReviews/" + client.getId(),
                 HttpMethod.GET,
                 getEntity,
-                new org.springframework.core.ParameterizedTypeReference<>() {}
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                }
         );
 
         // Then: Zwrócona jest tylko recenzja gdzie klient jest target
@@ -933,6 +964,7 @@ public class ReviewsIntegrationTests {
         // Tworzenie 5 recenzji z różnymi ocenami
         for (int i = 1; i <= 5; i++) {
             OrdersEntity order = createCompletedOrder(client);
+            createAcceptedMatch(order, operator);
 
             ReviewRequest review = ReviewRequest.builder()
                     .stars(i)
@@ -954,7 +986,8 @@ public class ReviewsIntegrationTests {
                 "/api/reviews/getUserReviews/" + operator.getId(),
                 HttpMethod.GET,
                 getEntity,
-                new org.springframework.core.ParameterizedTypeReference<>() {}
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                }
         );
 
         // Then: Zwróconych jest 5 recenzji z prawidłowymi ocenami
@@ -992,7 +1025,7 @@ public class ReviewsIntegrationTests {
         );
 
         // Then: Zwrócony błąd autoryzacji
-        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
@@ -1002,9 +1035,10 @@ public class ReviewsIntegrationTests {
         UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
 
         ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
-        createTestOperator("operator_reviews6", service);
+        UserEntity operator = createTestOperator("operator_reviews6", service);
 
         OrdersEntity order = createCompletedOrder(client);
+        createAcceptedMatch(order, operator);
 
         // Operator tworzy recenzję bez treści
         String operatorToken = loginAsOperator("operator_reviews6@op.pl");
@@ -1026,7 +1060,8 @@ public class ReviewsIntegrationTests {
                 "/api/reviews/getUserReviews/" + client.getId(),
                 HttpMethod.GET,
                 getEntity,
-                new org.springframework.core.ParameterizedTypeReference<>() {}
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                }
         );
 
         // Then: Recenzja została zwrócona z pustą treścią
@@ -1038,4 +1073,183 @@ public class ReviewsIntegrationTests {
         assertThat(reviewResponse.getStars()).isEqualTo(5);
         assertThat(reviewResponse.getBody()).isNullOrEmpty();
     }
+
+    @Test
+    void givenOrderNotAcceptedByOperator_whenClientCreatesReview_thenReturnsUnauthorized() {
+        // Given: Zamówienie zaakceptowane tylko przez klienta
+        String clientToken = registerAndLoginClient();
+        UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
+
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator = createTestOperator("operator_not_accepted", service);
+
+        OrdersEntity order = createCompletedOrder(client);
+
+        // Match z PENDING statusem operatora
+        NewMatchedOrderEntity match = NewMatchedOrderEntity.builder()
+                .order(order)
+                .operator(operator)
+                .operatorStatus(MatchedOrderStatus.PENDING)
+                .clientStatus(MatchedOrderStatus.ACCEPTED)
+                .build();
+        newMatchedOrdersRepository.save(match);
+
+        // When: Klient próbuje utworzyć recenzję
+        ReviewRequest reviewRequest = ReviewRequest.builder()
+                .stars(5)
+                .body("Review for not accepted order")
+                .build();
+
+        HttpEntity<ReviewRequest> requestEntity = new HttpEntity<>(reviewRequest, getHeaders(clientToken));
+        ResponseEntity<String> response = testRestTemplate.exchange(
+                "/api/reviews/createReview/" + order.getId() + "/" + operator.getId(),
+                HttpMethod.POST,
+                requestEntity,
+                String.class
+        );
+
+        // Then: Zwrócony błąd autoryzacji
+        assertThat(response.getStatusCode().is4xxClientError()).isTrue();
+
+        // Weryfikacja że recenzja nie została utworzona
+        List<ReviewEntity> reviews = reviewsRepository.findAll();
+        assertThat(reviews).isEmpty();
+    }
+
+    @Test
+    void givenOrderNotAcceptedByClient_whenOperatorCreatesReview_thenReturnsUnauthorized() {
+        // Given: Zamówienie zaakceptowane tylko przez operatora
+        registerAndLoginClient();
+        UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
+
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator = createTestOperator("operator_client_pending", service);
+
+        OrdersEntity order = createCompletedOrder(client);
+
+        // Match z PENDING statusem klienta
+        NewMatchedOrderEntity match = NewMatchedOrderEntity.builder()
+                .order(order)
+                .operator(operator)
+                .operatorStatus(MatchedOrderStatus.ACCEPTED)
+                .clientStatus(MatchedOrderStatus.PENDING)
+                .build();
+        newMatchedOrdersRepository.save(match);
+
+        String operatorToken = loginAsOperator("operator_client_pending@op.pl");
+
+        // When: Operator próbuje utworzyć recenzję
+        ReviewRequest reviewRequest = ReviewRequest.builder()
+                .stars(5)
+                .body("Review for not fully accepted order")
+                .build();
+
+        HttpEntity<ReviewRequest> requestEntity = new HttpEntity<>(reviewRequest, getHeaders(operatorToken));
+        ResponseEntity<String> response = testRestTemplate.exchange(
+                "/api/reviews/createReview/" + order.getId() + "/" + client.getId(),
+                HttpMethod.POST,
+                requestEntity,
+                String.class
+        );
+
+        // Then: Zwrócony błąd autoryzacji
+        assertThat(response.getStatusCode().is4xxClientError()).isTrue();
+
+        // Weryfikacja że recenzja nie została utworzona
+        List<ReviewEntity> reviews = reviewsRepository.findAll();
+        assertThat(reviews).isEmpty();
+    }
+
+    @Test
+    void givenUnauthorizedOperator_whenTriesToReviewOrder_thenReturnsUnauthorized() {
+        // Given: Klient z zamówieniem i dwóch operatorów, ale tylko jeden ma match
+        registerAndLoginClient();
+        UserEntity client = userRepository.findByEmail("client@example.com").orElseThrow();
+
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator1 = createTestOperator("operator_authorized", service);
+        createTestOperator("operator_unauthorized", service);
+
+        OrdersEntity order = createCompletedOrder(client);
+        createAcceptedMatch(order, operator1);
+
+        String operator2Token = loginAsOperator("operator_unauthorized@op.pl");
+
+        // When: Nieautoryzowany operator próbuje wystawić opinię klientowi
+        ReviewRequest reviewRequest = ReviewRequest.builder()
+                .stars(5)
+                .body("Trying to review without authorization")
+                .build();
+
+        HttpEntity<ReviewRequest> requestEntity = new HttpEntity<>(reviewRequest, getHeaders(operator2Token));
+        ResponseEntity<String> response = testRestTemplate.exchange(
+                "/api/reviews/createReview/" + order.getId() + "/" + client.getId(),
+                HttpMethod.POST,
+                requestEntity,
+                String.class
+        );
+
+        // Then: Zwrócony błąd autoryzacji
+        assertThat(response.getStatusCode().is4xxClientError()).isTrue();
+
+        // Weryfikacja że recenzja nie została utworzona
+        List<ReviewEntity> reviews = reviewsRepository.findAll();
+        assertThat(reviews).isEmpty();
+    }
+
+    @Test
+    void givenUnauthorizedClient_whenTriesToReviewOperator_thenReturnsUnauthorized() {
+        // Given: Dwóch klientów i operator, ale tylko jeden klient ma zamówienie
+        registerAndLoginClient();
+        UserEntity client1 = userRepository.findByEmail("client@example.com").orElseThrow();
+
+        RegisterRequest client2Register = RegisterRequest.builder()
+                .displayName("testClient2")
+                .password("password456")
+                .name("Anna")
+                .surname("Kowalska")
+                .email("client2@example.com")
+                .phoneNumber("987654321")
+                .build();
+
+        testRestTemplate.postForEntity("/api/auth/register", client2Register, Void.class);
+
+        LoginRequest client2Login = LoginRequest.builder()
+                .email("client2@example.com")
+                .password("password456")
+                .build();
+
+        ResponseEntity<LoginResponse> login2Response = testRestTemplate.postForEntity(
+                "/api/auth/login", client2Login, LoginResponse.class);
+        Assertions.assertNotNull(login2Response.getBody());
+        String client2Token = login2Response.getBody().token();
+
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator = createTestOperator("operator_for_client1", service);
+
+        OrdersEntity order = createCompletedOrder(client1);
+        createAcceptedMatch(order, operator);
+
+        // When: Nieautoryzowany klient (client2) próbuje wystawić opinię operatorowi
+        ReviewRequest reviewRequest = ReviewRequest.builder()
+                .stars(5)
+                .body("Trying to review without authorization")
+                .build();
+
+        HttpEntity<ReviewRequest> requestEntity = new HttpEntity<>(reviewRequest, getHeaders(client2Token));
+        ResponseEntity<String> response = testRestTemplate.exchange(
+                "/api/reviews/createReview/" + order.getId() + "/" + operator.getId(),
+                HttpMethod.POST,
+                requestEntity,
+                String.class
+        );
+
+        // Then: Zwrócony błąd autoryzacji
+        assertThat(response.getStatusCode().is4xxClientError()).isTrue();
+
+        // Weryfikacja że recenzja nie została utworzona
+        List<ReviewEntity> reviews = reviewsRepository.findAll();
+        assertThat(reviews).isEmpty();
+    }
 }
+

@@ -1,8 +1,22 @@
+DROP TABLE IF EXISTS reviews CASCADE;
+DROP TABLE IF EXISTS new_matched_orders CASCADE;
+DROP TABLE IF EXISTS orders CASCADE;
+DROP TABLE IF EXISTS operator_service CASCADE;
+DROP TABLE IF EXISTS photos CASCADE;
+DROP TABLE IF EXISTS portfolio CASCADE;
+DROP TABLE IF EXISTS services CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
+DROP TYPE IF EXISTS user_role CASCADE;
+DROP TYPE IF EXISTS order_status CASCADE;
+DROP TYPE IF EXISTS matched_order_status CASCADE;
+
 CREATE TYPE user_role AS ENUM (
     'CLIENT',
     'OPERATOR',
     'ADMIN',
-    'BLOCKED'
+    'BLOCKED',
+    'INCOMPLETE'
     );
 
 CREATE TYPE order_status AS ENUM (
@@ -19,21 +33,19 @@ CREATE TYPE matched_order_status AS ENUM (
     'REJECTED'
     );
 
-
-
 CREATE TABLE users
 (
     id                  UUID PRIMARY KEY             DEFAULT gen_random_uuid(),
     role                user_role           NOT NULL DEFAULT 'CLIENT',
-    username            VARCHAR(255)        NOT NULL,
-    name                VARCHAR(255)        NOT NULL,
-    surname             VARCHAR(255)        NOT NULL,
-    password            VARCHAR(255)        NOT NULL,
+    username            VARCHAR(255),
+    name                VARCHAR(255),
+    surname             VARCHAR(255),
+    password            VARCHAR(255),
     email               VARCHAR(255) UNIQUE NOT NULL,
     phone_number        VARCHAR(20),
     created_at          TIMESTAMP                    DEFAULT NOW(),
-    google_user_id      VARCHAR(255),
-    google_access_token VARCHAR(255),
+    provider_user_id      VARCHAR(255) UNIQUE,
+    provider_refresh_token TEXT,
     coordinates         VARCHAR(255), -- Np. "52.2297,21.0122"
     radius              INTEGER,
     certificates        JSONB         -- np. ['cert1', 'cert2']
@@ -71,14 +83,14 @@ CREATE TABLE operator_service
 CREATE TABLE orders
 (
     id           UUID PRIMARY KEY,
-    title        VARCHAR(255),
+    title        VARCHAR(255) NOT NULL,
     user_id      UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    description  TEXT,
+    description  TEXT NOT NULL,
     service_name VARCHAR(100) REFERENCES services (name),
     parameters   JSONB, -- key -value pairs specific to the service
     coordinates  VARCHAR(255),
-    from_date    TIMESTAMP,
-    to_date      TIMESTAMP,
+    from_date    TIMESTAMP NOT NULL,
+    to_date      TIMESTAMP NOT NULL,
     created_at   TIMESTAMP    DEFAULT NOW(),
     status       order_status DEFAULT 'OPEN'
 );
