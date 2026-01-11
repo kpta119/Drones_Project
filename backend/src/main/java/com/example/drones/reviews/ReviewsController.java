@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +23,7 @@ public class ReviewsController {
     private final JwtService jwtService;
 
     @PostMapping("/createReview/{orderId}/{targetId}")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'CLIENT')")
     public ResponseEntity<ReviewResponse> createReview(
             @PathVariable UUID orderId,
             @PathVariable UUID targetId,
@@ -33,6 +35,7 @@ public class ReviewsController {
     }
 
     @GetMapping("/getUserReviews/{userId}")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'CLIENT')")
     public ResponseEntity<List<UserReviewResponse>> getUserReviews(@PathVariable UUID userId) {
         List<UserReviewResponse> response = reviewsService.getUserReviews(userId);
         return ResponseEntity.ok(response);

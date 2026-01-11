@@ -33,34 +33,32 @@ public class UserEntity {
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private UserRole role = UserRole.CLIENT;
 
-    @Column(name = "username", nullable = false)
+    @Column(name = "username")
     private String displayName;
 
-    @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
     private String surname;
 
-    @Column(nullable = false)
+    @Column
     private String password;
 
     @Column(nullable = false, unique = true)
     @Email
     private String email;
 
-    @Column(name = "phone_number", nullable = false)
+    @Column(name = "phone_number")
     private String phoneNumber;
 
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "google_user_id")
-    private String googleUserId;
+    @Column(name = "provider_user_id", unique = true)
+    private String providerUserId;
 
-    @Column(name = "google_access_token")
-    private String googleAccessToken;
+    @Column(name = "provider_refresh_token")
+    private String providerRefreshToken;
 
     @Column(name = "coordinates")
     private String coordinates;
@@ -74,6 +72,4 @@ public class UserEntity {
 
     @OneToOne(mappedBy = "operator")
     private PortfolioEntity portfolio;
-
-
 }
