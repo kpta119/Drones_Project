@@ -1,36 +1,39 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
-  const [status, setStatus] = useState('Przetwarzanie logowania...');
+  const [status, setStatus] = useState("Przetwarzanie logowania...");
 
   useEffect(() => {
     // all data from cookies
-    const token = Cookies.get('auth_token');
-    const role = Cookies.get('auth_role');
+    const token = Cookies.get("auth_token");
+    const role = Cookies.get("auth_role");
     // const userId = Cookies.get('auth_userid');
-    const username = Cookies.get('auth_username');
+    const username = Cookies.get("auth_username");
     // const email = Cookies.get('auth_email');
 
-    const decodedUsername = (username || '').replaceAll('+', ' ');
-    localStorage.setItem('token', token || '');
-    localStorage.setItem('role', role || '');
-    localStorage.setItem('name', decodedUsername); // username or email if new user
-
+    const decodedUsername = (username || "").replaceAll("+", " ");
+    localStorage.setItem("token", token || "");
+    localStorage.setItem("role", role || "");
+    localStorage.setItem("username", decodedUsername);
     try {
-      ['auth_token', 'auth_role', 'auth_userid', 'auth_email', 'auth_username']
-        .forEach(cookieName => Cookies.remove(cookieName));
+      [
+        "auth_token",
+        "auth_role",
+        "auth_userid",
+        "auth_email",
+        "auth_username",
+      ].forEach((cookieName) => Cookies.remove(cookieName));
 
-      if (role === 'INCOMPLETE') {
-        router.push('/complete-profile');
+      if (role === "INCOMPLETE") {
+        router.push("/complete-profile");
       } else {
-        router.push('/user_profile');
+        router.push("/user_profile");
       }
-
     } catch (error) {
       console.error("Błąd przetwarzania logowania:", error);
     }
