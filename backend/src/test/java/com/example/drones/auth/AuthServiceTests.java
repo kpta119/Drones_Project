@@ -4,6 +4,7 @@ import com.example.drones.auth.dto.LoginRequest;
 import com.example.drones.auth.dto.LoginResponse;
 import com.example.drones.auth.dto.RegisterRequest;
 import com.example.drones.auth.exceptions.InvalidCredentialsException;
+import com.example.drones.auth.exceptions.UserAccountLockedException;
 import com.example.drones.auth.exceptions.UserAlreadyExistsException;
 import com.example.drones.common.config.auth.JwtService;
 import com.example.drones.user.UserEntity;
@@ -17,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -130,7 +132,33 @@ public class AuthServiceTests {
     public void givenInvalidLoginRequest_whenLogin_thenInvalidCredentialsExceptionIsThrown() {
         LoginRequest loginRequest = validLogin;
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenThrow(new InternalAuthenticationServiceException("Bad credentials"));
+                .thenThrow(new BadCredentialsException("Bad credentials"));
+        InvalidCredentialsException ex = assertThrows(InvalidCredentialsException.class,
+                () -> authService.login(loginRequest)
+        );
+
+        assertThat(ex.getMessage()).isEqualTo("The provided credentials are invalid.");
+    }
+
+    @Test
+    public void givenLockedUser_whenLogin_thenUserAccountLockedExceptionIsThrown() {
+        LoginRequest loginRequest = validLogin;
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenThrow(new InternalAuthenticationServiceException("User account is locked",
+                        new org.springframework.security.authentication.LockedException("User account is blocked")));
+        UserAccountLockedException ex = assertThrows(UserAccountLockedException.class,
+                () -> authService.login(loginRequest)
+        );
+
+        assertThat(ex.getMessage()).isEqualTo("Account has been banned");
+    }
+
+    @Test
+    public void givenUserNotFound_whenLogin_thenInvalidCredentialsExceptionIsThrown() {
+        LoginRequest loginRequest = validLogin;
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenThrow(new InternalAuthenticationServiceException("User not found",
+                        new RuntimeException("User not found")));
         InvalidCredentialsException ex = assertThrows(InvalidCredentialsException.class,
                 () -> authService.login(loginRequest)
         );

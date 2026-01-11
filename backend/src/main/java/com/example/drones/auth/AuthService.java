@@ -5,6 +5,7 @@ import com.example.drones.auth.dto.LoginRequest;
 import com.example.drones.auth.dto.LoginResponse;
 import com.example.drones.auth.dto.RegisterRequest;
 import com.example.drones.auth.exceptions.InvalidCredentialsException;
+import com.example.drones.auth.exceptions.UserAccountLockedException;
 import com.example.drones.auth.exceptions.UserAlreadyExistsException;
 import com.example.drones.common.config.auth.JwtService;
 import com.example.drones.user.UserEntity;
@@ -12,10 +13,7 @@ import com.example.drones.user.UserMapper;
 import com.example.drones.user.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.InternalAuthenticationServiceException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -52,8 +50,10 @@ public class AuthService {
             );
 
         } catch (InternalAuthenticationServiceException | BadCredentialsException e) {
+            if (e.getCause() instanceof LockedException) {
+                throw new UserAccountLockedException();
+            }
             throw new InvalidCredentialsException();
-
         }
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String jwtToken = jwtService.generateToken(UUID.fromString(userDetails.getUsername()));

@@ -22,11 +22,9 @@ public class UserService {
     private final UserMapper userMapper;
     private final JwtService jwtService;
 
-    @Cacheable(value = "users", key = "#userId", condition = "#userId != null")
+    @Cacheable(value = "users", key = "#userId")
     public UserResponse getUserData(UUID userId) {
-        UUID idToSearch = (userId != null) ? userId : jwtService.extractUserId();
-
-        UserEntity userEntity = userRepository.findById(idToSearch)
+        UserEntity userEntity = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         return userMapper.toResponse(userEntity);
@@ -34,7 +32,7 @@ public class UserService {
 
     @Transactional
     @CacheEvict(value = "users", key = "@jwtService.extractUserId()")
-    public UserResponse editUserData(UserUpdateRequest request){
+    public UserResponse editUserData(UserUpdateRequest request) {
         UUID userId = jwtService.extractUserId();
 
         UserEntity userEntity = userRepository.findById(userId)
