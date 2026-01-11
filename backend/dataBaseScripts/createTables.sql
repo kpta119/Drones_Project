@@ -86,14 +86,14 @@ CREATE TABLE operator_service
 CREATE TABLE orders
 (
     id          UUID PRIMARY KEY,
-    title       VARCHAR(255),
+    title       VARCHAR(255) NOT NULL,
     user_id     UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    description TEXT,
+    description TEXT NOT NULL,
     service_name  VARCHAR(100) REFERENCES services (name),
     parameters  JSONB,  -- key -value pairs specific to the service
     coordinates VARCHAR(255),
-    from_date   TIMESTAMP,
-    to_date     TIMESTAMP,
+    from_date   TIMESTAMP NOT NULL,
+    to_date     TIMESTAMP NOT NULL,
     created_at  TIMESTAMP    DEFAULT NOW(),
     status      order_status DEFAULT 'OPEN'
 );

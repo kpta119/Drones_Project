@@ -1,5 +1,8 @@
 package com.example.drones.calendar;
 
+import com.example.drones.calendar.exceptions.AddEventToCalendarException;
+import com.example.drones.calendar.exceptions.OrderInProgressByOperatorIdNotFoundException;
+import com.example.drones.calendar.exceptions.UserIsNotConnectedToGoogleException;
 import com.example.drones.common.config.exceptions.UserNotFoundException;
 import com.example.drones.orders.OrdersEntity;
 import com.example.drones.orders.OrdersRepository;
@@ -46,12 +49,12 @@ public class CalendarService {
         UserEntity user = userRepository.findById(operatorId)
                 .orElseThrow(UserNotFoundException::new);
         String userRefreshToken = user.getProviderRefreshToken();
-
-        OrdersEntity order = ordersRepository.findInProgressOrderByOperatorId(orderId, operatorId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
         if (userRefreshToken == null) {
-            throw new RuntimeException("Brak refresh tokenu");
+            throw new UserIsNotConnectedToGoogleException();
         }
+        OrdersEntity order = ordersRepository.findInProgressOrderByOperatorId(orderId, operatorId)
+                .orElseThrow(OrderInProgressByOperatorIdNotFoundException::new);
+
         return addEventWithRefreshToken(userRefreshToken, order);
     }
 
@@ -80,12 +83,14 @@ public class CalendarService {
             }
 
         } catch (Exception e) {
-            throw new RuntimeException("Nie udało się zsynchronizować kalendarza dla zamówienia: " + order.getTitle(), e);
+            log.warn(e.getMessage());
+            throw new AddEventToCalendarException();
+
         }
     }
 
 
-    private Calendar buildCalendarService(String refreshToken) throws GeneralSecurityException, IOException {
+    protected Calendar buildCalendarService(String refreshToken) throws GeneralSecurityException, IOException {
         UserCredentials credentials = UserCredentials.newBuilder()
                 .setClientId(clientId)
                 .setClientSecret(clientSecret)
@@ -101,12 +106,12 @@ public class CalendarService {
                 .build();
     }
 
-    private Event prepareEventObject(OrdersEntity order, String googleEventId) {
+    protected Event prepareEventObject(OrdersEntity order, String googleEventId) {
         LocalDate eventDate = LocalDate.from(order.getToDate());
 
         Event event = new Event()
                 .setId(googleEventId)
-                .setSummary("DEADLINE: " + order.getTitle())
+                .setSummary("DEADLINE zlecenia: " + order.getTitle())
                 .setDescription("Szczegóły na: " + frontendUrl)
                 .setColorId("11")
                 .setTransparency("transparent");
