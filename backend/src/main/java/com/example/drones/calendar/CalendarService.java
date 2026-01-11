@@ -1,10 +1,12 @@
 package com.example.drones.calendar;
 
+import com.example.drones.calendar.dto.SchedulableOrders;
 import com.example.drones.calendar.exceptions.AddEventToCalendarException;
 import com.example.drones.calendar.exceptions.OrderInProgressByOperatorIdNotFoundException;
 import com.example.drones.calendar.exceptions.UserIsNotConnectedToGoogleException;
 import com.example.drones.common.config.exceptions.UserNotFoundException;
 import com.example.drones.orders.OrdersEntity;
+import com.example.drones.orders.OrdersMapper;
 import com.example.drones.orders.OrdersRepository;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
@@ -15,17 +17,24 @@ import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
+import com.google.api.services.calendar.model.Events;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.UserCredentials;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +44,7 @@ public class CalendarService {
 
     private final UserRepository userRepository;
     private final OrdersRepository ordersRepository;
+    private final OrdersMapper ordersMapper;
 
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String clientId;
@@ -59,7 +69,7 @@ public class CalendarService {
     }
 
     public String addEventWithRefreshToken(String userRefreshToken, OrdersEntity order) {
-        String googleEventId = "order" + order.getId().toString().replace("-", "");
+        String googleEventId = createGoogleEventId(order.getId());
         Event event = prepareEventObject(order, googleEventId);
 
         try {
@@ -87,6 +97,10 @@ public class CalendarService {
             throw new AddEventToCalendarException();
 
         }
+    }
+
+    public String createGoogleEventId(UUID orderId) {
+        return "order" + orderId.toString().replace("-", "");
     }
 
 
@@ -120,5 +134,63 @@ public class CalendarService {
         event.setEnd(new EventDateTime().setDate(new DateTime(eventDate.plusDays(1).toString())));
 
         return event;
+    }
+
+    public Page<SchedulableOrders> getInProgressSchedulableOrders(UUID operatorId, Pageable pageable) {
+        UserEntity user = userRepository.findById(operatorId)
+                .orElseThrow(UserNotFoundException::new);
+
+
+        Page<OrdersEntity> orders = ordersRepository
+                .findInProgressOrdersByOperatorId(operatorId, pageable);
+
+        Page<SchedulableOrders> schedulableOrders = orders.map(ordersMapper::toSchedulableOrders);
+
+        markOrdersAddedToCalendar(schedulableOrders.getContent(), user.getProviderRefreshToken());
+        return schedulableOrders;
+
+    }
+
+    public void markOrdersAddedToCalendar(List<SchedulableOrders> orders, String userRefreshToken) {
+        if (userRefreshToken == null) {
+            return;
+        }
+        if (orders.isEmpty()) return;
+
+        try {
+            Calendar service = buildCalendarService(userRefreshToken);
+
+            LocalDateTime minDate = orders.stream()
+                    .map(SchedulableOrders::getFromDate)
+                    .min(LocalDateTime::compareTo)
+                    .orElseThrow();
+
+            LocalDateTime maxDate = orders.stream()
+                    .map(SchedulableOrders::getToDate)
+                    .max(LocalDateTime::compareTo)
+                    .orElseThrow();
+
+            Events eventsResult = service.events().list("primary")
+                    .setTimeMin(new DateTime(minDate.minusDays(1).toString()))
+                    .setTimeMax(new DateTime(maxDate.plusDays(1).toString()))
+                    .setSingleEvents(true)
+                    .setShowDeleted(false)
+                    .execute();
+
+            Set<String> googleEventIds = eventsResult.getItems().stream()
+                    .map(Event::getId)
+                    .collect(Collectors.toSet());
+
+            for (SchedulableOrders order : orders) {
+                String expectedGoogleId = createGoogleEventId(order.getId());
+                boolean exists = googleEventIds.contains(expectedGoogleId);
+
+                order.setAlreadyAdded(exists);
+            }
+
+        } catch (IOException | GeneralSecurityException e) {
+            log.error("Failed to fetch event status from calendar", e);
+            orders.forEach(o -> o.setAlreadyAdded(false));
+        }
     }
 }

@@ -1,4 +1,5 @@
 package com.example.drones.auth;
+
 import com.example.drones.common.config.auth.JwtService;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
@@ -21,6 +22,7 @@ import org.springframework.security.oauth2.core.OAuth2RefreshToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.RedirectStrategy;
 import org.springframework.test.util.ReflectionTestUtils;
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URLEncoder;
@@ -28,9 +30,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+
 @ExtendWith(MockitoExtension.class)
 public class OAuth2AuthenticationSuccessHandlerTests {
     @Mock
@@ -62,6 +66,7 @@ public class OAuth2AuthenticationSuccessHandlerTests {
     private static final String FAMILY_NAME = "Doe";
     private static final String JWT_TOKEN = "jwt-token-123";
     private static final UUID USER_ID = UUID.randomUUID();
+
     @BeforeEach
     public void setUp() {
         ReflectionTestUtils.setField(successHandler, "frontendUrl", FRONTEND_URL);
@@ -73,6 +78,7 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         lenient().when(oAuth2User.getAttribute("family_name")).thenReturn(FAMILY_NAME);
         when(oAuth2AuthenticationToken.getAuthorizedClientRegistrationId()).thenReturn("google");
     }
+
     @Test
     public void givenExistingUserWithProviderId_whenOnAuthenticationSuccess_thenUserIsLoggedIn() throws IOException {
         UserEntity existingUser = UserEntity.builder()
@@ -91,6 +97,7 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         verify(response, atLeast(5)).addCookie(any(Cookie.class));
         verify(redirectStrategy).sendRedirect(request, response, FRONTEND_URL + "/auth/callback");
     }
+
     @Test
     public void givenExistingUserWithEmail_whenOnAuthenticationSuccess_thenProviderIdIsLinked() throws IOException {
         UserEntity existingUser = UserEntity.builder()
@@ -111,6 +118,7 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         assertThat(savedUser.getEmail()).isEqualTo(EMAIL);
         verify(redirectStrategy).sendRedirect(request, response, FRONTEND_URL + "/auth/callback");
     }
+
     @Test
     public void givenNewUser_whenOnAuthenticationSuccess_thenNewUserIsCreated() throws IOException {
         when(userRepository.findByProviderUserId(PROVIDER_ID)).thenReturn(Optional.empty());
@@ -138,6 +146,7 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         assertThat(savedUser.getRole()).isEqualTo(UserRole.INCOMPLETE);
         verify(redirectStrategy).sendRedirect(request, response, FRONTEND_URL + "/auth/callback");
     }
+
     @Test
     public void givenRefreshToken_whenOnAuthenticationSuccess_thenRefreshTokenIsSaved() throws IOException {
         UserEntity existingUser = UserEntity.builder()
@@ -159,6 +168,7 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         UserEntity savedUser = userCaptor.getValue();
         assertThat(savedUser.getProviderRefreshToken()).isEqualTo("refresh-token-123");
     }
+
     @Test
     public void givenNoRefreshToken_whenOnAuthenticationSuccess_thenUserIsSavedWithoutRefreshToken() throws IOException {
         UserEntity existingUser = UserEntity.builder()
@@ -176,6 +186,7 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         verify(userRepository, never()).save(any());
         verify(redirectStrategy).sendRedirect(request, response, FRONTEND_URL + "/auth/callback");
     }
+
     @Test
     public void givenNullAuthorizedClient_whenOnAuthenticationSuccess_thenNoRefreshTokenIsProcessed() throws IOException {
         UserEntity existingUser = UserEntity.builder()
@@ -191,6 +202,7 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         verify(userRepository, never()).save(any());
         verify(redirectStrategy).sendRedirect(request, response, FRONTEND_URL + "/auth/callback");
     }
+
     @Test
     public void givenUserWithDisplayName_whenOnAuthenticationSuccess_thenCookiesContainDisplayName() throws IOException {
         UserEntity existingUser = UserEntity.builder()
@@ -216,6 +228,7 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         assertThat(usernameCookie.getSecure()).isTrue();
         assertThat(usernameCookie.isHttpOnly()).isFalse();
     }
+
     @Test
     public void givenUserWithoutDisplayName_whenOnAuthenticationSuccess_thenCookiesContainEmail() throws IOException {
         UserEntity existingUser = UserEntity.builder()
@@ -236,6 +249,7 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         String expectedEncodedEmail = URLEncoder.encode(EMAIL, StandardCharsets.UTF_8);
         assertThat(usernameCookie.getValue()).isEqualTo(expectedEncodedEmail);
     }
+
     @Test
     public void givenAuthenticationSuccess_whenOnAuthenticationSuccess_thenAllCookiesAreSet() throws IOException {
         UserEntity existingUser = UserEntity.builder()
@@ -264,6 +278,7 @@ public class OAuth2AuthenticationSuccessHandlerTests {
             assertThat(cookie.isHttpOnly()).isFalse();
         }
     }
+
     @Test
     public void givenOperatorUser_whenOnAuthenticationSuccess_thenRoleCookieIsOperator() throws IOException {
         UserEntity existingUser = UserEntity.builder()

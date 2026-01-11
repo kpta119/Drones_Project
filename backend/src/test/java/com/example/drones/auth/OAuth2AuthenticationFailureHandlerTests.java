@@ -15,7 +15,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 public class OAuth2AuthenticationFailureHandlerTests {
@@ -52,7 +52,8 @@ public class OAuth2AuthenticationFailureHandlerTests {
 
     @Test
     public void givenDifferentException_whenOnAuthenticationFailure_thenRedirectsToLoginWithError() throws IOException {
-        AuthenticationException exception = new AuthenticationException("OAuth error") {};
+        AuthenticationException exception = new AuthenticationException("OAuth error") {
+        };
 
         failureHandler.onAuthenticationFailure(request, response, exception);
 

@@ -1,5 +1,7 @@
 package com.example.drones.orders;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -33,4 +35,13 @@ public interface OrdersRepository extends JpaRepository<OrdersEntity, UUID>, Jpa
             AND nmo.operator.id = :operatorId
             """)
     Optional<OrdersEntity> findInProgressOrderByOperatorId(UUID orderId, UUID operatorId);
+
+    @Query("""
+            SELECT o
+            FROM OrdersEntity o
+            INNER JOIN o.matchedOrders nmo
+            WHERE o.status = 'IN_PROGRESS'
+            AND nmo.operator.id = :operatorId
+            """)
+    Page<OrdersEntity> findInProgressOrdersByOperatorId(UUID operatorId, Pageable pageable);
 }
