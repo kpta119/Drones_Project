@@ -77,4 +77,13 @@ public class OrdersController {
         List<OrderResponse> response = ordersService.getMyOrders(userId);
         return ResponseEntity.ok(response);
     }
+
+    @PatchMapping("/finishOrder/{orderId}")
+    public ResponseEntity<OrderResponse> finishOrder(@PathVariable UUID orderId) {
+        UUID currentUserId = jwtService.extractUserId();
+        OrderResponse response = ordersService.finishOrder(orderId, currentUserId);
+        return ResponseEntity.ok(response);
+    }
+
+
 }
