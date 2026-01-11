@@ -250,6 +250,27 @@ Odrzucenie operatora przez zleceniodawce i na odwrót nie wpływa na staus zlece
 
 ---
 
+### Zakończ zlecenie
+Zleceniodawca zakańcza zlecenie i zmienia status zlecenia na COMPLETED
+
+**PATCH** `/finishOrder/:orderId`
+
+* **Response (200 OK):**
+  Zwraca zakończony obiekt zlecenia.
+
+    ```json
+    {
+      "id": 123,
+      "title": "Inspekcja dachu kamienicy",
+      "client_id": "fd1f3569-f530-45c5-a81f-d30a9df136e0",
+      "status": "completed",
+      // ...pozostałe pola
+    }
+    ```
+
+---
+
+
 ### Pobierz listę zleceń użytkownika
 **GET** `/getMyOrders`
 * **Response (200 OK):**
