@@ -304,7 +304,7 @@ Base URL: `/api/operators`.
 **GET** `/operators/getMatchedOrders`
 
 * **Opis:** Zwraca machujące zlecenia
-* **Parametry (Query):** `location` (jeśli nie podany to jest brany z profilu operatora), `radius` (jeśli nie podany to jest brany z profilu operatora), `service`, `from_date` (format: rrrr-MM-ddTHH:mm:ss.nnn), `to_date` (format rrrr-MM-ddTHH:mm:ss.nnn), `order_status`, `client_status`, `operator_status`
+* **Parametry (Query):** `location` (jeśli nie podany to jest brany z profilu operatora), `radius` (jeśli nie podany to jest brany z profilu operatora), `service`, `from_date` (format: rrrr-MM-ddTHH:mm:ss.nnn), `to_date` (format rrrr-MM-ddTHH:mm:ss.nnn), `order_status`, `client_status`, `operator_status`, `size` oraz `page` (do wybrania konkretnej strony, domyślnie size=20 oraz page=0).
 * **Response:** Lista obiektów zamówień.
 
     ```json
@@ -721,7 +721,6 @@ Base URL: `/api/photos`.
 
 **DELETE** `/photos/deletePhotos`
 * **Wymagania:** Request typu `application/json`.
-* 
 * **Request:**
 
     ```json
@@ -729,3 +728,59 @@ Base URL: `/api/photos`.
     ```
 
 * **Response:** `204 No Content`
+
+---
+
+## 8. Kalendarz (Calendar)
+
+Base URL: `/api/calendar`.
+
+### Dodaj wydarzenie deadlinu do kalendarza
+
+**POST** `calendar/addEvent/:orderId`
+* **Parametry: (Path)** orderId - Identyfiaktor zlecenia, które chcemy dodać.
+
+* **Response:** `201 Created`: pojedynczy String z linkiem do wydarzenia.
+
+
+## Pobierz wszystkie zlecenia operatora, które mają status in progress i można je dodać do kalendarza
+
+**GET** `calendar/getInProgressSchedulableOrders`
+* **Parametry: (Query):**` size` oraz `page` (do wybrania konkretnej strony, domyślnie size=20 oraz page=0).
+
+* **Response:** `200 ok`
+  ```json
+    {
+      "content": [
+        {
+          "id": "1aca9f63-f35b-4778-8f43-9aa497f4cb87",
+          "title": "Inspekcja dachu/mostu",
+          "description": "Potrzebuję ładnych zdjęć działki na sprzedaż.",
+          "service": "Fotografia/Wideo",
+          "parameters": {
+            "format": "MP4",
+            "resolution": "1080p",
+            "expectations": "Materiał surowy do montażu"
+          },
+          "coordinates": "52.7502,21.3875",
+          "is_already_added": false, // możliwa jest wartość null jeśli użytkownik nie jest podłączony do konta google.
+          "client_id": "12e516ac-ec67-4672-9b9b-b13215f51afc",
+          "from_date": "2026-01-11T12:09:23.330105",
+          "to_date": "2026-01-18T12:09:23.330105",
+          "created_at": "2026-01-06T12:09:23.330105"
+        },
+        {...},
+      ],
+      "page": {
+        "size": 20,
+        "number": 0,
+        "totalElements": 2,
+        "totalPages": 1
+      }
+    }
+
+  ```
+
+
+
+
