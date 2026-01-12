@@ -37,6 +37,7 @@ class UserRepositoryTests {
     private OperatorServicesRepository operatorServicesRepository;
 
     private final String SERVICE_NAME = "Filmowanie";
+    private UserEntity clientUser;
 
     @BeforeEach
     void setUp() {
@@ -46,6 +47,15 @@ class UserRepositoryTests {
         String OTHER_SERVICE = "Kopanie";
         s2.setName(OTHER_SERVICE);
         servicesRepository.saveAll(List.of(s1, s2));
+
+        // Create a client user who will create the order
+        clientUser = UserEntity.builder()
+                .displayName("client")
+                .email("client@test.com")
+                .role(UserRole.CLIENT)
+                .name("Client").surname("User").password("pass")
+                .build();
+        userRepository.save(clientUser);
 
         createOperator("operator_ok", "52.2300, 21.0100", 10, SERVICE_NAME);
 
@@ -81,7 +91,7 @@ class UserRepositoryTests {
         double orderLat = 52.2297;
         double orderLon = 21.0122;
 
-        List<UserEntity> result = userRepository.findMatchingOperators(SERVICE_NAME, orderLat, orderLon);
+        List<UserEntity> result = userRepository.findMatchingOperators(SERVICE_NAME, orderLat, orderLon, clientUser.getId());
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getDisplayName()).isEqualTo("operator_ok");
