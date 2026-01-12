@@ -2,7 +2,13 @@
 
 import { OperatorDto } from "./operator_dto";
 
-export default function OperatorLayout({ data }: { data: OperatorDto }) {
+export default function OperatorLayout({
+  data,
+  isOwnProfile,
+}: {
+  data: OperatorDto;
+  isOwnProfile: boolean;
+}) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-2 gap-8 lg:gap-10 p-5 lg:ps-5 lg:pt-10 lg:pb-10 m-auto font-montserrat w-full max-w-7xl h-auto lg:h-[85vh]">
       <style>{`

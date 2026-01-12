@@ -8,7 +8,7 @@ import dynamic from "next/dynamic";
 const MapModule = dynamic(() => import("./map_module"), {
   ssr: false,
   loading: () => (
-    <div className="fixed inset-0 z-100 bg-black/60 flex items-center justify-center text-white">
+    <div className="fixed inset-0 z-100 bg-black/60 flex items-center justify-center text-white font-bold font-montserrat">
       Ładowanie mapy...
     </div>
   ),
@@ -16,7 +16,8 @@ const MapModule = dynamic(() => import("./map_module"), {
 
 interface OfferMatchProps {
   order: MatchedOrderDto;
-  address: { city: string; street: string };
+  address: { city: string; street: string; country: string };
+  isAddressLoading: boolean;
   onAccept: (id: string) => void;
   onReject: (id: string) => void;
 }
@@ -24,69 +25,104 @@ interface OfferMatchProps {
 export default function OfferMatch({
   order,
   address,
+  isAddressLoading,
   onAccept,
   onReject,
 }: OfferMatchProps) {
   const [showMap, setShowMap] = useState(false);
 
+  const handleViewAuthor = () => {
+    const id = order.clientId || (order as any).client_id;
+    window.open(`/user_profile?user_id=${id}`, "_blank");
+  };
+
   return (
-    <div className="relative w-full max-w-5xl bg-slate-900 rounded-[3rem] overflow-hidden shadow-2xl p-6 lg:p-10 text-white min-h-[500px]">
-      <div className="absolute inset-0 opacity-40">
+    <div className="relative w-full max-w-7xl mt-6 bg-slate-900 rounded-[4rem] overflow-hidden shadow-2xl p-8 lg:p-10 text-white min-h-[420px] flex items-center font-montserrat animate-fadeIn">
+      <div className="absolute inset-0 opacity-60">
         <Image src="/dron_zdj.png" alt="bg" fill className="object-cover" />
+        <div className="absolute inset-0 bg-linear-to-r from-transparent via-slate-900/10 to-slate-900/90" />
       </div>
 
-      <div className="relative z-10 flex flex-col lg:flex-row gap-10">
-        <div className="w-full lg:w-1/2 flex items-center justify-center bg-white/5 rounded-[2.5rem] border border-white/10 min-h-[250px]">
-          <div className="text-center">
-            <span className="text-8xl">🛸</span>
-            <p className="mt-4 text-primary-500 font-bold uppercase tracking-widest">
-              {order.service}
-            </p>
-          </div>
-        </div>
+      <div className="relative z-10 flex flex-col lg:flex-row w-full gap-4 lg:gap-12 items-center">
+        <div className="hidden lg:block lg:w-1/2"></div>
 
-        <div className="w-full lg:w-1/2 flex flex-col justify-between">
-          <div className="text-right">
-            <h2 className="text-4xl lg:text-5xl font-bold leading-tight">
-              {address.city}
-            </h2>
-            <p className="text-gray-400">{address.street}</p>
-            <p className="text-primary-400 text-sm mt-1 font-medium italic">
-              Odległość: {(order.distance / 1000).toFixed(1)} km
-            </p>
+        <div className="w-full lg:w-1/2 flex flex-col">
+          <div className="text-right mb-4 lg:mb-6 min-h-[140px] flex flex-col justify-end">
+            {isAddressLoading ? (
+              <div className="space-y-2 animate-pulse flex flex-col items-end">
+                <div className="h-4 w-20 bg-white/20 rounded"></div>
+                <div className="h-12 w-64 bg-white/20 rounded"></div>
+                <div className="h-6 w-48 bg-white/20 rounded"></div>
+              </div>
+            ) : (
+              <div className="animate-fadeIn">
+                <p className="text-white text-base uppercase tracking-widest font-medium">
+                  {address.country}
+                </p>
+                <h2 className="text-5xl lg:text-7xl font-bold tracking-tighter leading-none text-white">
+                  {address.city}
+                </h2>
+                <p className="text-white text-lg lg:text-xl font-light">
+                  ul. {address.street}
+                </p>
+              </div>
+            )}
+
+            <div className="mt-2 flex flex-col items-end">
+              <button
+                onClick={handleViewAuthor}
+                className="text-white/80 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-1 mt-1 underline underline-offset-4"
+              >
+                👤 Zobacz profil autora
+              </button>
+            </div>
           </div>
 
-          <div className="mt-6 space-y-4">
+          <div className="space-y-3 lg:space-y-4 text-left">
             <div>
-              <h3 className="text-2xl font-bold leading-tight mb-1">
+              <h4 className="text-white/70 text-lg lg:text-xl font-medium">
+                Temat:
+              </h4>
+              <p className="text-xl lg:text-2xl font-bold leading-tight tracking-tight text-white">
                 {order.title}
-              </h3>
-              <p className="text-yellow-400 text-xs font-bold uppercase tracking-tighter">
-                Status: {OrderStatusLabels[order.status]}
+              </p>
+              <p className="text-white/80 text-base lg:text-lg italic font-medium">
+                Stan:{" "}
+                <span className="text-white font-bold">
+                  {OrderStatusLabels[order.orderStatus]}
+                </span>
               </p>
             </div>
-            <p className="text-gray-300 text-sm line-clamp-6 leading-relaxed">
-              {order.description}
-            </p>
+
+            <div className="space-y-0">
+              <p className="text-white text-base lg:text-lg">
+                <span className="font-medium text-white/60">Serwis:</span>{" "}
+                <span className="text-white font-bold">{order.service}</span>
+              </p>
+              <p className="text-white text-base leading-relaxed line-clamp-3">
+                <span className="font-medium text-white/60">Opis:</span>{" "}
+                {order.description}
+              </p>
+            </div>
           </div>
 
-          <div className="mt-10 space-y-4">
+          <div className="mt-6 lg:mt-8 flex flex-col gap-3">
             <button
               onClick={() => setShowMap(true)}
-              className="w-full py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all font-semibold border border-white/5"
+              className="w-full py-2.5 bg-primary-900/40 hover:bg-primary-900/60 rounded-2xl transition-all font-bold text-base backdrop-blur-md border border-white/20 text-primary-100"
             >
               Zobacz na mapie
             </button>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 lg:gap-10">
               <button
                 onClick={() => onReject(order.id)}
-                className="flex-1 py-4 bg-red-600 hover:bg-red-700 rounded-2xl shadow-lg font-bold text-xl transition-all active:scale-95"
+                className="w-full sm:flex-1 py-4 bg-red-600 hover:bg-red-700 rounded-2xl shadow-lg font-black text-xl lg:text-2xl transition-all active:scale-95 text-white"
               >
                 Zrezygnuj
               </button>
               <button
                 onClick={() => onAccept(order.id)}
-                className="flex-1 py-4 bg-green-500 hover:bg-green-600 rounded-2xl shadow-lg font-bold text-xl transition-all active:scale-95"
+                className="w-full sm:flex-1 py-4 bg-green-500 hover:bg-green-600 rounded-2xl shadow-lg font-black text-xl lg:text-2xl transition-all active:scale-95 text-white"
               >
                 Akceptuj
               </button>

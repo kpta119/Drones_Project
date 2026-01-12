@@ -20,14 +20,14 @@ export default function AuthPage() {
   }, [router]);
 
   const handleGoogleLogin = () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
     window.location.href = `${apiUrl}/oauth2/authorization/google`;
   };
 
   return (
     <div
       style={{ height: "calc(100vh - 120px)" }}
-      className="max-w-full w-screen max-h-full  flex p-8 gap-6"
+      className="max-w-full w-screen max-h-full  flex p-8 gap-6 mt-6"
     >
       <div className="w-2/5 rounded-2xl flex flex-col items-center justify-center p-8">
         {activeForm === "none" && (

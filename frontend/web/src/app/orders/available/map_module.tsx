@@ -28,17 +28,17 @@ export default function MapModule({ coords, onClose }: MapModuleProps) {
   const [lat, lng] = coords.split(",").map((c) => parseFloat(c.trim()));
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <div className="relative w-full max-w-4xl h-[70vh] bg-white rounded-2rem overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+      <div className="relative w-full max-w-5xl h-[80vh] bg-white rounded-[3rem] overflow-hidden shadow-2xl border-4 border-white/20">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-1001 bg-white w-10 h-10 rounded-full flex items-center justify-center text-black font-bold shadow-lg hover:bg-gray-100 transition-colors"
+          className="absolute top-6 right-6 z-10000 bg-white w-12 h-12 rounded-full flex items-center justify-center text-black font-bold shadow-2xl hover:bg-gray-100 transition-all hover:scale-110 active:scale-95"
         >
           ✕
         </button>
         <MapContainer
           center={[lat, lng]}
-          zoom={13}
+          zoom={15}
           style={{ height: "100%", width: "100%" }}
         >
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />

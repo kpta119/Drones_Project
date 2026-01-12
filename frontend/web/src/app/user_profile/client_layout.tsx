@@ -5,7 +5,13 @@ import { ClientDto } from "./client_dto";
 import OperatorRegisterButton from "@/src/components/operator_register_button";
 import OperatorRegisterModule from "./operator_register/operator_register_module";
 
-export default function ClientLayout({ data }: { data: ClientDto }) {
+export default function ClientLayout({
+  data,
+  isOwnProfile,
+}: {
+  data: ClientDto;
+  isOwnProfile: boolean;
+}) {
   const [showRegister, setShowRegister] = useState(false);
 
   return (
@@ -54,7 +60,9 @@ export default function ClientLayout({ data }: { data: ClientDto }) {
                 <p className="break-all">{data.email}</p>
               </div>
             </div>
-            <OperatorRegisterButton onClick={() => setShowRegister(true)} />
+            {isOwnProfile && (
+              <OperatorRegisterButton onClick={() => setShowRegister(true)} />
+            )}
           </div>
         </div>
 

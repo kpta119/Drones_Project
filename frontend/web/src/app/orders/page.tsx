@@ -1,62 +1,71 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AvailableView from "./available/view";
-import CreatedView from "./created/view"; // Sprawdź czy ścieżka jest OK
+import CreatedView from "./created/view";
 import ActiveView from "./active/view";
 import CreateOrderView from "./create/view";
 
 export type OrdersView = "available" | "created" | "active" | "create";
 
 export default function OrdersPage() {
-  const [view, setView] = useState<OrdersView>("available");
+  const [view, setView] = useState<OrdersView>("created");
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [loadingRole, setLoadingRole] = useState(true);
+
+  useEffect(() => {
+    const role = localStorage.getItem("role");
+    setUserRole(role ? role.toUpperCase() : "CLIENT");
+    setLoadingRole(false);
+  }, []);
+
+  if (loadingRole) return null;
 
   return (
-    <div className="min-h-screen bg-white font-montserrat">
-      {/* MENU NAWIGACYJNE */}
-      <div className="flex flex-wrap justify-center gap-4 lg:gap-8 py-10 px-4">
+    <div className="min-h-screen bg-white font-montserrat text-black">
+      <div className="flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-24 py-10 px-6">
         <button
           onClick={() => setView("available")}
-          className={`px-6 lg:px-12 py-3 lg:py-4 rounded-2xl font-semibold transition-all shadow-lg ${
+          className={`w-full max-w-[300px] lg:w-auto lg:px-12 py-2.5 rounded-xl font-bold transition-all shadow-md border-2 ${
             view === "available"
-              ? "bg-primary-500 text-black"
-              : "bg-gray-200 text-gray-500"
+              ? "bg-primary-300 border-primary-400 text-primary-900"
+              : "bg-gray-100 border-transparent text-gray-500 hover:bg-gray-200"
           }`}
         >
           Dostępne zlecenia
         </button>
         <button
           onClick={() => setView("created")}
-          className={`px-6 lg:px-12 py-3 lg:py-4 rounded-2xl font-semibold transition-all shadow-lg ${
+          className={`w-full max-w-[300px] lg:w-auto lg:px-12 py-2.5 rounded-xl font-bold transition-all shadow-md border-2 ${
             view === "created" || view === "create"
-              ? "bg-primary-500 text-black"
-              : "bg-gray-200 text-gray-500"
+              ? "bg-primary-300 border-primary-400 text-primary-900"
+              : "bg-gray-100 border-transparent text-gray-500 hover:bg-gray-200"
           }`}
         >
           Własne zlecenia
         </button>
         <button
           onClick={() => setView("active")}
-          className={`px-6 lg:px-12 py-3 lg:py-4 rounded-2xl font-semibold transition-all shadow-lg ${
+          className={`w-full max-w-[300px] lg:w-auto lg:px-12 py-2.5 rounded-xl font-bold transition-all shadow-md border-2 ${
             view === "active"
-              ? "bg-primary-500 text-black"
-              : "bg-gray-200 text-gray-500"
+              ? "bg-primary-300 border-primary-400 text-primary-900"
+              : "bg-gray-100 border-transparent text-gray-500 hover:bg-gray-200"
           }`}
         >
           Zlecenia w trakcie
         </button>
       </div>
 
-      {/* GŁÓWNY CONTENT */}
       <main className="container mx-auto px-4 pb-20 flex justify-center">
-        {view === "available" && <AvailableView />}
-
+        {view === "available" && (
+          <AvailableView isOperator={userRole === "OPERATOR"} />
+        )}
         {view === "created" && (
           <CreatedView onCreateNew={() => setView("create")} />
         )}
-
-        {view === "active" && <ActiveView />}
-
+        {view === "active" && (
+          <ActiveView isOperator={userRole === "OPERATOR"} />
+        )}
         {view === "create" && (
           <CreateOrderView
             onCancel={() => setView("created")}

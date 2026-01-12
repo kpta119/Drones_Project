@@ -6,8 +6,8 @@ import dynamic from "next/dynamic";
 const OrderLocationPicker = dynamic(() => import("../utils/order_location"), {
   ssr: false,
   loading: () => (
-    <div className="h-[450px] w-full bg-gray-50 animate-pulse rounded-[2rem] flex items-center justify-center text-black">
-      Inicjalizacja mapy...
+    <div className="h-[450px] w-full bg-primary-50 animate-pulse rounded-2rem flex items-center justify-center text-primary-900 font-bold">
+      Ładowanie mapy...
     </div>
   ),
 });
@@ -50,33 +50,26 @@ export default function CreateOrderView({
     };
     fetchServices();
   }, []);
+
   const handleSubmit = async () => {
     setLoading(true);
     setError(null);
     const token = localStorage.getItem("token");
 
-    // Precyzyjny format dla Java LocalDateTime: YYYY-MM-DDTHH:mm:ss
     const formatForJava = (dateStr: string) => {
       if (!dateStr) return null;
-      // datetime-local zwraca "YYYY-MM-DDTHH:mm" -> dodajemy ":00"
-      return dateStr.includes(":") && dateStr.split(":").length === 2
-        ? `${dateStr}:00`
-        : dateStr;
+      return dateStr.length === 16 ? `${dateStr}:00` : dateStr;
     };
 
-    // Zmieniamy klucze na snake_case, ponieważ Twój backend (sądząc po mapperze)
-    // prawdopodobnie tak ma skonfigurowany Jackson Naming Strategy
     const payload = {
       title: formData.title,
       description: formData.description,
       service: formData.service,
       coordinates: `${formData.coordinates.lat},${formData.coordinates.lng}`,
-      from_date: formatForJava(formData.fromDate), // klucz: from_date
-      to_date: formatForJava(formData.toDate), // klucz: to_date
+      from_date: formatForJava(formData.fromDate),
+      to_date: formatForJava(formData.toDate),
       parameters: formData.parameters || {},
     };
-
-    console.log("Wysyłany Payload (do sprawdzenia):", payload);
 
     try {
       const res = await fetch("/api/orders/createOrder", {
@@ -92,37 +85,34 @@ export default function CreateOrderView({
         onSuccess();
       } else {
         const responseText = await res.text();
-        console.error("Surowy błąd z serwera:", responseText);
-
-        // Próba wyciągnięcia komunikatu o błędzie
-        let errorMessage = `Błąd serwera (${res.status})`;
+        let message = "Błąd walidacji";
         try {
           const json = JSON.parse(responseText);
-          // Jeśli backend zwraca listę błędów walidacji, wyciągnij pierwszy
-          errorMessage = json.message || json.error || errorMessage;
+          message = json.message || message;
         } catch {
-          errorMessage = responseText || errorMessage;
+          message = responseText || message;
         }
-
-        setError(errorMessage);
+        setError(message);
       }
-    } catch (err) {
-      console.error("Błąd sieci:", err);
+    } catch {
       setError("Błąd połączenia z serwerem.");
     } finally {
       setLoading(false);
     }
   };
+
   return (
-    <div className="w-full max-w-4xl bg-white border-2 border-gray-100 rounded-[3rem] p-8 lg:p-12 shadow-xl animate-fadeIn text-black font-montserrat">
+    <div className="w-full max-w-4xl bg-white border-2 border-primary-100 rounded-[3rem] p-8 lg:p-12 shadow-2xl animate-fadeIn text-black font-montserrat">
       <div className="flex justify-between items-center mb-10">
-        <h2 className="text-3xl font-bold">Wystaw ofertę</h2>
-        <div className="flex gap-2">
+        <h2 className="text-3xl font-black text-primary-900 uppercase tracking-tight">
+          Wystaw ofertę
+        </h2>
+        <div className="flex gap-3">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className={`h-2 w-8 rounded-full transition-all ${
-                step === i ? "bg-primary-500" : "bg-gray-200"
+              className={`h-2.5 w-10 rounded-full transition-all duration-500 ${
+                step === i ? "bg-primary-500 shadow-md" : "bg-primary-100"
               }`}
             />
           ))}
@@ -130,7 +120,7 @@ export default function CreateOrderView({
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-sm font-bold animate-shake">
+        <div className="mb-8 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-2xl text-sm font-bold shadow-sm">
           ⚠️ {error}
         </div>
       )}
@@ -138,7 +128,7 @@ export default function CreateOrderView({
       {step === 1 && (
         <div className="space-y-6 animate-fadeIn">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">
+            <label className="block text-xs font-black text-primary-800 mb-2 uppercase tracking-widest">
               Tytuł ogłoszenia
             </label>
             <input
@@ -147,12 +137,12 @@ export default function CreateOrderView({
               onChange={(e) =>
                 setFormData({ ...formData, title: e.target.value })
               }
-              placeholder="np. Zdjęcia z drona - budowa domu"
-              className="w-full px-6 py-4 bg-gray-50 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-medium"
+              placeholder="np. Ortofotomapa działki leśnej"
+              className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-300 focus:bg-white rounded-2xl outline-none font-bold transition-all"
             />
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">
+            <label className="block text-xs font-black text-primary-800 mb-2 uppercase tracking-widest">
               Rodzaj usługi
             </label>
             <select
@@ -160,7 +150,7 @@ export default function CreateOrderView({
               onChange={(e) =>
                 setFormData({ ...formData, service: e.target.value })
               }
-              className="w-full px-6 py-4 bg-gray-50 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none appearance-none font-medium"
+              className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-300 focus:bg-white rounded-2xl outline-none appearance-none font-bold transition-all"
             >
               <option value="">Wybierz usługę...</option>
               {services.map((s) => (
@@ -171,8 +161,8 @@ export default function CreateOrderView({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">
-              Szczegółowy opis
+            <label className="block text-xs font-black text-primary-800 mb-2 uppercase tracking-widest">
+              Szczegółowe wymagania
             </label>
             <textarea
               value={formData.description}
@@ -180,15 +170,15 @@ export default function CreateOrderView({
                 setFormData({ ...formData, description: e.target.value })
               }
               rows={4}
-              placeholder="Opisz dokładnie zakres prac..."
-              className="w-full px-6 py-4 bg-gray-50 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-medium"
+              placeholder="Napisz czego oczekujesz od operatora..."
+              className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-300 focus:bg-white rounded-2xl outline-none font-medium transition-all"
             />
           </div>
           <div className="flex justify-end pt-4">
             <button
               onClick={() => setStep(2)}
               disabled={!formData.title || !formData.service}
-              className="px-12 py-4 bg-primary-600 text-white rounded-2xl font-bold shadow-lg hover:bg-primary-700 disabled:opacity-50 transition-all"
+              className="px-16 py-4 bg-primary-300 text-primary-900 rounded-2xl font-black shadow-lg hover:bg-primary-400 disabled:opacity-30 transition-all uppercase tracking-widest text-sm"
             >
               Dalej
             </button>
@@ -211,7 +201,7 @@ export default function CreateOrderView({
         <div className="space-y-8 animate-fadeIn">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">
+              <label className="block text-xs font-black text-primary-800 mb-2 uppercase tracking-widest">
                 Zlecenie od:
               </label>
               <input
@@ -220,11 +210,11 @@ export default function CreateOrderView({
                 onChange={(e) =>
                   setFormData({ ...formData, fromDate: e.target.value })
                 }
-                className="w-full px-6 py-4 bg-gray-50 rounded-2xl font-medium border-2 border-transparent focus:border-primary-500 outline-none"
+                className="w-full px-6 py-4 bg-gray-50 rounded-2xl font-bold border-2 border-transparent focus:border-primary-300 outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">
+              <label className="block text-xs font-black text-primary-800 mb-2 uppercase tracking-widest">
                 Zlecenie do:
               </label>
               <input
@@ -233,24 +223,23 @@ export default function CreateOrderView({
                 onChange={(e) =>
                   setFormData({ ...formData, toDate: e.target.value })
                 }
-                className="w-full px-6 py-4 bg-gray-50 rounded-2xl font-medium border-2 border-transparent focus:border-primary-500 outline-none"
+                className="w-full px-6 py-4 bg-gray-50 rounded-2xl font-bold border-2 border-transparent focus:border-primary-300 outline-none"
               />
             </div>
           </div>
-
           <div className="flex justify-between items-center pt-10">
             <button
               onClick={() => setStep(2)}
-              className="text-gray-400 font-bold hover:text-black transition-colors"
+              className="text-primary-800 font-black uppercase tracking-widest text-xs hover:text-black transition-colors"
             >
               Wróć
             </button>
             <button
               onClick={handleSubmit}
               disabled={loading || !formData.fromDate || !formData.toDate}
-              className="px-16 py-4 bg-primary-600 text-white rounded-2xl font-bold shadow-xl hover:bg-primary-700 disabled:opacity-50 transition-all"
+              className="px-20 py-5 bg-primary-300 text-primary-900 rounded-2xl font-black shadow-xl hover:bg-primary-400 disabled:opacity-30 transition-all uppercase tracking-widest"
             >
-              {loading ? "Przetwarzanie..." : "Opublikuj ogłoszenie"}
+              {loading ? "Wysyłanie..." : "Opublikuj ogłoszenie"}
             </button>
           </div>
         </div>

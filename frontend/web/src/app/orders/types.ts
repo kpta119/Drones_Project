@@ -20,8 +20,8 @@ export interface OrderResponse {
   description: string;
   service: string;
   coordinates: string;
-  fromDate: string;
-  toDate: string;
+  from_date: string;
+  to_date: string;
   status: OrderStatus;
   client_id: string;
   createdAt: string;
@@ -30,8 +30,18 @@ export interface OrderResponse {
   street?: string;
 }
 
-export interface MatchedOrderDto extends OrderResponse {
+export interface MatchedOrderDto {
+  id: string;
   clientId: string;
+  title: string;
+  description: string;
+  service: string;
+  parameters: Record<string, string>;
+  coordinates: string;
+  fromDate: string;
+  toDate: string;
+  createdAt: string;
+  orderStatus: OrderStatus;
   distance: number;
   clientStatus: MatchStatus;
   operatorStatus: MatchStatus;

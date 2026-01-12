@@ -29,7 +29,6 @@ if (typeof window !== "undefined") {
   L.Marker.prototype.options.icon = DefaultIcon;
 }
 
-// Komponent pomocniczy do przesuwania widoku mapy po wyszukiwaniu
 function MapSync({ center }: { center: { lat: number; lng: number } }) {
   const map = useMap();
   useEffect(() => {
@@ -58,20 +57,17 @@ export default function OrderLocationPicker({
     "Wybierz lokalizację..."
   );
 
-  // Funkcja aktualizująca adres tekstowy na bazie współrzędnych (Geocoding wsteczny)
   const syncTextAddress = useCallback(async (lat: number, lng: number) => {
     const addr = await getAddressFromCoordinates(`${lat},${lng}`);
     const fullAddr = `${addr.city}${addr.street ? ", " + addr.street : ""}`;
     setDisplayAddress(fullAddr);
-    setSearchQuery(fullAddr); // Aktualizujemy input, żeby pasował do pinezki
+    setSearchQuery(fullAddr);
   }, []);
 
-  // Inicjalizacja adresu przy starcie
   useEffect(() => {
     syncTextAddress(coordinates.lat, coordinates.lng);
   }, [coordinates.lat, coordinates.lng, syncTextAddress]);
 
-  // Funkcja wyszukiwania współrzędnych na bazie tekstu (Geocoding)
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     setIsSearching(true);
@@ -88,12 +84,11 @@ export default function OrderLocationPicker({
           lng: parseFloat(data[0].lon),
         };
         setCoordinates(newCoords);
-        // syncTextAddress zostanie wywołane przez useEffect powyżej
       } else {
-        alert("Nie znaleziono takiego adresu.");
+        alert("Błąd wyszukiwania adresu.");
       }
-    } catch (err) {
-      console.error("Search error:", err);
+    } catch {
+      console.error("Search failed");
     } finally {
       setIsSearching(false);
     }
@@ -106,7 +101,6 @@ export default function OrderLocationPicker({
         if (marker != null) {
           const { lat, lng } = marker.getLatLng();
           setCoordinates({ lat, lng });
-          // Po przeciągnięciu, syncTextAddress zaktualizuje input tekstowy
         }
       },
     }),
@@ -117,16 +111,17 @@ export default function OrderLocationPicker({
     <div className="flex flex-col h-full animate-fadeIn text-black font-montserrat">
       <div className="flex-1">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold">Gdzie wykonasz zlecenie?</h2>
-          <p className="text-gray-500 text-sm">
-            Wpisz miasto/adres lub przesuń pinezkę.
+          <h2 className="text-2xl font-black text-primary-900 uppercase tracking-tight">
+            Lokalizacja zlecenia
+          </h2>
+          <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-1">
+            Wyszukaj lub przesuń pinezkę.
           </p>
         </div>
 
-        {/* WYSZUKIWARKA */}
         <div className="flex gap-2 mb-6">
           <div className="relative flex-1">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-700">
               🔍
             </span>
             <input
@@ -134,31 +129,27 @@ export default function OrderLocationPicker({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="Wyszukaj miasto lub ulicę..."
-              className="w-full pl-11 pr-4 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-primary-500 outline-none transition-all font-medium text-black"
+              placeholder="Miasto, ulica..."
+              className="w-full pl-11 pr-4 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-300 focus:bg-white rounded-2xl outline-none font-bold text-black shadow-inner"
             />
           </div>
           <button
             onClick={handleSearch}
             disabled={isSearching}
-            className="px-8 py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all disabled:opacity-50 shadow-lg"
+            className="px-8 py-4 bg-primary-900 text-primary-50 rounded-2xl font-black hover:bg-black transition-all disabled:opacity-50 shadow-lg uppercase text-xs tracking-widest"
           >
-            {isSearching ? "..." : "Szukaj"}
+            Szukaj
           </button>
         </div>
 
-        {/* MAPA */}
-        <div className="h-[350px] w-full rounded-[2.5rem] overflow-hidden border-2 border-gray-100 relative shadow-inner mb-6">
+        <div className="h-[350px] w-full rounded-[2.5rem] overflow-hidden border-4 border-primary-50 relative shadow-2xl mb-6">
           <MapContainer
             center={[coordinates.lat, coordinates.lng]}
             zoom={13}
             style={{ height: "100%", width: "100%" }}
           >
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-
-            {/* Ten komponent przesuwa mapę po wyszukiwaniu */}
             <MapSync center={coordinates} />
-
             <Marker
               draggable={true}
               eventHandlers={eventHandlers}
@@ -168,17 +159,16 @@ export default function OrderLocationPicker({
           </MapContainer>
         </div>
 
-        {/* WYBRANY ADRES - FEEDBACK */}
-        <div className="bg-primary-50 p-5 rounded-3xl border border-primary-100 mb-8">
+        <div className="bg-primary-100/50 p-5 rounded-3xl border-2 border-primary-200 mb-8 shadow-sm">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-primary-500 rounded-2xl flex items-center justify-center text-xl shadow-md">
+            <div className="w-12 h-12 bg-primary-400 rounded-2xl flex items-center justify-center text-xl shadow-md text-white">
               📍
             </div>
             <div>
-              <p className="text-[10px] font-extrabold text-primary-700 uppercase tracking-[0.2em]">
-                Miejsce operacji:
+              <p className="text-[10px] font-black text-primary-800 uppercase tracking-[0.2em]">
+                Punkt operacji:
               </p>
-              <p className="text-base font-bold text-gray-900">
+              <p className="text-base font-black text-primary-950 tracking-tight">
                 {displayAddress}
               </p>
             </div>
@@ -189,15 +179,15 @@ export default function OrderLocationPicker({
       <div className="flex justify-between items-center pt-6 border-t border-gray-100">
         <button
           onClick={onPrev}
-          className="px-8 py-2 text-gray-400 font-bold hover:text-black transition-colors"
+          className="text-primary-800 font-black uppercase tracking-widest text-xs hover:text-black"
         >
           Wróć
         </button>
         <button
           onClick={onNext}
-          className="px-12 py-4 bg-primary-600 text-white rounded-2xl font-bold shadow-xl hover:bg-primary-700 hover:scale-[1.02] transition-all"
+          className="px-12 py-4 bg-primary-300 text-primary-900 rounded-2xl font-black shadow-xl hover:bg-primary-400 transition-all uppercase tracking-widest text-sm"
         >
-          Potwierdź to miejsce
+          Potwierdź adres
         </button>
       </div>
     </div>
