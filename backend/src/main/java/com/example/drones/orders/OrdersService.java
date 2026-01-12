@@ -39,6 +39,12 @@ public class OrdersService {
     @Transactional
     @CacheEvict(value = "orders", key = "'open'")
     public OrderResponse createOrder(OrderRequest request, UUID userId) {
+        LocalDateTime now = LocalDateTime.now(clock);
+
+        if (request.getToDate().isBefore(now.toLocalDate().atStartOfDay())) {
+            throw new IllegalOrderStateException("The end date cannot be earlier than today.");
+        }
+
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
 
@@ -47,7 +53,7 @@ public class OrdersService {
 
         OrdersEntity orderEntity = ordersMapper.toEntity(request, serviceEntity);
 
-        orderEntity.setCreatedAt(LocalDateTime.now(clock));
+        orderEntity.setCreatedAt(now);
         orderEntity.setUser(user);
         OrdersEntity savedOrder = ordersRepository.save(orderEntity);
 
@@ -104,6 +110,11 @@ public class OrdersService {
 
             match = newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, currentUserId)
                     .orElseThrow(MatchedOrderNotFoundException::new);
+
+            if (match.getOperatorStatus() == MatchedOrderStatus.ACCEPTED) {
+                throw new OrderAlreadyAcceptedByYouException();
+            }
+
             match.setOperatorStatus(MatchedOrderStatus.ACCEPTED);
             if (foundOrder.getStatus() == OrderStatus.OPEN) {
                 foundOrder.setStatus(OrderStatus.AWAITING_OPERATOR);
@@ -114,15 +125,20 @@ public class OrdersService {
                 throw new NotOwnerOfOrderException();
             }
 
+            match = newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operatorIdParam)
+                    .orElseThrow(MatchedOrderNotFoundException::new);
+
+            if (match.getClientStatus() == MatchedOrderStatus.ACCEPTED) {
+                throw new OrderAlreadyAcceptedByYouException();
+            }
+
             boolean alreadyAcceptedSomeone = newMatchedOrdersRepository
                     .existsByOrderIdAndClientStatus(orderId, MatchedOrderStatus.ACCEPTED);
-
             if (alreadyAcceptedSomeone){
                 throw new OrderAlreadyHasAcceptedOperatorException();
             }
 
-            match = newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operatorIdParam)
-                    .orElseThrow(MatchedOrderNotFoundException::new);
+
             match.setClientStatus(MatchedOrderStatus.ACCEPTED);
             if (match.getOperatorStatus() == MatchedOrderStatus.ACCEPTED) {
                 foundOrder.setStatus(OrderStatus.IN_PROGRESS);
