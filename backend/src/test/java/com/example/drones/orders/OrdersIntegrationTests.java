@@ -491,6 +491,144 @@ public class OrdersIntegrationTests {
     }
 
     @Test
+    void givenOperatorAlreadyAcceptedOrder_whenTriesToAcceptAgain_thenReturnsError() {
+        String clientToken = registerAndLogin();
+
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator = createTestOperator("operator_double_accept", "52.2200, 21.0100", 20, service);
+
+        OrderRequest orderRequest = OrderRequest.builder()
+                .title("Test Order for Double Accept")
+                .description("Test description")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity = new HttpEntity<>(orderRequest, getHeaders(clientToken));
+        ResponseEntity<OrderResponse> createResponse = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity,
+                OrderResponse.class
+        );
+        Assertions.assertNotNull(createResponse.getBody());
+        UUID orderId = createResponse.getBody().getId();
+
+        await().atMost(10, SECONDS).untilAsserted(() -> {
+            List<NewMatchedOrderEntity> matches = newMatchedOrdersRepository
+                    .findAll().stream()
+                    .filter(m -> m.getOrder().getId().equals(orderId))
+                    .toList();
+            assertThat(matches).hasSize(1);
+        });
+
+        LoginRequest operatorLogin = LoginRequest.builder()
+                .email("operator_double_accept@op.pl")
+                .password("pass")
+                .build();
+        ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
+                "/api/auth/login", operatorLogin, LoginResponse.class);
+        Assertions.assertNotNull(loginResponse.getBody());
+        String operatorToken = loginResponse.getBody().token();
+
+        // First accept - should succeed
+        HttpEntity<Void> firstAcceptEntity = new HttpEntity<>(getHeaders(operatorToken));
+        ResponseEntity<OrderResponse> firstAcceptResponse = testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + orderId,
+                HttpMethod.PATCH,
+                firstAcceptEntity,
+                OrderResponse.class
+        );
+
+        assertThat(firstAcceptResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // Second accept - should fail
+        HttpEntity<Void> secondAcceptEntity = new HttpEntity<>(getHeaders(operatorToken));
+        ResponseEntity<String> secondAcceptResponse = testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + orderId,
+                HttpMethod.PATCH,
+                secondAcceptEntity,
+                String.class
+        );
+
+        assertThat(secondAcceptResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(secondAcceptResponse.getBody()).contains("already accepted");
+    }
+
+    @Test
+    void givenClientAlreadyAcceptedOperator_whenTriesToAcceptAgain_thenReturnsError() {
+        String clientToken = registerAndLogin();
+
+        ServicesEntity service = servicesRepository.findById(SERVICE_NAME).orElseThrow();
+        UserEntity operator = createTestOperator("operator_client_double", "52.2200, 21.0100", 20, service);
+
+        OrderRequest orderRequest = OrderRequest.builder()
+                .title("Test Order for Client Double Accept")
+                .description("Test description")
+                .service(SERVICE_NAME)
+                .coordinates("52.23, 21.01")
+                .fromDate(LocalDateTime.now().plusDays(1))
+                .toDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        HttpEntity<OrderRequest> createEntity = new HttpEntity<>(orderRequest, getHeaders(clientToken));
+        ResponseEntity<OrderResponse> createResponse = testRestTemplate.exchange(
+                "/api/orders/createOrder",
+                HttpMethod.POST,
+                createEntity,
+                OrderResponse.class
+        );
+        Assertions.assertNotNull(createResponse.getBody());
+        UUID orderId = createResponse.getBody().getId();
+
+        await().atMost(10, SECONDS).untilAsserted(() -> assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
+                .isPresent());
+
+        LoginRequest operatorLogin = LoginRequest.builder()
+                .email("operator_client_double@op.pl")
+                .password("pass")
+                .build();
+        ResponseEntity<LoginResponse> loginResponse = testRestTemplate.postForEntity(
+                "/api/auth/login", operatorLogin, LoginResponse.class);
+        Assertions.assertNotNull(loginResponse.getBody());
+        String operatorToken = loginResponse.getBody().token();
+
+        // Operator accepts first
+        HttpEntity<Void> operatorAcceptEntity = new HttpEntity<>(getHeaders(operatorToken));
+        testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + orderId,
+                HttpMethod.PATCH,
+                operatorAcceptEntity,
+                OrderResponse.class
+        );
+
+        // Client accepts once - should succeed
+        HttpEntity<Void> firstClientAcceptEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<OrderResponse> firstClientAcceptResponse = testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + orderId + "?operatorId=" + operator.getId(),
+                HttpMethod.PATCH,
+                firstClientAcceptEntity,
+                OrderResponse.class
+        );
+
+        assertThat(firstClientAcceptResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // Client tries to accept again - should fail
+        HttpEntity<Void> secondClientAcceptEntity = new HttpEntity<>(getHeaders(clientToken));
+        ResponseEntity<String> secondClientAcceptResponse = testRestTemplate.exchange(
+                "/api/orders/acceptOrder/" + orderId + "?operatorId=" + operator.getId(),
+                HttpMethod.PATCH,
+                secondClientAcceptEntity,
+                String.class
+        );
+
+        assertThat(secondClientAcceptResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(secondClientAcceptResponse.getBody()).contains("already accepted");
+    }
+
+    @Test
     void givenNonOperator_whenTriesToAcceptOrder_thenReturnsError() {
         String client1Token = registerAndLogin();
 

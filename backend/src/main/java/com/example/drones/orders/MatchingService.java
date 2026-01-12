@@ -34,7 +34,8 @@ public class MatchingService {
             List<UserEntity> matchingOperators = userRepository.findMatchingOperators(
                     order.getService().getName(),
                     orderLat,
-                    orderLon
+                    orderLon,
+                    order.getUser().getId()
             );
 
             log.info("Found {} matching operators for order {}", matchingOperators.size(), order.getId());
