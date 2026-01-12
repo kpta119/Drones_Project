@@ -1,7 +1,7 @@
 "use client";
 
 import { ActiveOrderDto, OrderStatusLabels } from "../types";
-import AddToCalButton from "./add_to_cal_button";
+import AddToCalButton from "./add_to_cal_button"; // Import bez klamerek
 
 export default function ActiveView() {
   const mockActive: ActiveOrderDto[] = [
@@ -29,13 +29,13 @@ export default function ActiveView() {
       {mockActive.map((order) => (
         <div
           key={order.id}
-          className="bg-white border-2 border-gray-100 rounded-3xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 hover:border-primary-200 transition-colors"
+          className="bg-white border-2 border-gray-100 rounded-3xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4"
         >
           <div className="flex gap-4 items-center">
-            <div className="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center text-2xl shadow-inner">
+            <div className="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center text-2xl">
               🛸
             </div>
-            <div>
+            <div className="flex-1">
               <h3 className="font-bold text-lg text-slate-800">
                 {order.title}
               </h3>
