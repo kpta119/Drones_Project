@@ -111,7 +111,7 @@ export default function OrderLocationPicker({
     <div className="flex flex-col h-full animate-fadeIn text-black font-montserrat">
       <div className="flex-1">
         <div className="mb-6">
-          <h2 className="text-2xl font-black text-primary-900 uppercase tracking-tight">
+          <h2 className="text-2xl font-bold text-primary-900 uppercase tracking-tight">
             Lokalizacja zlecenia
           </h2>
           <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-1">
@@ -136,7 +136,7 @@ export default function OrderLocationPicker({
           <button
             onClick={handleSearch}
             disabled={isSearching}
-            className="px-8 py-4 bg-primary-900 text-primary-50 rounded-2xl font-black hover:bg-black transition-all disabled:opacity-50 shadow-lg uppercase text-xs tracking-widest"
+            className="px-8 py-4 bg-primary-900 text-primary-50 rounded-2xl font-bold hover:bg-black transition-all disabled:opacity-50 shadow-lg uppercase text-xs tracking-widest"
           >
             Szukaj
           </button>
@@ -165,10 +165,10 @@ export default function OrderLocationPicker({
               📍
             </div>
             <div>
-              <p className="text-[10px] font-black text-primary-800 uppercase tracking-[0.2em]">
+              <p className="text-[10px] font-bold text-primary-800 uppercase tracking-[0.2em]">
                 Punkt operacji:
               </p>
-              <p className="text-base font-black text-primary-950 tracking-tight">
+              <p className="text-base font-bold text-primary-950 tracking-tight">
                 {displayAddress}
               </p>
             </div>
@@ -179,13 +179,13 @@ export default function OrderLocationPicker({
       <div className="flex justify-between items-center pt-6 border-t border-gray-100">
         <button
           onClick={onPrev}
-          className="text-primary-800 font-black uppercase tracking-widest text-xs hover:text-black"
+          className="text-primary-800 font-bold uppercase tracking-widest text-xs hover:text-black"
         >
           Wróć
         </button>
         <button
           onClick={onNext}
-          className="px-12 py-4 bg-primary-300 text-primary-900 rounded-2xl font-black shadow-xl hover:bg-primary-400 transition-all uppercase tracking-widest text-sm"
+          className="px-12 py-4 bg-primary-300 text-primary-900 rounded-2xl font-bold shadow-xl hover:bg-primary-400 transition-all uppercase tracking-widest text-sm"
         >
           Potwierdź adres
         </button>

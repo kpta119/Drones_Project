@@ -5,21 +5,34 @@ import AvailableView from "./available/view";
 import CreatedView from "./created/view";
 import ActiveView from "./active/view";
 import CreateOrderView from "./create/view";
+import { OrderResponse } from "./types";
 
 export type OrdersView = "available" | "created" | "active" | "create";
 
 export default function OrdersPage() {
   const [view, setView] = useState<OrdersView>("created");
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [loadingRole, setLoadingRole] = useState(true);
+  const [editingOrder, setEditingOrder] = useState<OrderResponse | null>(null);
 
   useEffect(() => {
     const role = localStorage.getItem("role");
     setUserRole(role ? role.toUpperCase() : "CLIENT");
-    setLoadingRole(false);
   }, []);
 
-  if (loadingRole) return null;
+  const handleEdit = (order: OrderResponse) => {
+    setEditingOrder(order);
+    setView("create");
+  };
+
+  const handleCreateNew = () => {
+    setEditingOrder(null);
+    setView("create");
+  };
+
+  const handleBackToCreated = () => {
+    setEditingOrder(null);
+    setView("created");
+  };
 
   return (
     <div className="min-h-screen bg-white font-montserrat text-black">
@@ -61,15 +74,16 @@ export default function OrdersPage() {
           <AvailableView isOperator={userRole === "OPERATOR"} />
         )}
         {view === "created" && (
-          <CreatedView onCreateNew={() => setView("create")} />
+          <CreatedView onCreateNew={handleCreateNew} onEdit={handleEdit} />
         )}
         {view === "active" && (
           <ActiveView isOperator={userRole === "OPERATOR"} />
         )}
         {view === "create" && (
           <CreateOrderView
-            onCancel={() => setView("created")}
-            onSuccess={() => setView("created")}
+            onCancel={handleBackToCreated}
+            onSuccess={handleBackToCreated}
+            editData={editingOrder}
           />
         )}
       </main>

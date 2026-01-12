@@ -68,7 +68,7 @@ export default function AvailableView({ isOperator }: { isOperator: boolean }) {
         </p>
         <button
           onClick={() => (window.location.href = "/user_profile")}
-          className="mt-10 px-12 py-4 bg-primary-300 text-primary-900 rounded-2xl font-black hover:bg-primary-400 transition-all shadow-xl uppercase tracking-widest text-sm"
+          className="mt-10 px-12 py-4 bg-primary-300 text-primary-900 rounded-2xl font-bold hover:bg-primary-400 transition-all shadow-xl uppercase tracking-widest text-sm"
         >
           Załóż profil operatora
         </button>

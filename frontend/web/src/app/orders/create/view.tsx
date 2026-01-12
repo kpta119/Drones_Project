@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { OrderResponse } from "../types";
 
 const OrderLocationPicker = dynamic(() => import("../utils/order_location"), {
   ssr: false,
@@ -15,11 +16,13 @@ const OrderLocationPicker = dynamic(() => import("../utils/order_location"), {
 interface CreateOrderViewProps {
   onCancel: () => void;
   onSuccess: () => void;
+  editData: OrderResponse | null;
 }
 
 export default function CreateOrderView({
   onCancel,
   onSuccess,
+  editData,
 }: CreateOrderViewProps) {
   const [services, setServices] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -27,13 +30,18 @@ export default function CreateOrderView({
   const [step, setStep] = useState(1);
 
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    service: "",
-    coordinates: { lat: 52.237, lng: 21.017 },
-    fromDate: "",
-    toDate: "",
-    parameters: {},
+    title: editData?.title || "",
+    description: editData?.description || "",
+    service: editData?.service || "",
+    coordinates: editData?.coordinates
+      ? {
+          lat: parseFloat(editData.coordinates.split(",")[0]),
+          lng: parseFloat(editData.coordinates.split(",")[1]),
+        }
+      : { lat: 52.237, lng: 21.017 },
+    fromDate: editData?.from_date?.split(":").slice(0, 2).join(":") || "",
+    toDate: editData?.to_date?.split(":").slice(0, 2).join(":") || "",
+    parameters: editData?.parameters || {},
   });
 
   useEffect(() => {
@@ -71,9 +79,15 @@ export default function CreateOrderView({
       parameters: formData.parameters || {},
     };
 
+    const url = editData
+      ? `/api/orders/editOrder/${editData.id}`
+      : "/api/orders/createOrder";
+
+    const method = editData ? "PATCH" : "POST";
+
     try {
-      const res = await fetch("/api/orders/createOrder", {
-        method: "POST",
+      const res = await fetch(url, {
+        method: method,
         headers: {
           "Content-Type": "application/json",
           "X-USER-TOKEN": `Bearer ${token}`,
@@ -85,7 +99,7 @@ export default function CreateOrderView({
         onSuccess();
       } else {
         const responseText = await res.text();
-        let message = "Błąd walidacji";
+        let message = "Błąd zapisu";
         try {
           const json = JSON.parse(responseText);
           message = json.message || message;
@@ -104,8 +118,8 @@ export default function CreateOrderView({
   return (
     <div className="w-full max-w-4xl bg-white border-2 border-primary-100 rounded-[3rem] p-8 lg:p-12 shadow-2xl animate-fadeIn text-black font-montserrat">
       <div className="flex justify-between items-center mb-10">
-        <h2 className="text-3xl font-black text-primary-900 uppercase tracking-tight">
-          Wystaw ofertę
+        <h2 className="text-3xl font-bold text-primary-900 uppercase tracking-tight">
+          {editData ? "Edytuj ofertę" : "Wystaw ofertę"}
         </h2>
         <div className="flex gap-3">
           {[1, 2, 3].map((i) => (
@@ -128,7 +142,7 @@ export default function CreateOrderView({
       {step === 1 && (
         <div className="space-y-6 animate-fadeIn">
           <div>
-            <label className="block text-xs font-black text-primary-800 mb-2 uppercase tracking-widest">
+            <label className="block text-xs font-bold text-primary-800 mb-2 uppercase tracking-widest">
               Tytuł ogłoszenia
             </label>
             <input
@@ -137,12 +151,11 @@ export default function CreateOrderView({
               onChange={(e) =>
                 setFormData({ ...formData, title: e.target.value })
               }
-              placeholder="np. Ortofotomapa działki leśnej"
-              className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-300 focus:bg-white rounded-2xl outline-none font-bold transition-all"
+              className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-300 focus:bg-white rounded-2xl outline-none font-bold transition-all text-black"
             />
           </div>
           <div>
-            <label className="block text-xs font-black text-primary-800 mb-2 uppercase tracking-widest">
+            <label className="block text-xs font-bold text-primary-800 mb-2 uppercase tracking-widest">
               Rodzaj usługi
             </label>
             <select
@@ -150,7 +163,7 @@ export default function CreateOrderView({
               onChange={(e) =>
                 setFormData({ ...formData, service: e.target.value })
               }
-              className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-300 focus:bg-white rounded-2xl outline-none appearance-none font-bold transition-all"
+              className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-300 focus:bg-white rounded-2xl outline-none appearance-none font-bold transition-all text-black"
             >
               <option value="">Wybierz usługę...</option>
               {services.map((s) => (
@@ -161,7 +174,7 @@ export default function CreateOrderView({
             </select>
           </div>
           <div>
-            <label className="block text-xs font-black text-primary-800 mb-2 uppercase tracking-widest">
+            <label className="block text-xs font-bold text-primary-800 mb-2 uppercase tracking-widest">
               Szczegółowe wymagania
             </label>
             <textarea
@@ -170,15 +183,14 @@ export default function CreateOrderView({
                 setFormData({ ...formData, description: e.target.value })
               }
               rows={4}
-              placeholder="Napisz czego oczekujesz od operatora..."
-              className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-300 focus:bg-white rounded-2xl outline-none font-medium transition-all"
+              className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-300 focus:bg-white rounded-2xl outline-none font-medium transition-all text-black"
             />
           </div>
           <div className="flex justify-end pt-4">
             <button
               onClick={() => setStep(2)}
               disabled={!formData.title || !formData.service}
-              className="px-16 py-4 bg-primary-300 text-primary-900 rounded-2xl font-black shadow-lg hover:bg-primary-400 disabled:opacity-30 transition-all uppercase tracking-widest text-sm"
+              className="px-16 py-4 bg-primary-300 text-primary-900 rounded-2xl font-bold shadow-lg hover:bg-primary-400 disabled:opacity-30 transition-all uppercase tracking-widest text-sm"
             >
               Dalej
             </button>
@@ -198,10 +210,10 @@ export default function CreateOrderView({
       )}
 
       {step === 3 && (
-        <div className="space-y-8 animate-fadeIn">
+        <div className="space-y-8 animate-fadeIn text-black">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <label className="block text-xs font-black text-primary-800 mb-2 uppercase tracking-widest">
+              <label className="block text-xs font-bold text-primary-800 mb-2 uppercase tracking-widest">
                 Zlecenie od:
               </label>
               <input
@@ -210,11 +222,11 @@ export default function CreateOrderView({
                 onChange={(e) =>
                   setFormData({ ...formData, fromDate: e.target.value })
                 }
-                className="w-full px-6 py-4 bg-gray-50 rounded-2xl font-bold border-2 border-transparent focus:border-primary-300 outline-none"
+                className="w-full px-6 py-4 bg-gray-50 rounded-2xl font-bold border-2 border-transparent focus:border-primary-300 outline-none text-black"
               />
             </div>
             <div>
-              <label className="block text-xs font-black text-primary-800 mb-2 uppercase tracking-widest">
+              <label className="block text-xs font-bold text-primary-800 mb-2 uppercase tracking-widest">
                 Zlecenie do:
               </label>
               <input
@@ -223,23 +235,27 @@ export default function CreateOrderView({
                 onChange={(e) =>
                   setFormData({ ...formData, toDate: e.target.value })
                 }
-                className="w-full px-6 py-4 bg-gray-50 rounded-2xl font-bold border-2 border-transparent focus:border-primary-300 outline-none"
+                className="w-full px-6 py-4 bg-gray-50 rounded-2xl font-bold border-2 border-transparent focus:border-primary-300 outline-none text-black"
               />
             </div>
           </div>
           <div className="flex justify-between items-center pt-10">
             <button
               onClick={() => setStep(2)}
-              className="text-primary-800 font-black uppercase tracking-widest text-xs hover:text-black transition-colors"
+              className="text-primary-800 font-bold uppercase tracking-widest text-xs hover:text-black transition-colors"
             >
               Wróć
             </button>
             <button
               onClick={handleSubmit}
               disabled={loading || !formData.fromDate || !formData.toDate}
-              className="px-20 py-5 bg-primary-300 text-primary-900 rounded-2xl font-black shadow-xl hover:bg-primary-400 disabled:opacity-30 transition-all uppercase tracking-widest"
+              className="px-20 py-5 bg-primary-300 text-primary-900 rounded-2xl font-bold shadow-xl hover:bg-primary-400 disabled:opacity-30 transition-all uppercase tracking-widest"
             >
-              {loading ? "Wysyłanie..." : "Opublikuj ogłoszenie"}
+              {loading
+                ? "Wysyłanie..."
+                : editData
+                ? "Zapisz zmiany"
+                : "Opublikuj ogłoszenie"}
             </button>
           </div>
         </div>

@@ -26,8 +26,6 @@ export interface OrderResponse {
   client_id: string;
   createdAt: string;
   parameters: Record<string, string>;
-  city?: string;
-  street?: string;
 }
 
 export interface MatchedOrderDto {
@@ -45,11 +43,6 @@ export interface MatchedOrderDto {
   distance: number;
   clientStatus: MatchStatus;
   operatorStatus: MatchStatus;
-}
-
-export interface ActiveOrderDto extends OrderResponse {
-  startDate: string;
-  endDate: string;
 }
 
 export interface OperatorApplicantDto {
