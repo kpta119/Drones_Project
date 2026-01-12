@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { MatchedOrderDto, OrderStatusLabels } from "../types";
 import dynamic from "next/dynamic";
+import { FaExternalLinkAlt } from "react-icons/fa";
 
 const MapModule = dynamic(() => import("./map_module"), {
   ssr: false,
@@ -32,16 +33,11 @@ export default function OfferMatch({
   const [showMap, setShowMap] = useState(false);
 
   const handleViewAuthor = () => {
-    const id = order.clientId || (order as any).client_id;
-    window.open(`/user_profile?user_id=${id}`, "_blank");
+    window.open(`/user_profile?user_id=${order.client_id}`, "_blank");
   };
 
-  const rawStatus =
-    order.orderStatus || (order as any).status || (order as any).order_status;
-  const displayStatus = rawStatus
-    ? OrderStatusLabels[rawStatus as keyof typeof OrderStatusLabels] ||
-      rawStatus
-    : "";
+  const displayStatus =
+    OrderStatusLabels[order.order_status] || order.order_status;
 
   return (
     <div className="relative w-full max-w-7xl mt-12 bg-slate-900 rounded-[4rem] overflow-hidden shadow-2xl p-8 lg:p-10 text-white min-h-[420px] flex items-center font-montserrat animate-fadeIn">
@@ -56,7 +52,7 @@ export default function OfferMatch({
         <div className="w-full lg:w-1/2 flex flex-col">
           <div className="text-right mb-4 lg:mb-6 min-h-[140px] flex flex-col justify-end">
             {isAddressLoading ? (
-              <div className="space-y-2 animate-pulse flex flex-col items-end text-white">
+              <div className="space-y-2 animate-pulse flex flex-col items-end text-white text-right">
                 <div className="h-4 w-20 bg-white/20 rounded"></div>
                 <div className="h-12 w-64 bg-white/20 rounded"></div>
                 <div className="h-6 w-48 bg-white/20 rounded"></div>
@@ -66,7 +62,7 @@ export default function OfferMatch({
                 <p className="text-white text-base uppercase tracking-widest font-medium">
                   {address.country}
                 </p>
-                <h2 className="text-5xl lg:text-7xl font-bold tracking-tighter leading-none">
+                <h2 className="text-5xl lg:text-7xl font-bold tracking-tighter leading-none text-white">
                   {address.city}
                 </h2>
                 <p className="text-white text-lg lg:text-xl font-light">
@@ -78,8 +74,9 @@ export default function OfferMatch({
             <div className="mt-2 flex flex-col items-end">
               <button
                 onClick={handleViewAuthor}
-                className="text-white hover:text-primary-300 text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-1 mt-1 underline underline-offset-4"
+                className="text-white/80 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2 mt-1 underline underline-offset-4"
               >
+                <FaExternalLinkAlt size={10} />
                 Zobacz profil autora
               </button>
             </div>
@@ -95,7 +92,9 @@ export default function OfferMatch({
               </p>
               <div className="text-white text-base lg:text-lg flex items-center gap-2">
                 <span className="font-light opacity-70">Stan:</span>{" "}
-                <span className="font-bold text-white">{displayStatus}</span>
+                <span className="font-bold text-primary-300">
+                  {displayStatus}
+                </span>
               </div>
             </div>
 

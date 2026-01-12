@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import {
   OrderResponse,
@@ -28,22 +28,77 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
   const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(
     null
   );
+  const [applicants, setApplicants] = useState<OperatorApplicantDto[]>([]);
+  const [currentAppIndex, setCurrentAppIndex] = useState(0);
 
-  const fetchMyOrders = async () => {
+  const fetchMyOrders = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch("/api/orders/getMyOrders", {
         headers: { "X-USER-TOKEN": `Bearer ${token}` },
       });
-      if (res.ok) setMyOrders(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setMyOrders(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMyOrders();
+  }, [fetchMyOrders]);
+
+  const fetchApplicants = async (orderId: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/operators/getOperatorsInfo/${orderId}`, {
+        headers: { "X-USER-TOKEN": `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : [];
+        if (list.length > 0) {
+          setApplicants(list);
+          setCurrentAppIndex(0);
+          setMatchingOrderId(orderId);
+        } else {
+          alert("Brak chętnych operatorów dla tego zlecenia.");
+        }
+      }
     } catch (err) {
       console.error(err);
     }
   };
 
-  useEffect(() => {
-    fetchMyOrders();
-  }, []);
+  const handleOpDecision = async (
+    operatorId: string,
+    action: "accept" | "reject"
+  ) => {
+    if (!matchingOrderId || !operatorId) return;
+    try {
+      const token = localStorage.getItem("token");
+      const endpoint = action === "accept" ? "acceptOrder" : "rejectOrder";
+      const res = await fetch(
+        `/api/orders/${endpoint}/${matchingOrderId}?operatorId=${operatorId}`,
+        {
+          method: "PATCH",
+          headers: { "X-USER-TOKEN": `Bearer ${token}` },
+        }
+      );
+      if (res.ok) {
+        if (currentAppIndex < applicants.length - 1) {
+          setCurrentAppIndex((prev) => prev + 1);
+        } else {
+          setMatchingOrderId(null);
+          fetchMyOrders();
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleCancelOrder = async (id: string) => {
     if (!confirm("Czy na pewno chcesz anulować to zlecenie?")) return;
@@ -75,7 +130,7 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
         {myOrders.map((order) => (
           <div
             key={order.id}
-            className="relative bg-slate-900 rounded-[2.5rem] p-8 text-white overflow-hidden shadow-xl border border-white/5"
+            className="relative bg-slate-900 rounded-[2.5rem] p-8 overflow-hidden shadow-xl border border-white/5 text-white"
           >
             <div className="absolute inset-0 opacity-20">
               <Image
@@ -85,7 +140,7 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
                 className="object-cover"
               />
             </div>
-            <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6 text-white">
               <div className="text-center md:text-left">
                 <h3 className="text-2xl font-bold leading-tight">
                   {order.title}
@@ -102,45 +157,43 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
               </div>
 
               <div className="flex flex-wrap justify-center items-center gap-3">
-                <div
-                  onClick={() => setSelectedOrder(order)}
-                  className="group flex items-center flex-row bg-white/10 rounded-xl hover:bg-primary-500 hover:text-black transition-all cursor-pointer overflow-hidden"
-                >
-                  <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest pl-0 group-hover:pl-4">
-                    Szczegóły
-                  </span>
-                  <div className="p-4">
-                    <FaSearchPlus />
-                  </div>
-                </div>
-
                 {(order.status === "IN_PROGRESS" ||
                   order.status === "COMPLETED") &&
-                  (order as any).assigned_operator_id && (
+                  (order as any).operator_id && (
                     <div
                       onClick={() =>
                         window.open(
-                          `/user_profile?user_id=${
-                            (order as any).assigned_operator_id
-                          }`,
+                          `/user_profile?user_id=${(order as any).operator_id}`,
                           "_blank"
                         )
                       }
-                      className="group flex items-center flex-row bg-primary-400 text-black rounded-xl hover:bg-primary-300 transition-all cursor-pointer overflow-hidden"
+                      className="group flex items-center bg-primary-300 rounded-xl hover:bg-primary-400 transition-all cursor-pointer overflow-hidden h-10 shadow-sm"
                     >
-                      <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest pl-0 group-hover:pl-4">
-                        Operator
+                      <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[150px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest text-primary-950 pl-0 group-hover:pl-4">
+                        Wykonawca
                       </span>
-                      <div className="p-4">
-                        <FaUserTie />
+                      <div className="p-3 text-primary-950">
+                        <FaUserTie size={14} />
                       </div>
                     </div>
                   )}
 
+                <div
+                  onClick={() => setSelectedOrder(order)}
+                  className="group flex items-center bg-white/10 rounded-xl hover:bg-white/20 transition-all cursor-pointer overflow-hidden h-10"
+                >
+                  <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[150px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest text-white pl-0 group-hover:pl-4">
+                    Szczegóły
+                  </span>
+                  <div className="p-3 text-white">
+                    <FaSearchPlus size={14} />
+                  </div>
+                </div>
+
                 {order.status === "AWAITING_OPERATOR" && (
                   <button
-                    onClick={() => setMatchingOrderId(order.id)}
-                    className="px-6 py-4 bg-primary-300 text-primary-900 rounded-xl font-bold hover:bg-primary-400 transition-all active:scale-95 text-xs uppercase"
+                    onClick={() => fetchApplicants(order.id)}
+                    className="px-6 h-10 bg-primary-300 text-primary-900 rounded-xl font-bold hover:bg-primary-400 transition-all active:scale-95 text-[10px] uppercase tracking-widest shadow-md"
                   >
                     Chętni
                   </button>
@@ -149,13 +202,13 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
                 {order.status === "OPEN" && (
                   <div
                     onClick={() => onEdit(order)}
-                    className="group flex items-center flex-row bg-white/10 rounded-xl hover:bg-primary-500 hover:text-black transition-all cursor-pointer overflow-hidden"
+                    className="group flex items-center bg-white/10 rounded-xl hover:bg-primary-500 hover:text-black transition-all cursor-pointer overflow-hidden h-10"
                   >
-                    <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest pl-0 group-hover:pl-4">
+                    <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest text-black pl-0 group-hover:pl-4">
                       Edytuj
                     </span>
-                    <div className="p-4">
-                      <FaEdit />
+                    <div className="p-3 text-white group-hover:text-black transition-all">
+                      <FaEdit size={14} />
                     </div>
                   </div>
                 )}
@@ -164,13 +217,13 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
                   order.status !== "CANCELLED" && (
                     <div
                       onClick={() => handleCancelOrder(order.id)}
-                      className="group flex items-center flex-row bg-white/10 rounded-xl hover:bg-red-600 transition-all cursor-pointer overflow-hidden"
+                      className="group flex items-center bg-white/10 rounded-xl hover:bg-red-600 transition-all cursor-pointer overflow-hidden h-10"
                     >
-                      <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest pl-0 group-hover:pl-4">
+                      <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[150px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest text-white pl-0 group-hover:pl-4">
                         Anuluj
                       </span>
-                      <div className="p-4">
-                        <FaTrash />
+                      <div className="p-3 text-white">
+                        <FaTrash size={14} />
                       </div>
                     </div>
                   )}
@@ -184,22 +237,16 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
         <OrderDetailsModule
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
-          assignedOperatorId={(selectedOrder as any).assigned_operator_id}
+          assignedOperatorId={(selectedOrder as any).operator_id}
         />
       )}
-      {matchingOrderId && (
+
+      {matchingOrderId && applicants[currentAppIndex] && (
         <OpMatch
-          applicant={{
-            id: "1",
-            name: "Jan",
-            surname: "Kowalski",
-            username: "jan_drone",
-            rating: 5,
-            description: "Test",
-          }}
+          applicant={applicants[currentAppIndex]}
           onClose={() => setMatchingOrderId(null)}
-          onAccept={() => setMatchingOrderId(null)}
-          onReject={() => setMatchingOrderId(null)}
+          onAccept={(opId) => handleOpDecision(opId, "accept")}
+          onReject={(opId) => handleOpDecision(opId, "reject")}
         />
       )}
     </div>

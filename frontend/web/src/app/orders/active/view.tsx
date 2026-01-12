@@ -64,14 +64,16 @@ export default function ActiveView({ isOperator }: { isOperator: boolean }) {
         <h2 className="text-3xl font-bold mb-4 text-primary-900 uppercase tracking-tight">
           Twój panel pracy
         </h2>
-        <p className="text-gray-500 max-w-md font-medium px-4">
-          Sekcja przeznaczona dla zweryfikowanych operatorów.
+        <p className="text-gray-500 max-w-md font-medium leading-relaxed px-4">
+          Musisz posiadać zweryfikowany profil operatora, aby móc zarządzać
+          swoimi aktywnymi zleceniami jako operator.
         </p>
         <button
           onClick={() => (window.location.href = "/user_profile")}
-          className="mt-10 px-12 py-4 bg-primary-300 text-primary-900 rounded-2xl font-bold hover:bg-primary-400 transition-all shadow-xl uppercase tracking-widest text-sm"
+          className="mt-10 px-12 py-4 bg-primary-300 text-primary-900 rounded-2xl font-bold hover:bg-primary-400 transition-all shadow-xl flex items-center gap-3 border-2 border-primary-500/20 uppercase tracking-widest text-sm"
         >
-          Zostań operatorem
+          <FaUserPlus />
+          Załóż profil operatora
         </button>
       </div>
     );
@@ -86,69 +88,74 @@ export default function ActiveView({ isOperator }: { isOperator: boolean }) {
 
   return (
     <div className="w-full max-w-5xl space-y-4 animate-fadeIn font-montserrat">
-      {activeOrders.map((order) => (
-        <div
-          key={order.id}
-          className="bg-white border-2 border-primary-100 rounded-[2.5rem] p-6 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 hover:border-primary-300 transition-all"
-        >
-          <div className="flex gap-5 items-center flex-1">
-            <div className="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center text-3xl text-primary-800 shrink-0">
-              <FaRobot />
+      {activeOrders.length > 0 ? (
+        activeOrders.map((order) => (
+          <div
+            key={order.id}
+            className="bg-white border-2 border-primary-100 rounded-[2.5rem] p-6 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 hover:border-primary-300 transition-all"
+          >
+            <div className="flex gap-5 items-center flex-1 text-black">
+              <div className="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center text-3xl text-primary-800 shrink-0">
+                <FaRobot />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg text-primary-950 leading-tight">
+                  {order.title}
+                </h3>
+                <p className="text-gray-500 text-sm font-medium">
+                  {order.city}, {order.street}
+                </p>
+                <div className="flex gap-2 mt-1">
+                  <span className="text-[10px] text-primary-700 font-bold uppercase tracking-widest bg-primary-50 px-2 py-0.5 rounded-md border border-primary-100">
+                    {OrderStatusLabels[order.status]}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-lg text-primary-950 leading-tight">
-                {order.title}
-              </h3>
-              <p className="text-gray-500 text-sm font-medium">
-                {order.city}, {order.street}
-              </p>
-              <div className="flex gap-2 mt-1">
-                <span className="text-[10px] text-primary-700 font-bold uppercase tracking-widest bg-primary-50 px-2 py-0.5 rounded-md border border-primary-100">
-                  {OrderStatusLabels[order.status]}
+
+            <div className="flex flex-row items-center gap-3 shrink-0">
+              <div
+                onClick={() =>
+                  window.open(
+                    `/user_profile?user_id=${order.client_id}`,
+                    "_blank"
+                  )
+                }
+                className="group flex items-center bg-primary-50 rounded-xl hover:bg-primary-200 transition-all cursor-pointer overflow-hidden h-12"
+              >
+                <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[150px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest text-primary-900 pl-0 group-hover:pl-4">
+                  Profil autora
                 </span>
+                <div className="p-4 text-primary-700 group-hover:text-primary-900">
+                  <FaUserAlt size={14} />
+                </div>
               </div>
+
+              <div
+                onClick={() => setSelectedOrder(order)}
+                className="group flex items-center bg-primary-50 rounded-xl hover:bg-primary-200 transition-all cursor-pointer overflow-hidden h-12"
+              >
+                <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[150px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest text-primary-900 pl-0 group-hover:pl-4">
+                  Szczegóły
+                </span>
+                <div className="p-4 text-primary-700 group-hover:text-primary-900">
+                  <FaSearchPlus size={14} />
+                </div>
+              </div>
+
+              <AddToCalButton orderId={order.id} />
             </div>
           </div>
-
-          <div className="flex flex-row items-center gap-3 shrink-0">
-            <div
-              onClick={() =>
-                window.open(
-                  `/user_profile?user_id=${order.client_id}`,
-                  "_blank"
-                )
-              }
-              className="group flex items-center bg-primary-50 rounded-xl hover:bg-primary-200 transition-all cursor-pointer overflow-hidden h-12"
-            >
-              <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[150px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest text-primary-900 pl-0 group-hover:pl-4">
-                Profil autora
-              </span>
-              <div className="p-4 text-primary-700">
-                <FaUserAlt size={14} />
-              </div>
-            </div>
-
-            <div
-              onClick={() => setSelectedOrder(order)}
-              className="group flex items-center bg-primary-50 rounded-xl hover:bg-primary-200 transition-all cursor-pointer overflow-hidden h-12"
-            >
-              <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[150px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest text-primary-900 pl-0 group-hover:pl-4">
-                Szczegóły
-              </span>
-              <div className="p-4 text-primary-700">
-                <FaSearchPlus size={14} />
-              </div>
-            </div>
-
-            <AddToCalButton orderId={order.id} />
-          </div>
+        ))
+      ) : (
+        <div className="text-center py-20 text-gray-400 font-bold uppercase tracking-widest">
+          Nie masz obecnie żadnych aktywnych zleceń.
         </div>
-      ))}
+      )}
       {selectedOrder && (
         <OrderDetailsModule
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
-          assignedOperatorId={undefined}
         />
       )}
     </div>

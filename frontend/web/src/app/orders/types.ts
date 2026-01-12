@@ -16,6 +16,7 @@ export const OrderStatusLabels: Record<OrderStatus, string> = {
 
 export interface OrderResponse {
   id: string;
+  client_id: string;
   title: string;
   description: string;
   service: string;
@@ -23,34 +24,33 @@ export interface OrderResponse {
   from_date: string;
   to_date: string;
   status: OrderStatus;
-  client_id: string;
-  createdAt: string;
+  created_at: string;
   parameters: Record<string, string>;
 }
 
 export interface MatchedOrderDto {
   id: string;
-  clientId: string;
+  client_id: string;
   title: string;
   description: string;
   service: string;
   parameters: Record<string, string>;
   coordinates: string;
-  fromDate: string;
-  toDate: string;
-  createdAt: string;
-  orderStatus: OrderStatus;
   distance: number;
-  clientStatus: MatchStatus;
-  operatorStatus: MatchStatus;
+  from_date: string;
+  to_date: string;
+  created_at: string;
+  order_status: OrderStatus;
+  client_status: MatchStatus;
+  operator_status: MatchStatus;
 }
 
 export interface OperatorApplicantDto {
-  id: string;
+  user_id: string;
+  username: string;
   name: string;
   surname: string;
-  username: string;
-  rating: number;
-  photoUrl?: string;
-  description: string;
+  certificates: string[];
+  rating?: number;
+  description?: string;
 }
