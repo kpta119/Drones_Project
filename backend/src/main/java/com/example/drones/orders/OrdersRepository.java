@@ -42,6 +42,8 @@ public interface OrdersRepository extends JpaRepository<OrdersEntity, UUID>, Jpa
             INNER JOIN o.matchedOrders nmo
             WHERE o.status = 'IN_PROGRESS'
             AND nmo.operator.id = :operatorId
+            AND nmo.clientStatus = 'ACCEPTED'
+            AND nmo.operatorStatus = 'ACCEPTED'
             """)
-    Page<OrdersEntity> findInProgressOrdersByOperatorId(UUID operatorId, Pageable pageable);
+    Page<OrdersEntity> findInProgressAndAcceptedOrdersByOperatorId(UUID operatorId, Pageable pageable);
 }
