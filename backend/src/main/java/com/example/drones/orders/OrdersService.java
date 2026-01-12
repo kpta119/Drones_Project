@@ -105,11 +105,20 @@ public class OrdersService {
             match = newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, currentUserId)
                     .orElseThrow(MatchedOrderNotFoundException::new);
             match.setOperatorStatus(MatchedOrderStatus.ACCEPTED);
-            foundOrder.setStatus(OrderStatus.AWAITING_OPERATOR);
+            if (foundOrder.getStatus() == OrderStatus.OPEN) {
+                foundOrder.setStatus(OrderStatus.AWAITING_OPERATOR);
+            }
         } else {
             // Client accepts
             if (!foundOrder.getUser().getId().equals(currentUserId)) {
                 throw new NotOwnerOfOrderException();
+            }
+
+            boolean alreadyAcceptedSomeone = newMatchedOrdersRepository
+                    .existsByOrderIdAndClientStatus(orderId, MatchedOrderStatus.ACCEPTED);
+
+            if (alreadyAcceptedSomeone){
+                throw new OrderAlreadyHasAcceptedOperatorException();
             }
 
             match = newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operatorIdParam)
@@ -202,5 +211,37 @@ public class OrdersService {
         return orders.stream()
                 .map(ordersMapper::toResponse)
                 .toList();
+    }
+
+    @Transactional
+    @CacheEvict(value = "orders", allEntries = true)
+    public OrderResponse finishOrder(UUID orderId, UUID currentUserId) {
+        OrdersEntity order = ordersRepository.findById(orderId)
+                .orElseThrow(OrderNotFoundException::new);
+
+        if (!order.getUser().getId().equals(currentUserId)) {
+            throw new NotOwnerOfOrderException();
+        }
+
+        if (order.getStatus() == OrderStatus.COMPLETED) {
+            throw new IllegalOrderStateException("The order has been already finished.");
+        }
+
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new IllegalOrderStateException("You cannot complete the order that has been cancelled.");
+        }
+
+        boolean hasAcceptedMatch = order.getMatchedOrders().stream()
+                .anyMatch(match -> match.getOperatorStatus() == MatchedOrderStatus.ACCEPTED
+                        && match.getClientStatus() == MatchedOrderStatus.ACCEPTED);
+
+        if (!hasAcceptedMatch) {
+            throw new IllegalOrderStateException("The order must be accepted by both client and operator before completion.");
+        }
+
+        order.setStatus(OrderStatus.COMPLETED);
+
+        OrdersEntity savedOrder = ordersRepository.save(order);
+        return ordersMapper.toResponse(savedOrder);
     }
 }

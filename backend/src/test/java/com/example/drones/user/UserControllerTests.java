@@ -47,9 +47,10 @@ public class UserControllerTests {
                 .build();
 
 
-        mockUpdateRequest = new UserUpdateRequest();
-        mockUpdateRequest.setName("Janusz");
-        mockUpdateRequest.setPhoneNumber("987654321");
+        mockUpdateRequest = UserUpdateRequest.builder()
+                .name("Janusz")
+                .phoneNumber("987654321")
+                .build();
     }
 
 
@@ -81,9 +82,7 @@ public class UserControllerTests {
     @Test
     public void givenNonExistentUser_whenGetUserData_thenThrowsException() {
         when(userService.getUserData(userId)).thenThrow(new RuntimeException("User not found"));
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            userController.getUserData(userId);
-        });
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> userController.getUserData(userId));
 
         assertEquals("User not found", exception.getMessage());
         verify(userService).getUserData(userId);
@@ -105,9 +104,7 @@ public class UserControllerTests {
     public void givenTakenEmail_whenEditUserData_thenThrowsException() {
         doThrow(new InvalidCredentialsException()).when(userService).editUserData(mockUpdateRequest);
 
-        RuntimeException exception = assertThrows(InvalidCredentialsException.class, () -> {
-            userController.editUserData(mockUpdateRequest);
-        });
+        RuntimeException exception = assertThrows(InvalidCredentialsException.class, () -> userController.editUserData(mockUpdateRequest));
 
         assertEquals("The provided credentials are invalid.", exception.getMessage());
         verify(userService).editUserData(mockUpdateRequest);
@@ -115,8 +112,9 @@ public class UserControllerTests {
 
     @Test
     public void givenAdminUser_whenEditRole_thenReturnsUserWithNewRole() {
-        UserUpdateRequest roleChangeRequest = new UserUpdateRequest();
-        roleChangeRequest.setRole(UserRole.ADMIN);
+        UserUpdateRequest roleChangeRequest = UserUpdateRequest.builder()
+                .role(UserRole.ADMIN)
+                .build();
 
         UserResponse responseWithNewRole = UserResponse.builder()
                 .username("testUser")
@@ -133,16 +131,14 @@ public class UserControllerTests {
 
     @Test
     public void givenClientUser_whenEditRole_thenThrowsAccessDeniedException() {
-        UserUpdateRequest roleChangeRequest = new UserUpdateRequest();
-        roleChangeRequest.setRole(UserRole.ADMIN);
-
+        UserUpdateRequest roleChangeRequest = UserUpdateRequest.builder()
+                .role(UserRole.ADMIN)
+                .build();
 
         when(userService.editUserData(roleChangeRequest))
                 .thenThrow(new InvalidCredentialsException());
 
-        InvalidCredentialsException exception = assertThrows(InvalidCredentialsException.class, () -> {
-            userController.editUserData(roleChangeRequest);
-        });
+        InvalidCredentialsException exception = assertThrows(InvalidCredentialsException.class, () -> userController.editUserData(roleChangeRequest));
 
         assertEquals("The provided credentials are invalid.", exception.getMessage());
         verify(userService).editUserData(roleChangeRequest);

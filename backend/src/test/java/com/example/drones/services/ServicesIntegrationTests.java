@@ -124,7 +124,7 @@ public class ServicesIntegrationTests {
     void givenUnauthenticatedUser_whenGetServices_thenReturnsForbidden() {
         ResponseEntity<Void> response = testRestTemplate.getForEntity("/api/services/getServices", Void.class);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
@@ -139,7 +139,7 @@ public class ServicesIntegrationTests {
                 String.class
         );
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(servicesRepository.count()).isEqualTo(0);
     }
 

@@ -2,21 +2,25 @@ package com.example.drones.user.dto;
 
 import com.example.drones.user.UserRole;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import lombok.Builder;
 
 import java.util.List;
 
-@Data
-public class UserUpdateRequest {
-    private String name;
-    private String surname;
-    private String username;
-    private UserRole role;
+@Builder
+@SuppressFBWarnings({"EI_EXPOSE_REP"})
+public record UserUpdateRequest(
+        String name,
+        String surname,
+        String username,
+        UserRole role,
 
-    @JsonProperty("phone_number")
-    private String phoneNumber;
 
-    private String coordinates;
-    private Integer radius;
-    private List<String> certificates;
+        @JsonProperty("phone_number")
+        String phoneNumber,
+
+        String coordinates,
+        Integer radius,
+        List<String> certificates
+) {
 }

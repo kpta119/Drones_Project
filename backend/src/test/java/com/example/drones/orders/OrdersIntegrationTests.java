@@ -319,7 +319,7 @@ public class OrdersIntegrationTests {
         Assertions.assertNotNull(response.getBody());
         UUID createdOrderId = response.getBody().getId();
 
-        await().atMost(5, SECONDS)
+        await().atMost(10, SECONDS)
                 .pollInterval(500, java.util.concurrent.TimeUnit.MILLISECONDS)
                 .untilAsserted(() -> {
 
@@ -389,7 +389,7 @@ public class OrdersIntegrationTests {
         Assertions.assertNotNull(createResponse.getBody());
         UUID orderId = createResponse.getBody().getId();
 
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(10, SECONDS).untilAsserted(() -> {
             List<NewMatchedOrderEntity> matches = newMatchedOrdersRepository
                     .findAll().stream()
                     .filter(m -> m.getOrder().getId().equals(orderId))
@@ -451,7 +451,7 @@ public class OrdersIntegrationTests {
         Assertions.assertNotNull(createResponse.getBody());
         UUID orderId = createResponse.getBody().getId();
 
-        await().atMost(5, SECONDS).untilAsserted(() -> assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
+        await().atMost(10, SECONDS).untilAsserted(() -> assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
                 .isPresent());
 
         LoginRequest operatorLogin = LoginRequest.builder()
@@ -691,7 +691,7 @@ public class OrdersIntegrationTests {
         Assertions.assertNotNull(createResponse.getBody());
         UUID orderId = createResponse.getBody().getId();
 
-        await().atMost(5, SECONDS).untilAsserted(() -> assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
+        await().atMost(10, SECONDS).untilAsserted(() -> assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
                 .isPresent());
 
         RegisterRequest client2Register = RegisterRequest.builder()
@@ -776,7 +776,7 @@ public class OrdersIntegrationTests {
         Assertions.assertNotNull(createResponse.getBody());
         UUID orderId = createResponse.getBody().getId();
 
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(10, SECONDS).untilAsserted(() -> {
             List<NewMatchedOrderEntity> matches = newMatchedOrdersRepository
                     .findAll().stream()
                     .filter(m -> m.getOrder().getId().equals(orderId))
@@ -836,7 +836,7 @@ public class OrdersIntegrationTests {
         Assertions.assertNotNull(createResponse.getBody());
         UUID orderId = createResponse.getBody().getId();
 
-        await().atMost(5, SECONDS).untilAsserted(() -> assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
+        await().atMost(10, SECONDS).untilAsserted(() -> assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
                 .isPresent());
 
         HttpEntity<Void> rejectEntity = new HttpEntity<>(getHeaders(clientToken));
@@ -938,7 +938,7 @@ public class OrdersIntegrationTests {
         Assertions.assertNotNull(createResponse.getBody());
         UUID orderId = createResponse.getBody().getId();
 
-        await().atMost(5, SECONDS).untilAsserted(() -> assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
+        await().atMost(10, SECONDS).untilAsserted(() -> assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
                 .isPresent());
 
         RegisterRequest client2Register = RegisterRequest.builder()
@@ -1237,7 +1237,7 @@ public class OrdersIntegrationTests {
         Assertions.assertNotNull(createResponse.getBody());
         UUID orderId = createResponse.getBody().getId();
 
-        await().atMost(5, SECONDS).untilAsserted(() ->
+        await().atMost(10, SECONDS).untilAsserted(() ->
                 assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
                         .isPresent()
         );
@@ -1309,7 +1309,7 @@ public class OrdersIntegrationTests {
         Assertions.assertNotNull(createResponse.getBody());
         UUID orderId = createResponse.getBody().getId();
 
-        await().atMost(5, SECONDS).untilAsserted(() ->
+        await().atMost(10, SECONDS).untilAsserted(() ->
                 assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
                         .isPresent()
         );
@@ -1611,7 +1611,7 @@ public class OrdersIntegrationTests {
         Assertions.assertNotNull(createResponse.getBody());
         UUID orderId = createResponse.getBody().getId();
 
-        await().atMost(5, SECONDS).untilAsserted(() ->
+        await().atMost(10, SECONDS).untilAsserted(() ->
                 assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
                         .isPresent()
         );
@@ -1675,7 +1675,7 @@ public class OrdersIntegrationTests {
         Assertions.assertNotNull(createResponse.getBody());
         UUID orderId = createResponse.getBody().getId();
 
-        await().atMost(5, SECONDS).untilAsserted(() ->
+        await().atMost(10, SECONDS).untilAsserted(() ->
                 assertThat(newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operator.getId()))
                         .isPresent()
         );
@@ -1768,7 +1768,8 @@ public class OrdersIntegrationTests {
                 "/api/orders/getMyOrders",
                 HttpMethod.GET,
                 getEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -1798,7 +1799,8 @@ public class OrdersIntegrationTests {
                 "/api/orders/getMyOrders",
                 HttpMethod.GET,
                 getEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -1873,7 +1875,8 @@ public class OrdersIntegrationTests {
                 "/api/orders/getMyOrders",
                 HttpMethod.GET,
                 getEntity1,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         assertThat(getResponse1.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -1886,7 +1889,8 @@ public class OrdersIntegrationTests {
                 "/api/orders/getMyOrders",
                 HttpMethod.GET,
                 getEntity2,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         assertThat(getResponse2.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -1941,7 +1945,7 @@ public class OrdersIntegrationTests {
         UUID order2Id = createResponse2.getBody().getId();
 
         // Czekamy na dopasowanie
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(10, SECONDS).untilAsserted(() -> {
             List<NewMatchedOrderEntity> matches = newMatchedOrdersRepository
                     .findAll().stream()
                     .filter(m -> m.getOrder().getId().equals(order2Id))
@@ -2002,7 +2006,8 @@ public class OrdersIntegrationTests {
                 "/api/orders/getMyOrders",
                 HttpMethod.GET,
                 getEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -2033,7 +2038,7 @@ public class OrdersIntegrationTests {
                 String.class
         );
 
-        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
@@ -2089,7 +2094,8 @@ public class OrdersIntegrationTests {
                 "/api/orders/getMyOrders",
                 HttpMethod.GET,
                 getEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);

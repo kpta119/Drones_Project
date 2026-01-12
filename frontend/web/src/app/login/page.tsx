@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import LoginForm from "@/src/components/login_form";
 import RegisterForm from "@/src/components/register_form";
+import { FcGoogle } from "react-icons/fc";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -17,6 +18,11 @@ export default function AuthPage() {
       router.push("/user_profile");
     }
   }, [router]);
+
+  const handleGoogleLogin = () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL
+    window.location.href = `${apiUrl}/oauth2/authorization/google`;
+  };
 
   return (
     <div
@@ -51,6 +57,18 @@ export default function AuthPage() {
         {activeForm === "login" && (
           <div className="flex flex-col gap-4 w-full max-w-xs opacity-0 animate-fadeIn">
             <LoginForm />
+            <div className="flex items-center gap-2 my-1">
+              <div className="flex-1 h-px bg-gray-300"></div>
+              <span className="text-gray-500 text-sm">lub</span>
+              <div className="flex-1 h-px bg-gray-300"></div>
+            </div>
+            <button
+              onClick={handleGoogleLogin}
+              className="w-full h-12 px-6 rounded-lg font-semibold text-base border border-gray-300 bg-white text-gray-700 flex items-center justify-center gap-3 hover:bg-gray-50 transition-colors shadow-sm"
+            >
+              <FcGoogle className="w-6 h-6" />
+              Zaloguj przez Google
+            </button>
             <button
               onClick={() => setActiveForm("none")}
               className="text-black hover:text-primary-500 font-medium text-center transition-all"
