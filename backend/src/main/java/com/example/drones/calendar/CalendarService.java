@@ -31,6 +31,8 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -142,7 +144,7 @@ public class CalendarService {
 
 
         Page<OrdersEntity> orders = ordersRepository
-                .findInProgressOrdersByOperatorId(operatorId, pageable);
+                .findInProgressAndAcceptedOrdersByOperatorId(operatorId, pageable);
 
         Page<SchedulableOrders> schedulableOrders = orders.map(ordersMapper::toSchedulableOrders);
 
@@ -170,9 +172,14 @@ public class CalendarService {
                     .max(LocalDateTime::compareTo)
                     .orElseThrow();
 
+            ZoneId zoneId = ZoneId.systemDefault();
+
+            Date start = Date.from(minDate.minusDays(1).atZone(zoneId).toInstant());
+            Date end = Date.from(maxDate.plusDays(1).atZone(zoneId).toInstant());
+
             Events eventsResult = service.events().list("primary")
-                    .setTimeMin(new DateTime(minDate.minusDays(1).toString()))
-                    .setTimeMax(new DateTime(maxDate.plusDays(1).toString()))
+                    .setTimeMin(new DateTime(start))
+                    .setTimeMax(new DateTime(end))
                     .setSingleEvents(true)
                     .setShowDeleted(false)
                     .execute();
