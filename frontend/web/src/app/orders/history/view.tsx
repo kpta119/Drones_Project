@@ -7,12 +7,23 @@ import OrderDetailsModule from "../utils/details_module";
 import ReviewModule from "../utils/review_module";
 import { FaSearchPlus, FaStar, FaUserTie } from "react-icons/fa";
 
+interface OperatorInfo {
+  name: string;
+  surname: string;
+}
+
 interface HistoryViewProps {
   onEdit?: (order: OrderResponse) => void;
 }
 
 export default function HistoryView({ onEdit }: HistoryViewProps) {
   const [myOrders, setMyOrders] = useState<OrderResponse[]>([]);
+  const [operatorNames, setOperatorNames] = useState<
+    Record<string, OperatorInfo>
+  >({});
+  const [reviewedOrderIds, setReviewedOrderIds] = useState<Set<string>>(
+    new Set()
+  );
   const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(
     null
   );
@@ -20,6 +31,52 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
     null
   );
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("reviewedOrderIds");
+    if (stored) {
+      try {
+        const ids = JSON.parse(stored);
+        setReviewedOrderIds(new Set(ids));
+      } catch (err) {
+        console.error("Error parsing reviewed orders:", err);
+      }
+    }
+  }, []);
+
+  const fetchOperatorInfo = useCallback(
+    async (operatorId: string) => {
+      if (operatorNames[operatorId]) {
+        return operatorNames[operatorId];
+      }
+
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          `/api/operators/getOperatorProfile/${operatorId}`,
+          {
+            headers: { "X-USER-TOKEN": `Bearer ${token}` },
+          }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const operatorInfo = {
+            name: data.name || "",
+            surname: data.surname || "",
+          };
+          setOperatorNames((prev) => ({
+            ...prev,
+            [operatorId]: operatorInfo,
+          }));
+          return operatorInfo;
+        }
+      } catch (err) {
+        console.error("Error fetching operator info:", err);
+      }
+      return { name: "Operator", surname: "" };
+    },
+    [operatorNames]
+  );
 
   const fetchMyOrders = useCallback(async () => {
     try {
@@ -29,18 +86,29 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
       });
       if (res.ok) {
         const data = await res.json();
-        const filtered = data.filter(
+        const orders = Array.isArray(data) ? data : data.content || [];
+        const filtered = orders.filter(
           (order: OrderResponse) =>
             order.status === "COMPLETED" || order.status === "CANCELLED"
         );
         setMyOrders(filtered);
+
+        const operatorIds = filtered
+          .filter((order: any) => order.operator_id)
+          .map((order: any) => order.operator_id);
+
+        for (const operatorId of operatorIds) {
+          if (!operatorNames[operatorId]) {
+            await fetchOperatorInfo(operatorId);
+          }
+        }
       }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [operatorNames, fetchOperatorInfo]);
 
   useEffect(() => {
     fetchMyOrders();
@@ -63,7 +131,11 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
         comment: review.comment,
       });
 
-      if (!operatorId) {
+      if (
+        !operatorId ||
+        typeof operatorId !== "string" ||
+        operatorId === "undefined"
+      ) {
         throw new Error("Brak przypisanego operatora do tego zlecenia");
       }
 
@@ -85,7 +157,12 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
       console.log("Review response status:", res.status);
 
       if (res.ok) {
-        await fetchMyOrders();
+        const updatedSet = new Set([...reviewedOrderIds, reviewingOrder.id]);
+        setReviewedOrderIds(updatedSet);
+        localStorage.setItem(
+          "reviewedOrderIds",
+          JSON.stringify(Array.from(updatedSet))
+        );
         setReviewingOrder(null);
       } else {
         const errorText = await res.text();
@@ -179,21 +256,24 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
                       </div>
                     )}
 
-                    {!(order as any).reviewed && (order as any).operator_id && (
-                      <button
-                        onClick={() => setReviewingOrder(order)}
-                        className="group flex items-center bg-yellow-500/20 rounded-xl hover:bg-yellow-500/40 transition-all cursor-pointer overflow-hidden h-10"
-                      >
-                        <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest text-yellow-300 pl-0 group-hover:pl-4">
-                          Oceń operatora
-                        </span>
-                        <div className="p-3 text-yellow-300">
-                          <FaStar size={14} />
-                        </div>
-                      </button>
-                    )}
+                    {!(order as any).reviewed &&
+                      !reviewedOrderIds.has(order.id) &&
+                      (order as any).operator_id && (
+                        <button
+                          onClick={() => setReviewingOrder(order)}
+                          className="group flex items-center bg-yellow-500/20 rounded-xl hover:bg-yellow-500/40 transition-all cursor-pointer overflow-hidden h-10"
+                        >
+                          <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest text-yellow-300 pl-0 group-hover:pl-4">
+                            Oceń operatora
+                          </span>
+                          <div className="p-3 text-yellow-300">
+                            <FaStar size={14} />
+                          </div>
+                        </button>
+                      )}
 
-                    {(order as any).reviewed && (
+                    {((order as any).reviewed ||
+                      reviewedOrderIds.has(order.id)) && (
                       <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 rounded-xl text-green-300 text-[10px] font-bold uppercase tracking-widest">
                         <FaStar size={12} />
                         Oceniono
@@ -230,7 +310,13 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
       {reviewingOrder && (
         <ReviewModule
           operatorId={(reviewingOrder as any).operator_id}
-          operatorName={(reviewingOrder as any).operator_name || "Operator"}
+          operatorName={
+            operatorNames[(reviewingOrder as any).operator_id]
+              ? `${operatorNames[(reviewingOrder as any).operator_id].name} ${
+                  operatorNames[(reviewingOrder as any).operator_id].surname
+                }`
+              : "Operator"
+          }
           orderId={reviewingOrder.id}
           onClose={() => setReviewingOrder(null)}
           onSubmit={handleReviewSubmit}

@@ -112,7 +112,6 @@ export default function ClientLayout({
 
       {showReviews && (
         <ReviewsView
-          userId={data.id}
           userName={`${data.name} ${data.surname}`}
           onClose={() => setShowReviews(false)}
         />

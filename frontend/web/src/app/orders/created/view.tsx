@@ -40,7 +40,8 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
       });
       if (res.ok) {
         const data = await res.json();
-        const filtered = data.filter(
+        const orders = Array.isArray(data) ? data : data.content || [];
+        const filtered = orders.filter(
           (order: OrderResponse) =>
             order.status !== "COMPLETED" && order.status !== "CANCELLED"
         );

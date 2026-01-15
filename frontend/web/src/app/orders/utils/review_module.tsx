@@ -9,6 +9,7 @@ interface ReviewModuleProps {
   orderId: string;
   onClose: () => void;
   onSubmit: (review: { rating: number; comment: string }) => Promise<void>;
+  isClientReview?: boolean;
 }
 
 export default function ReviewModule({
@@ -17,6 +18,7 @@ export default function ReviewModule({
   orderId,
   onClose,
   onSubmit,
+  isClientReview = false,
 }: ReviewModuleProps) {
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
@@ -61,16 +63,18 @@ export default function ReviewModule({
 
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 tracking-tight mb-2">
-            Oceń operatora
+            {isClientReview ? "Oceń klienta" : "Oceń operatora"}
           </h2>
           <p className="text-gray-600 font-medium">
-            Twoja opinia pomaga innym klientom
+            {isClientReview
+              ? "Twoja opinia pomaga innym operatorom"
+              : "Twoja opinia pomaga innym klientom"}
           </p>
         </div>
 
         <div className="bg-primary-50 p-6 rounded-2xl border border-primary-200 mb-8">
           <p className="text-sm font-bold text-primary-700 uppercase tracking-widest mb-2">
-            Wykonawca
+            {isClientReview ? "Klient" : "Wykonawca"}
           </p>
           <p className="text-2xl font-bold text-gray-900">{operatorName}</p>
         </div>

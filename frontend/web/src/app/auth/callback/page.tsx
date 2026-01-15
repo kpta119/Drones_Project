@@ -9,12 +9,9 @@ export default function AuthCallbackPage() {
   const [status, setStatus] = useState("Przetwarzanie logowania...");
 
   useEffect(() => {
-    // all data from cookies
     const token = Cookies.get("auth_token");
     const role = Cookies.get("auth_role");
-    // const userId = Cookies.get('auth_userid');
     const username = Cookies.get("auth_username");
-    // const email = Cookies.get('auth_email');
 
     const decodedUsername = (username || "").replaceAll("+", " ");
     localStorage.setItem("token", token || "");
@@ -44,7 +41,6 @@ export default function AuthCallbackPage() {
       <div className="text-center">
         <h2 className="text-xl font-semibold mb-2">Logowanie...</h2>
         <p className="text-gray-500">{status}</p>
-        {/* Tu możesz wrzucić kręcący się spinner */}
         <div className="mt-4 h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto"></div>
       </div>
     </div>

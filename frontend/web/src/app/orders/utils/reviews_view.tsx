@@ -1,28 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { FaTimes, FaStar } from "react-icons/fa";
 
 interface ReviewData {
-  id: number;
   body: string;
   stars: number;
-  author_id: string;
+  author_id?: string;
   author_name?: string;
   author_username?: string;
+  name?: string;
+  surname?: string;
+  username?: string;
 }
 
 interface ReviewsViewProps {
-  userId: string;
   userName: string;
   onClose: () => void;
 }
 
-export default function ReviewsView({
-  userId,
-  userName,
-  onClose,
-}: ReviewsViewProps) {
+export default function ReviewsView({ userName, onClose }: ReviewsViewProps) {
+  const searchParams = useSearchParams();
+  const displayedUserId = searchParams.get("user_id");
+
   const [reviews, setReviews] = useState<ReviewData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,29 +34,60 @@ export default function ReviewsView({
     const fetchReviews = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`/api/reviews/getUserReviews/${userId}`, {
-          headers: { "X-USER-TOKEN": `Bearer ${token}` },
-        });
+        if (!token) {
+          console.warn("No token available");
+          setError("Brak tokenu autoryzacji");
+          setLoading(false);
+          return;
+        }
+
+        if (!displayedUserId) {
+          console.warn("No user_id in URL");
+          setError("Brak identyfikatora użytkownika");
+          setLoading(false);
+          return;
+        }
+
+        console.log("Fetching reviews for userId:", displayedUserId);
+        const res = await fetch(
+          `/api/reviews/getUserReviews/${displayedUserId}`,
+          {
+            headers: {
+              "X-USER-TOKEN": `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        console.log("Response status:", res.status);
 
         if (res.ok) {
           const data = await res.json();
+          console.log("Reviews data:", data);
           setReviews(data);
 
-          // Calculate average rating
-          if (data.length > 0) {
+          if (data && data.length > 0) {
             const avgRating =
               data.reduce(
                 (sum: number, review: ReviewData) => sum + review.stars,
                 0
               ) / data.length;
             setRating(Math.round(avgRating * 10) / 10);
+            setTotalReviews(data.length);
+          } else {
+            setRating(0);
+            setTotalReviews(0);
           }
-          setTotalReviews(data.length);
+          setError(null);
         } else {
-          setError("Nie udało się załadować opinii");
+          const errorText = await res.text();
+          console.error("Failed to fetch reviews:", res.status, errorText);
+          setReviews([]);
+          setError(`Błąd ładowania opinii (${res.status})`);
         }
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching reviews:", err);
+        setReviews([]);
         setError("Błąd przy ładowaniu opinii");
       } finally {
         setLoading(false);
@@ -63,7 +95,7 @@ export default function ReviewsView({
     };
 
     fetchReviews();
-  }, [userId]);
+  }, [displayedUserId]);
 
   if (loading) {
     return (
@@ -133,9 +165,9 @@ export default function ReviewsView({
             </div>
           ) : (
             <div className="space-y-4">
-              {reviews.map((review) => (
+              {reviews.map((review, index) => (
                 <div
-                  key={review.id}
+                  key={index}
                   className="bg-gray-50 border border-gray-200 rounded-2xl p-6 hover:border-primary-300 transition-all"
                 >
                   <div className="flex items-start justify-between mb-3">
@@ -154,7 +186,12 @@ export default function ReviewsView({
                         ))}
                       </div>
                       <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">
-                        {review.author_name || "Anonimowy użytkownik"}
+                        {review.author_name ||
+                          (review.name && review.surname
+                            ? `${review.name} ${review.surname}`
+                            : review.author_username ||
+                              review.username ||
+                              "Anonimowy użytkownik")}
                       </p>
                     </div>
                   </div>

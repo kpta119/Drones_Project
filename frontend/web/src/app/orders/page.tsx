@@ -5,6 +5,7 @@ import AvailableView from "./available/view";
 import CreatedView from "./created/view";
 import ActiveView from "./active/view";
 import HistoryView from "./history/view";
+import OperatorHistoryView from "./history/operator_view";
 import CreateOrderView from "./create/view";
 import { OrderResponse } from "./types";
 
@@ -95,7 +96,12 @@ export default function OrdersPage() {
         {view === "active" && (
           <ActiveView isOperator={userRole === "OPERATOR"} />
         )}
-        {view === "history" && <HistoryView onEdit={handleEdit} />}
+        {view === "history" && userRole === "OPERATOR" && (
+          <OperatorHistoryView onEdit={handleEdit} />
+        )}
+        {view === "history" && userRole !== "OPERATOR" && (
+          <HistoryView onEdit={handleEdit} />
+        )}
         {view === "create" && (
           <CreateOrderView
             onCancel={handleBackToCreated}
