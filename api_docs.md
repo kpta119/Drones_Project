@@ -291,7 +291,9 @@ Zwraca zlecenia użytkownika o `userId` zawartym w `JWT tokenie`
                 "coordinates": "52.2300,21.0100",
                 "from_date": "2025-06-10T10:00:00",
                 "to_date": "2025-06-10T12:00:00",
+                "created_at": "2025-06-10T12:00:00",
                 "status": "open"
+                "operator_id": null // null jeśli brak przydzielonego operatora do zlecenia.
               }
             ],
     "page": {
