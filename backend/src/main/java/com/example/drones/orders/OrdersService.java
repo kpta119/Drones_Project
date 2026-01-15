@@ -4,6 +4,7 @@ import com.example.drones.auth.exceptions.InvalidCredentialsException;
 import com.example.drones.common.config.exceptions.UserNotFoundException;
 import com.example.drones.orders.dto.OrderRequest;
 import com.example.drones.orders.dto.OrderResponse;
+import com.example.drones.orders.dto.OrderResponseWithOperatorId;
 import com.example.drones.orders.dto.OrderUpdateRequest;
 import com.example.drones.orders.exceptions.*;
 import com.example.drones.services.ServicesEntity;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -34,6 +36,11 @@ public class OrdersService {
     private final NewMatchedOrdersRepository newMatchedOrdersRepository;
     private final Clock clock;
     private final MatchingService matchingService;
+    private final List<OrderStatus> statusesWithVisibleOperator = List.of(
+            OrderStatus.IN_PROGRESS,
+            OrderStatus.COMPLETED,
+            OrderStatus.CANCELLED
+    );
 
     @Transactional
     public OrderResponse createOrder(OrderRequest request, UUID userId) {
@@ -199,10 +206,10 @@ public class OrdersService {
         return ordersMapper.toResponse(savedOrder);
     }
 
-    public Page<OrderResponse> getMyOrders(UUID userId, OrderStatus status, Pageable pageable) {
-        Page<OrdersEntity> orders = ordersRepository.findAllByUserIdAndOrderStatus(userId, status, pageable);
-
-        return orders.map(ordersMapper::toResponse);
+    public Page<OrderResponseWithOperatorId> getMyOrders(UUID userId, OrderStatus status, Pageable pageable) {
+        userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+        return ordersRepository.findAllByUserIdAndOrderStatus(userId, status, statusesWithVisibleOperator, pageable );
     }
 
     @Transactional

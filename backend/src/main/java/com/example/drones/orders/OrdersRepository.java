@@ -1,5 +1,6 @@
 package com.example.drones.orders;
 
+import com.example.drones.orders.dto.OrderResponseWithOperatorId;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -7,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,14 +25,33 @@ public interface OrdersRepository extends JpaRepository<OrdersEntity, UUID>, Jpa
     Optional<OrdersEntity> findByIdWithUser(UUID orderId);
 
     @Query("""
-                    SELECT o
+            SELECT new com.example.drones.orders.dto.OrderResponseWithOperatorId(
+                    o.id,
+                    o.userId,
+                    o.title,
+                    o.description,
+                    o.service.name,
+                    o.parameters,
+                    o.coordinates,
+                    o.fromDate,
+                    o.toDate,
+                    o.status,
+                    o.createdAt,
+                    CASE
+                        WHEN o.status IN :visibleStatuses THEN nmo.operator.id
+                        ELSE null
+                    END
+                    )
                     FROM OrdersEntity o
+                    LEFT JOIN NewMatchedOrderEntity nmo ON nmo.order = o
+                        AND nmo.clientStatus = 'ACCEPTED'
+                        AND nmo.operatorStatus = 'ACCEPTED'
                     WHERE o.user.id = :userId
                     AND (:#{#status == null} = true OR o.status = :status)
                     ORDER BY o.createdAt desc
             
             """)
-    Page<OrdersEntity> findAllByUserIdAndOrderStatus(UUID userId, OrderStatus status, Pageable pageable);
+    Page<OrderResponseWithOperatorId> findAllByUserIdAndOrderStatus(UUID userId, OrderStatus status, List<OrderStatus> visibleStatuses, Pageable pageable);
 
     @Query("""
             SELECT o
