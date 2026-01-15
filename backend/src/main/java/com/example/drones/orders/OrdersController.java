@@ -6,12 +6,14 @@ import com.example.drones.orders.dto.OrderResponse;
 import com.example.drones.orders.dto.OrderUpdateRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -71,18 +73,14 @@ public class OrdersController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/getOrders/{status}")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'CLIENT')")
-    public ResponseEntity<List<OrderResponse>> getOrders(@PathVariable String status) {
-        List<OrderResponse> responses = ordersService.getOrdersByStatus(status);
-        return ResponseEntity.ok(responses);
-    }
-
     @GetMapping("/getMyOrders")
     @PreAuthorize("hasAnyRole('OPERATOR', 'CLIENT')")
-    public ResponseEntity<List<OrderResponse>> getMyOrders() {
+    public ResponseEntity<Page<OrderResponse>> getMyOrders(
+            @RequestParam(required = false) OrderStatus status,
+            @PageableDefault(size = 20) Pageable pageable
+    ) {
         UUID userId = jwtService.extractUserId();
-        List<OrderResponse> response = ordersService.getMyOrders(userId);
+        Page<OrderResponse> response = ordersService.getMyOrders(userId, status, pageable);
         return ResponseEntity.ok(response);
     }
 

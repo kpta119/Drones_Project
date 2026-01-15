@@ -7,13 +7,11 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface OrdersRepository extends JpaRepository<OrdersEntity, UUID>, JpaSpecificationExecutor<OrdersEntity> {
-    List<OrdersEntity> findAllByStatus(OrderStatus status);
 
     @Query("""
                         SELECT o
@@ -24,7 +22,15 @@ public interface OrdersRepository extends JpaRepository<OrdersEntity, UUID>, Jpa
             """)
     Optional<OrdersEntity> findByIdWithUser(UUID orderId);
 
-    List<OrdersEntity> findAllByUser_IdOrderByCreatedAtDesc(UUID userId);
+    @Query("""
+                    SELECT o
+                    FROM OrdersEntity o
+                    WHERE o.user.id = :userId
+                    AND (:#{#status == null} = true OR o.status = :status)
+                    ORDER BY o.createdAt desc
+            
+            """)
+    Page<OrdersEntity> findAllByUserIdAndOrderStatus(UUID userId, OrderStatus status, Pageable pageable);
 
     @Query("""
             SELECT o
