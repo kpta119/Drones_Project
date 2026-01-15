@@ -4,10 +4,16 @@ import { useState, useEffect } from "react";
 import AvailableView from "./available/view";
 import CreatedView from "./created/view";
 import ActiveView from "./active/view";
+import HistoryView from "./history/view";
 import CreateOrderView from "./create/view";
 import { OrderResponse } from "./types";
 
-export type OrdersView = "available" | "created" | "active" | "create";
+export type OrdersView =
+  | "available"
+  | "created"
+  | "active"
+  | "history"
+  | "create";
 
 export default function OrdersPage() {
   const [view, setView] = useState<OrdersView>("created");
@@ -67,6 +73,16 @@ export default function OrdersPage() {
         >
           Zlecenia w trakcie
         </button>
+        <button
+          onClick={() => setView("history")}
+          className={`w-full max-w-[300px] lg:w-auto lg:px-12 py-2.5 rounded-xl font-bold transition-all shadow-md border-2 ${
+            view === "history"
+              ? "bg-primary-300 border-primary-400 text-primary-900"
+              : "bg-gray-100 border-transparent text-gray-500 hover:bg-gray-200"
+          }`}
+        >
+          Historia zleceń
+        </button>
       </div>
 
       <main className="container mx-auto px-4 pb-20 flex justify-center">
@@ -79,6 +95,7 @@ export default function OrdersPage() {
         {view === "active" && (
           <ActiveView isOperator={userRole === "OPERATOR"} />
         )}
+        {view === "history" && <HistoryView onEdit={handleEdit} />}
         {view === "create" && (
           <CreateOrderView
             onCancel={handleBackToCreated}

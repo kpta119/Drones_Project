@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ClientDto } from "./client_dto";
 import OperatorRegisterButton from "@/src/components/operator_register_button";
 import OperatorRegisterModule from "./operator_register/operator_register_module";
+import ReviewsView from "@/src/app/orders/utils/reviews_view";
 
 export default function ClientLayout({
   data,
@@ -13,6 +14,7 @@ export default function ClientLayout({
   isOwnProfile: boolean;
 }) {
   const [showRegister, setShowRegister] = useState(false);
+  const [showReviews, setShowReviews] = useState(false);
 
   return (
     <>
@@ -91,7 +93,10 @@ export default function ClientLayout({
             )}
           </div>
 
-          <button className="w-full bg-gray-700 text-white rounded-2xl py-3 font-semibold hover:cursor-pointer hover:bg-primary-800 hover:ring-2 hover:ring-primary-800 transition-all text-sm mt-4">
+          <button
+            onClick={() => setShowReviews(true)}
+            className="w-full bg-gray-700 text-white rounded-2xl py-3 font-semibold hover:cursor-pointer hover:bg-primary-800 hover:ring-2 hover:ring-primary-800 transition-all text-sm mt-4"
+          >
             Sprawdź więcej opinii
           </button>
         </div>
@@ -103,6 +108,14 @@ export default function ClientLayout({
             <OperatorRegisterModule onClose={() => setShowRegister(false)} />
           </div>
         </div>
+      )}
+
+      {showReviews && (
+        <ReviewsView
+          userId={data.id}
+          userName={`${data.name} ${data.surname}`}
+          onClose={() => setShowReviews(false)}
+        />
       )}
     </>
   );

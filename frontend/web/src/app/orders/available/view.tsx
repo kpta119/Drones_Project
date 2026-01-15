@@ -21,7 +21,12 @@ export default function AvailableView({ isOperator }: { isOperator: boolean }) {
       });
       if (res.ok) {
         const data = await res.json();
-        setMatches(data.content || []);
+        const filtered = (data.content || []).filter(
+          (order: MatchedOrderDto) =>
+            order.order_status === "OPEN" ||
+            order.order_status === "AWAITING_OPERATOR"
+        );
+        setMatches(filtered);
       }
     } catch (err) {
       console.error(err);
@@ -82,7 +87,7 @@ export default function AvailableView({ isOperator }: { isOperator: boolean }) {
         </h2>
         <p className="text-gray-500 max-w-md font-medium px-4 leading-relaxed">
           Musisz posiadać zweryfikowany profil operatora, aby móc przeglądać
-          dostępne zlecenia i zarabiać na lotach.
+          dostępne w pobliżu zlecenia.
         </p>
         <button
           onClick={() => (window.location.href = "/user_profile")}

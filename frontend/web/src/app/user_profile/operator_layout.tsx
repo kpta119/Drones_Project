@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { OperatorDto } from "./operator_dto";
+import ReviewsView from "@/src/app/orders/utils/reviews_view";
 
 export default function OperatorLayout({
   data,
@@ -9,6 +11,7 @@ export default function OperatorLayout({
   data: OperatorDto;
   isOwnProfile: boolean;
 }) {
+  const [showReviews, setShowReviews] = useState(false);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-2 gap-8 lg:gap-10 p-5 lg:ps-5 lg:pt-10 lg:pb-10 m-auto font-montserrat w-full max-w-7xl h-auto lg:h-[85vh]">
       <style>{`
@@ -56,7 +59,10 @@ export default function OperatorLayout({
             </div>
 
             <div className="flex flex-col w-full pt-4">
-              <button className="flex-1 bg-[#D9D9D9] text-black rounded-xl py-1 font-semibold hover:bg-gray-400 hover:ring-2 hover:ring-gray-400 transition-all text-sm">
+              <button
+                onClick={() => setShowReviews(true)}
+                className="flex-1 bg-[#D9D9D9] text-black rounded-xl py-1 font-semibold hover:bg-gray-400 hover:ring-2 hover:ring-gray-400 transition-all text-sm"
+              >
                 Czytaj opinie
               </button>
             </div>
@@ -92,6 +98,14 @@ export default function OperatorLayout({
           </p>
         </div>
       </div>
+
+      {showReviews && (
+        <ReviewsView
+          userId={data.id}
+          userName={`${data.name} ${data.surname}`}
+          onClose={() => setShowReviews(false)}
+        />
+      )}
     </div>
   );
 }

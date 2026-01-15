@@ -15,6 +15,7 @@ import {
   FaPlus,
   FaSearchPlus,
   FaUserTie,
+  FaCheckCircle,
 } from "react-icons/fa";
 
 interface CreatedViewProps {
@@ -39,7 +40,11 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
       });
       if (res.ok) {
         const data = await res.json();
-        setMyOrders(data);
+        const filtered = data.filter(
+          (order: OrderResponse) =>
+            order.status !== "COMPLETED" && order.status !== "CANCELLED"
+        );
+        setMyOrders(filtered);
       }
     } catch (err) {
       console.error(err);
@@ -105,6 +110,20 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`/api/orders/cancelOrder/${id}`, {
+        method: "PATCH",
+        headers: { "X-USER-TOKEN": `Bearer ${token}` },
+      });
+      if (res.ok) fetchMyOrders();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleFinishOrder = async (id: string) => {
+    if (!confirm("Czy na pewno chcesz zakończyć to zlecenie?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/orders/finishOrder/${id}`, {
         method: "PATCH",
         headers: { "X-USER-TOKEN": `Bearer ${token}` },
       });
@@ -209,6 +228,20 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
                     </span>
                     <div className="p-3 text-white group-hover:text-black transition-all">
                       <FaEdit size={14} />
+                    </div>
+                  </div>
+                )}
+
+                {order.status === "IN_PROGRESS" && (
+                  <div
+                    onClick={() => handleFinishOrder(order.id)}
+                    className="group flex items-center bg-white/10 rounded-xl hover:bg-green-500 transition-all cursor-pointer overflow-hidden h-10"
+                  >
+                    <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest text-white pl-0 group-hover:pl-4">
+                      Zakończ zlecenie
+                    </span>
+                    <div className="p-3 text-white">
+                      <FaCheckCircle size={14} />
                     </div>
                   </div>
                 )}

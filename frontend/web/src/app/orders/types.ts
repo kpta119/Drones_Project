@@ -26,6 +26,7 @@ export interface OrderResponse {
   status: OrderStatus;
   created_at: string;
   parameters: Record<string, string>;
+  operator_id?: string;
 }
 
 export interface MatchedOrderDto {
