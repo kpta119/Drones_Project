@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { OrderResponse } from "../types";
+import SpecificationsEditor from "../utils/specifications_editor";
 
 const OrderLocationPicker = dynamic(() => import("../utils/order_location"), {
   ssr: false,
@@ -239,6 +240,14 @@ export default function CreateOrderView({
               />
             </div>
           </div>
+
+          <SpecificationsEditor
+            specifications={formData.parameters}
+            onUpdate={(specs) =>
+              setFormData({ ...formData, parameters: specs })
+            }
+          />
+
           <div className="flex justify-between items-center pt-10">
             <button
               onClick={() => setStep(2)}

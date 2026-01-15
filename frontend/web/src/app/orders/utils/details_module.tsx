@@ -10,6 +10,7 @@ import {
 } from "react-icons/fa";
 import { useEffect, useState } from "react";
 import { getAddressFromCoordinates } from "./geocoding";
+import SpecificationsDisplay from "./specifications_display";
 
 interface OrderDetailsModuleProps {
   order: OrderResponse;
@@ -33,7 +34,7 @@ export default function OrderDetailsModule({
   };
 
   return (
-    <div className="fixed inset-0 z-200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn font-montserrat  text-black">
+    <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn font-montserrat  text-black">
       <div className="bg-white w-full max-w-2xl rounded-[3rem] overflow-hidden shadow-2xl relative border border-white/20">
         <button
           onClick={onClose}
@@ -99,6 +100,8 @@ export default function OrderDetailsModule({
               {order.description || "Brak dodatkowego opisu do tego zlecenia."}
             </div>
           </div>
+
+          <SpecificationsDisplay specifications={order.parameters} />
 
           <div className="flex flex-col sm:flex-row gap-4">
             {assignedOperatorId && (

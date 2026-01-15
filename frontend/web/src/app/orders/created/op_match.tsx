@@ -26,7 +26,7 @@ export default function OpMatch({
   };
 
   return (
-    <div className="fixed inset-0 z-150 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fadeIn font-montserrat text-white">
+    <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fadeIn font-montserrat text-white">
       <div className="relative w-full max-w-3xl bg-slate-900 rounded-[3rem] overflow-hidden shadow-2xl p-6 lg:p-8 flex flex-col lg:flex-row gap-6 items-center border border-white/5">
         <button
           onClick={onClose}
