@@ -3,6 +3,7 @@ package com.example.drones.orders;
 import com.example.drones.common.config.auth.JwtService;
 import com.example.drones.orders.dto.OrderRequest;
 import com.example.drones.orders.dto.OrderResponse;
+import com.example.drones.orders.dto.OrderResponseWithOperatorId;
 import com.example.drones.orders.dto.OrderUpdateRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -75,12 +76,12 @@ public class OrdersController {
 
     @GetMapping("/getMyOrders")
     @PreAuthorize("hasAnyRole('OPERATOR', 'CLIENT')")
-    public ResponseEntity<Page<OrderResponse>> getMyOrders(
+    public ResponseEntity<Page<OrderResponseWithOperatorId>> getMyOrders(
             @RequestParam(required = false) OrderStatus status,
             @PageableDefault(size = 20) Pageable pageable
     ) {
         UUID userId = jwtService.extractUserId();
-        Page<OrderResponse> response = ordersService.getMyOrders(userId, status, pageable);
+        Page<OrderResponseWithOperatorId> response = ordersService.getMyOrders(userId, status, pageable);
         return ResponseEntity.ok(response);
     }
 
