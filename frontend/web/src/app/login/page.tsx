@@ -20,7 +20,8 @@ export default function AuthPage() {
   }, [router]);
 
   const handleGoogleLogin = () => {
-    window.location.href = `/api/auth/oauth2/authorization/google`;
+    const url = process.env.NEXT_PUBLIC_API_URL
+    window.location.href = `${url}/oauth2/authorization/google`;
   };
 
   return (
