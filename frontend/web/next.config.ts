@@ -3,10 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   async rewrites() {
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
     return [
       {
         source: "/api/:path*",                    // Your frontend calls this
-        destination: "http://127.0.0.1:8080/api/:path*", // Proxy target URL
+        destination: `${backendUrl}/api/:path*`,
       },
     ];
   },
