@@ -15,6 +15,8 @@ public record OperatorDto(
         List<String> certificates,
         @JsonProperty("operator_services") List<String> operatorServices,
         String email,
+        String coordinates,
+        Integer radius,
         @JsonProperty("phone_number") String phoneNumber,
         OperatorPortfolioDto portfolio
 ) {
