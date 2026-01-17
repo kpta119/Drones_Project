@@ -12,22 +12,27 @@ interface OperatorInfo {
   surname: string;
 }
 
+interface OrderWithOperator extends OrderResponse {
+  operator_id?: string;
+  reviewed?: boolean;
+}
+
 interface HistoryViewProps {
   onEdit?: (order: OrderResponse) => void;
 }
 
 export default function HistoryView({ onEdit }: HistoryViewProps) {
-  const [myOrders, setMyOrders] = useState<OrderResponse[]>([]);
+  const [myOrders, setMyOrders] = useState<OrderWithOperator[]>([]);
   const [operatorNames, setOperatorNames] = useState<
     Record<string, OperatorInfo>
   >({});
   const [reviewedOrderIds, setReviewedOrderIds] = useState<Set<string>>(
     new Set()
   );
-  const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithOperator | null>(
     null
   );
-  const [reviewingOrder, setReviewingOrder] = useState<OrderResponse | null>(
+  const [reviewingOrder, setReviewingOrder] = useState<OrderWithOperator | null>(
     null
   );
   const [loading, setLoading] = useState(true);
@@ -88,14 +93,14 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
         const data = await res.json();
         const orders = Array.isArray(data) ? data : data.content || [];
         const filtered = orders.filter(
-          (order: OrderResponse) =>
+          (order: OrderWithOperator) =>
             order.status === "COMPLETED" || order.status === "CANCELLED"
         );
         setMyOrders(filtered);
 
         const operatorIds = filtered
-          .filter((order: any) => order.operator_id)
-          .map((order: any) => order.operator_id);
+          .filter((order: OrderWithOperator) => order.operator_id)
+          .map((order: OrderWithOperator) => order.operator_id);
 
         for (const operatorId of operatorIds) {
           if (!operatorNames[operatorId]) {
@@ -122,7 +127,7 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
 
     try {
       const token = localStorage.getItem("token");
-      const operatorId = (reviewingOrder as any).operator_id;
+      const operatorId = reviewingOrder.operator_id;
 
       console.log("Submitting review:", {
         orderId: reviewingOrder.id,
@@ -235,12 +240,12 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
               <div className="flex flex-wrap justify-center items-center gap-3">
                 {order.status === "COMPLETED" && (
                   <>
-                    {(order as any).operator_id && (
+                    {order.operator_id && (
                       <div
                         onClick={() =>
                           window.open(
                             `/user_profile?user_id=${
-                              (order as any).operator_id
+                              order.operator_id
                             }`,
                             "_blank"
                           )
@@ -256,9 +261,9 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
                       </div>
                     )}
 
-                    {!(order as any).reviewed &&
+                    {!order.reviewed &&
                       !reviewedOrderIds.has(order.id) &&
-                      (order as any).operator_id && (
+                      order.operator_id && (
                         <button
                           onClick={() => setReviewingOrder(order)}
                           className="group flex items-center bg-yellow-500/20 rounded-xl hover:bg-yellow-500/40 transition-all cursor-pointer overflow-hidden h-10"
@@ -272,7 +277,7 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
                         </button>
                       )}
 
-                    {((order as any).reviewed ||
+                    {(order.reviewed ||
                       reviewedOrderIds.has(order.id)) && (
                       <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 rounded-xl text-green-300 text-[10px] font-bold uppercase tracking-widest">
                         <FaStar size={12} />
@@ -303,17 +308,17 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
         <OrderDetailsModule
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
-          assignedOperatorId={(selectedOrder as any).operator_id}
+          assignedOperatorId={selectedOrder.operator_id}
         />
       )}
 
-      {reviewingOrder && (
+      {reviewingOrder && reviewingOrder.operator_id && (
         <ReviewModule
-          operatorId={(reviewingOrder as any).operator_id}
+          operatorId={reviewingOrder.operator_id}
           operatorName={
-            operatorNames[(reviewingOrder as any).operator_id]
-              ? `${operatorNames[(reviewingOrder as any).operator_id].name} ${
-                  operatorNames[(reviewingOrder as any).operator_id].surname
+            operatorNames[reviewingOrder.operator_id]
+              ? `${operatorNames[reviewingOrder.operator_id].name} ${
+                  operatorNames[reviewingOrder.operator_id].surname
                 }`
               : "Operator"
           }

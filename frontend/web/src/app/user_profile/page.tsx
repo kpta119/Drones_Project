@@ -54,8 +54,8 @@ function ProfileContent() {
         setIsOwnProfile(isOwner);
         setIsOperator(userData.role === "OPERATOR");
         setProfileData(userData);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Wystąpił błąd");
       } finally {
         setLoading(false);
       }
