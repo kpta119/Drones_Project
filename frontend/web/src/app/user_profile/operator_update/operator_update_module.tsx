@@ -141,8 +141,6 @@ export default function OperatorRegisterModule({ onClose, userIdFromUrl }: Opera
     }
   };
 
-  console.log(data)
-
   const steps = [
     { number: 0, label: "Certyfikaty" },
     { number: 1, label: "Usługi" },
@@ -187,7 +185,7 @@ export default function OperatorRegisterModule({ onClose, userIdFromUrl }: Opera
             />
           )}
           {step === 3 && (
-            <div className="flex flex-col items-center mt-6 gap-4">
+            <div className="flex flex-col items-center justify-center h-full mt-6 gap-4">
               <p className="text-lg font-semibold">Czy zapisać dane?</p>
               {error && <p className="text-red-500">{error}</p>}
               <div className="flex gap-4">
