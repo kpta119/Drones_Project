@@ -4,12 +4,13 @@ import com.example.drones.common.config.auth.JwtService;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
 import com.example.drones.user.UserRole;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -119,12 +120,14 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         String encodedValue = URLEncoder.encode(value, StandardCharsets.UTF_8);
 
-        Cookie cookie = new Cookie(name, encodedValue);
-        cookie.setPath("/");
-        cookie.setMaxAge(30);
-        cookie.setSecure(true);
-        cookie.setHttpOnly(false);
+        ResponseCookie cookie = ResponseCookie.from(name, encodedValue)
+                .path("/")
+                .maxAge(30)
+                .secure(true)
+                .httpOnly(false)
+                .sameSite("None")
+                .build();
 
-        response.addCookie(cookie);
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 }

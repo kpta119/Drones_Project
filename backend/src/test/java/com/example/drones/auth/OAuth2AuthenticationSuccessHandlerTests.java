@@ -4,7 +4,6 @@ import com.example.drones.common.config.auth.JwtService;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
 import com.example.drones.user.UserRole;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,7 +55,7 @@ public class OAuth2AuthenticationSuccessHandlerTests {
     @Mock
     private RedirectStrategy redirectStrategy;
     @Captor
-    private ArgumentCaptor<Cookie> cookieCaptor;
+    private ArgumentCaptor<String> headerCaptor;
     @InjectMocks
     private OAuth2AuthenticationSuccessHandler successHandler;
     private static final String FRONTEND_URL = "http://localhost:3000";
@@ -94,7 +93,7 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         successHandler.onAuthenticationSuccess(request, response, oAuth2AuthenticationToken);
         verify(userRepository, never()).save(any());
         verify(jwtService).generateToken(USER_ID);
-        verify(response, atLeast(5)).addCookie(any(Cookie.class));
+        verify(response, atLeast(5)).addHeader(eq("Set-Cookie"), anyString());
         verify(redirectStrategy).sendRedirect(request, response, FRONTEND_URL + "/auth/callback");
     }
 
@@ -216,17 +215,19 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         when(jwtService.generateToken(USER_ID)).thenReturn(JWT_TOKEN);
         when(authorizedClientRepository.loadAuthorizedClient(anyString(), any(), any())).thenReturn(null);
         successHandler.onAuthenticationSuccess(request, response, oAuth2AuthenticationToken);
-        verify(response, atLeast(5)).addCookie(cookieCaptor.capture());
-        Cookie usernameCookie = cookieCaptor.getAllValues().stream()
-                .filter(c -> c.getName().equals("auth_username"))
+        verify(response, atLeast(5)).addHeader(eq("Set-Cookie"), headerCaptor.capture());
+
+        String usernameCookieHeader = headerCaptor.getAllValues().stream()
+                .filter(header -> header.startsWith("auth_username="))
                 .findFirst()
                 .orElseThrow();
+
         String expectedEncodedUsername = URLEncoder.encode("CustomName", StandardCharsets.UTF_8);
-        assertThat(usernameCookie.getValue()).isEqualTo(expectedEncodedUsername);
-        assertThat(usernameCookie.getPath()).isEqualTo("/");
-        assertThat(usernameCookie.getMaxAge()).isEqualTo(30);
-        assertThat(usernameCookie.getSecure()).isTrue();
-        assertThat(usernameCookie.isHttpOnly()).isFalse();
+        assertThat(usernameCookieHeader).startsWith("auth_username=" + expectedEncodedUsername);
+        assertThat(usernameCookieHeader).contains("Path=/");
+        assertThat(usernameCookieHeader).contains("Max-Age=30");
+        assertThat(usernameCookieHeader).contains("Secure");
+        assertThat(usernameCookieHeader).contains("SameSite=None");
     }
 
     @Test
@@ -241,13 +242,15 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         when(jwtService.generateToken(USER_ID)).thenReturn(JWT_TOKEN);
         when(authorizedClientRepository.loadAuthorizedClient(anyString(), any(), any())).thenReturn(null);
         successHandler.onAuthenticationSuccess(request, response, oAuth2AuthenticationToken);
-        verify(response, atLeast(5)).addCookie(cookieCaptor.capture());
-        Cookie usernameCookie = cookieCaptor.getAllValues().stream()
-                .filter(c -> c.getName().equals("auth_username"))
+        verify(response, atLeast(5)).addHeader(eq("Set-Cookie"), headerCaptor.capture());
+
+        String usernameCookieHeader = headerCaptor.getAllValues().stream()
+                .filter(header -> header.startsWith("auth_username="))
                 .findFirst()
                 .orElseThrow();
+
         String expectedEncodedEmail = URLEncoder.encode(EMAIL, StandardCharsets.UTF_8);
-        assertThat(usernameCookie.getValue()).isEqualTo(expectedEncodedEmail);
+        assertThat(usernameCookieHeader).startsWith("auth_username=" + expectedEncodedEmail);
     }
 
     @Test
@@ -263,19 +266,27 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         when(jwtService.generateToken(USER_ID)).thenReturn(JWT_TOKEN);
         when(authorizedClientRepository.loadAuthorizedClient(anyString(), any(), any())).thenReturn(null);
         successHandler.onAuthenticationSuccess(request, response, oAuth2AuthenticationToken);
-        verify(response, times(5)).addCookie(cookieCaptor.capture());
-        Map<String, Cookie> cookieMap = cookieCaptor.getAllValues().stream()
-                .collect(java.util.stream.Collectors.toMap(Cookie::getName, c -> c));
+        verify(response, times(5)).addHeader(eq("Set-Cookie"), headerCaptor.capture());
+
+        Map<String, String> cookieMap = new java.util.HashMap<>();
+        for (String header : headerCaptor.getAllValues()) {
+            String[] parts = header.split(";")[0].split("=", 2);
+            if (parts.length == 2) {
+                cookieMap.put(parts[0], parts[1]);
+            }
+        }
+
         assertThat(cookieMap).containsKeys("auth_token", "auth_role", "auth_userid", "auth_email", "auth_username");
-        assertThat(cookieMap.get("auth_token").getValue()).isEqualTo(URLEncoder.encode(JWT_TOKEN, StandardCharsets.UTF_8));
-        assertThat(cookieMap.get("auth_role").getValue()).isEqualTo("CLIENT");
-        assertThat(cookieMap.get("auth_userid").getValue()).isEqualTo(URLEncoder.encode(USER_ID.toString(), StandardCharsets.UTF_8));
-        assertThat(cookieMap.get("auth_email").getValue()).isEqualTo(URLEncoder.encode(EMAIL, StandardCharsets.UTF_8));
-        for (Cookie cookie : cookieMap.values()) {
-            assertThat(cookie.getPath()).isEqualTo("/");
-            assertThat(cookie.getMaxAge()).isEqualTo(30);
-            assertThat(cookie.getSecure()).isTrue();
-            assertThat(cookie.isHttpOnly()).isFalse();
+        assertThat(cookieMap.get("auth_token")).isEqualTo(URLEncoder.encode(JWT_TOKEN, StandardCharsets.UTF_8));
+        assertThat(cookieMap.get("auth_role")).isEqualTo("CLIENT");
+        assertThat(cookieMap.get("auth_userid")).isEqualTo(URLEncoder.encode(USER_ID.toString(), StandardCharsets.UTF_8));
+        assertThat(cookieMap.get("auth_email")).isEqualTo(URLEncoder.encode(EMAIL, StandardCharsets.UTF_8));
+
+        for (String header : headerCaptor.getAllValues()) {
+            assertThat(header).contains("Path=/");
+            assertThat(header).contains("Max-Age=30");
+            assertThat(header).contains("Secure");
+            assertThat(header).contains("SameSite=None");
         }
     }
 
@@ -292,11 +303,13 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         when(jwtService.generateToken(USER_ID)).thenReturn(JWT_TOKEN);
         when(authorizedClientRepository.loadAuthorizedClient(anyString(), any(), any())).thenReturn(null);
         successHandler.onAuthenticationSuccess(request, response, oAuth2AuthenticationToken);
-        verify(response, atLeast(5)).addCookie(cookieCaptor.capture());
-        Cookie roleCookie = cookieCaptor.getAllValues().stream()
-                .filter(c -> c.getName().equals("auth_role"))
+        verify(response, atLeast(5)).addHeader(eq("Set-Cookie"), headerCaptor.capture());
+
+        String roleCookieHeader = headerCaptor.getAllValues().stream()
+                .filter(header -> header.startsWith("auth_role="))
                 .findFirst()
                 .orElseThrow();
-        assertThat(roleCookie.getValue()).isEqualTo("OPERATOR");
+
+        assertThat(roleCookieHeader).startsWith("auth_role=OPERATOR");
     }
 }
