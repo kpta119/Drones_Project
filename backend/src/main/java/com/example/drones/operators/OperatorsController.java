@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,6 +24,7 @@ public class OperatorsController {
     private final JwtService jwtService;
 
     @PostMapping("/createOperatorProfile")
+    @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<OperatorProfileDto> createOperatorProfile(@RequestBody @Valid CreateOperatorProfileDto operatorDto) {
         UUID userId = jwtService.extractUserId();
         OperatorProfileDto response = operatorsService.createProfile(userId, operatorDto);
@@ -30,6 +32,7 @@ public class OperatorsController {
     }
 
     @PatchMapping("/editOperatorProfile")
+    @PreAuthorize("hasRole('OPERATOR')")
     public ResponseEntity<OperatorProfileDto> editOperatorProfile(@RequestBody @Valid OperatorProfileDto operatorDto) {
         UUID userId = jwtService.extractUserId();
         OperatorProfileDto response = operatorsService.editProfile(userId, operatorDto);
@@ -38,6 +41,7 @@ public class OperatorsController {
     }
 
     @PostMapping("/addPortfolio")
+    @PreAuthorize("hasRole('OPERATOR')")
     public ResponseEntity<OperatorPortfolioDto> addPortfolio(@RequestBody @Valid CreatePortfolioDto portfolioDto) {
         UUID userId = jwtService.extractUserId();
         OperatorPortfolioDto response = operatorsService.createPortfolio(userId, portfolioDto);
@@ -45,6 +49,7 @@ public class OperatorsController {
     }
 
     @PatchMapping("/editPortfolio")
+    @PreAuthorize("hasRole('OPERATOR')")
     public ResponseEntity<OperatorPortfolioDto> editPortfolio(@RequestBody @Valid UpdatePortfolioDto portfolioDto) {
         UUID userId = jwtService.extractUserId();
         OperatorPortfolioDto response = operatorsService.editPortfolio(userId, portfolioDto);
@@ -52,12 +57,14 @@ public class OperatorsController {
     }
 
     @GetMapping("/getOperatorProfile/{userId}")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'CLIENT', 'ADMIN')")
     public ResponseEntity<OperatorDto> getOperatorProfile(@PathVariable UUID userId) {
         OperatorDto response = operatorsService.getOperatorProfile(userId);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/getOperatorsInfo/{orderId}")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'CLIENT', 'ADMIN')")
     public ResponseEntity<List<MatchingOperatorDto>> getOperatorsInfo(@PathVariable UUID orderId) {
         UUID userId = jwtService.extractUserId();
         List<MatchingOperatorDto> response = operatorsService.getOperatorInfo(userId, orderId);
@@ -65,6 +72,7 @@ public class OperatorsController {
     }
 
     @GetMapping("/getMatchedOrders")
+    @PreAuthorize("hasRole('OPERATOR')")
     public ResponseEntity<Page<MatchedOrderDto>> getMatchedOrders(
             @PageableDefault(size = 20) Pageable pageable,
             @ModelAttribute MatchedOrdersFilters filters

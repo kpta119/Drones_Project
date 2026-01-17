@@ -25,9 +25,10 @@ public class OrdersEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Column(nullable = false)
     private String title;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String description;
 
     @Column(name = "user_id", insertable = false, updatable = false)
@@ -43,10 +44,10 @@ public class OrdersEntity {
 
     private String coordinates;
 
-    @Column(name = "from_date")
+    @Column(name = "from_date", nullable = false)
     private LocalDateTime fromDate;
 
-    @Column(name = "to_date")
+    @Column(name = "to_date", nullable = false)
     private LocalDateTime toDate;
 
     @Enumerated(EnumType.STRING)

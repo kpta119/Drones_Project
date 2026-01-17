@@ -1,5 +1,6 @@
 package com.example.drones.orders;
 
+import com.example.drones.calendar.dto.SchedulableOrders;
 import com.example.drones.operators.dto.MatchedOrderDto;
 import com.example.drones.orders.dto.OrderRequest;
 import com.example.drones.orders.dto.OrderResponse;
@@ -49,4 +50,9 @@ public interface OrdersMapper {
     @Mapping(target = "clientStatus", source = "matchedOrder.clientStatus")
     @Mapping(target = "operatorStatus", source = "matchedOrder.operatorStatus")
     MatchedOrderDto toMatchedOrderDto(OrdersEntity entity, NewMatchedOrderEntity matchedOrder, Double distance);
+
+    @Mapping(target = "alreadyAdded", ignore = true)
+    @Mapping(target = "service", source = "ordersEntity.service.name")
+    @Mapping(target = "clientId", source = "ordersEntity.userId")
+    SchedulableOrders toSchedulableOrders(OrdersEntity ordersEntity);
 }

@@ -559,7 +559,7 @@ public class ReviewsIntegrationTests {
         );
 
         // Then: Zwrócony błąd autoryzacji
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
 
         // Weryfikacja że recenzja nie została utworzona
         List<ReviewEntity> reviews = reviewsRepository.findAll();
@@ -712,7 +712,8 @@ public class ReviewsIntegrationTests {
                 "/api/reviews/getUserReviews/" + client.getId(),
                 HttpMethod.GET,
                 getEntity,
-                new org.springframework.core.ParameterizedTypeReference<>() {}
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                }
         );
 
         // Then: Zwrócone są obie recenzje
@@ -744,7 +745,8 @@ public class ReviewsIntegrationTests {
                 "/api/reviews/getUserReviews/" + client.getId(),
                 HttpMethod.GET,
                 getEntity,
-                new org.springframework.core.ParameterizedTypeReference<>() {}
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                }
         );
 
         // Then: Zwrócona jest pusta lista
@@ -842,7 +844,8 @@ public class ReviewsIntegrationTests {
                 "/api/reviews/getUserReviews/" + operator.getId(),
                 HttpMethod.GET,
                 getEntity,
-                new org.springframework.core.ParameterizedTypeReference<>() {}
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                }
         );
 
         // Then: Zwrócone są obie recenzje
@@ -908,7 +911,8 @@ public class ReviewsIntegrationTests {
                 "/api/reviews/getUserReviews/" + client.getId(),
                 HttpMethod.GET,
                 getEntity,
-                new org.springframework.core.ParameterizedTypeReference<>() {}
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                }
         );
 
         // Then: Zwrócona jest tylko recenzja gdzie klient jest target
@@ -954,7 +958,8 @@ public class ReviewsIntegrationTests {
                 "/api/reviews/getUserReviews/" + operator.getId(),
                 HttpMethod.GET,
                 getEntity,
-                new org.springframework.core.ParameterizedTypeReference<>() {}
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                }
         );
 
         // Then: Zwróconych jest 5 recenzji z prawidłowymi ocenami
@@ -992,7 +997,7 @@ public class ReviewsIntegrationTests {
         );
 
         // Then: Zwrócony błąd autoryzacji
-        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
@@ -1026,7 +1031,8 @@ public class ReviewsIntegrationTests {
                 "/api/reviews/getUserReviews/" + client.getId(),
                 HttpMethod.GET,
                 getEntity,
-                new org.springframework.core.ParameterizedTypeReference<>() {}
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                }
         );
 
         // Then: Recenzja została zwrócona z pustą treścią

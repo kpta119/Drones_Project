@@ -36,10 +36,8 @@ public class UserEntity {
     @Column(name = "username")
     private String displayName;
 
-    @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
     private String surname;
 
     @Column
