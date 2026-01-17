@@ -1,7 +1,7 @@
 "use client";
 
 import { OperatorApplicantDto } from "../types";
-import { FaStar, FaTimes, FaExternalLinkAlt } from "react-icons/fa";
+import { FaStar, FaTimes, FaExternalLinkAlt, FaUser } from "react-icons/fa";
 
 interface OpMatchProps {
   applicant: OperatorApplicantDto;
@@ -37,7 +37,7 @@ export default function OpMatch({
 
         <div className="w-full lg:w-1/3 flex flex-col items-center justify-center">
           <div className="w-32 h-32 bg-[#D9D9D9] rounded-full flex items-center justify-center shrink-0 shadow-xl border-4 border-white/10 relative overflow-hidden">
-            <span className="text-5xl opacity-80 text-black font-bold">👤</span>
+            <FaUser className="text-4xl text-gray-600" />
           </div>
           <div className="mt-3 flex text-yellow-400 text-base gap-1">
             {[...Array(5)].map((_, i) => (

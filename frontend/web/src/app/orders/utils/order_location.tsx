@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { getAddressFromCoordinates } from "../utils/geocoding";
+import { FaMapPin, FaSearch } from "react-icons/fa";
 
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
@@ -119,11 +120,9 @@ export default function OrderLocationPicker({
           </p>
         </div>
 
-        <div className="flex gap-2 mb-6">
+        <div className="flex flex-col lg:flex-row gap-2 mb-6">
           <div className="relative flex-1">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-700">
-              🔍
-            </span>
+            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-700" />
             <input
               type="text"
               value={searchQuery}
@@ -136,13 +135,13 @@ export default function OrderLocationPicker({
           <button
             onClick={handleSearch}
             disabled={isSearching}
-            className="px-8 py-4 bg-primary-900 text-primary-50 rounded-2xl font-bold hover:bg-black transition-all disabled:opacity-50 shadow-lg uppercase text-xs tracking-widest"
+            className="w-full lg:w-auto px-8 py-4 bg-primary-900 text-primary-50 rounded-2xl font-bold hover:bg-black transition-all disabled:opacity-50 shadow-lg uppercase text-xs tracking-widest"
           >
             Szukaj
           </button>
         </div>
 
-        <div className="h-[350px] w-full rounded-[2.5rem] overflow-hidden border-4 border-primary-50 relative shadow-2xl mb-6">
+        <div className="h-[280px] w-full rounded-[2.5rem] overflow-hidden border-4 border-primary-50 relative shadow-2xl mb-6">
           <MapContainer
             center={[coordinates.lat, coordinates.lng]}
             zoom={13}
@@ -159,16 +158,16 @@ export default function OrderLocationPicker({
           </MapContainer>
         </div>
 
-        <div className="bg-primary-100/50 p-5 rounded-3xl border-2 border-primary-200 mb-8 shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-primary-400 rounded-2xl flex items-center justify-center text-xl shadow-md text-white">
-              📍
+        <div className="bg-primary-100/50 p-3 rounded-3xl border-2 border-primary-200 mb-8 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary-400 rounded-2xl flex items-center justify-center text-lg shadow-md text-white shrink-0">
+              <FaMapPin className="text-black"></FaMapPin>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-primary-800 uppercase tracking-[0.2em]">
-                Punkt operacji:
+              <p className="text-[9px] font-bold text-primary-800 uppercase tracking-[0.2em]">
+                Punkt wykonania zlecenia:
               </p>
-              <p className="text-base font-bold text-primary-950 tracking-tight">
+              <p className="text-sm font-bold text-primary-950 tracking-tight">
                 {displayAddress}
               </p>
             </div>
@@ -176,7 +175,7 @@ export default function OrderLocationPicker({
         </div>
       </div>
 
-      <div className="flex justify-between items-center pt-6 border-t border-gray-100">
+      <div className="flex justify-between mb-7 items-center pt-6 border-t border-gray-100 mt-auto">
         <button
           onClick={onPrev}
           className="text-primary-800 font-bold uppercase tracking-widest text-xs hover:text-black"
@@ -185,7 +184,7 @@ export default function OrderLocationPicker({
         </button>
         <button
           onClick={onNext}
-          className="px-12 py-4 bg-primary-300 text-primary-900 rounded-2xl font-bold shadow-xl hover:bg-primary-400 transition-all uppercase tracking-widest text-sm"
+          className="px-6 lg:px-12 py-2 lg:py-3 bg-primary-300 text-primary-900 rounded-2xl font-bold shadow-xl hover:bg-primary-400 transition-all uppercase tracking-widest text-xs lg:text-sm"
         >
           Potwierdź adres
         </button>

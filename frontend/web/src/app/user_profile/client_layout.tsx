@@ -1,10 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { ClientDto } from "./client_dto";
 import OperatorRegisterButton from "@/src/components/operator_register_button";
 import OperatorRegisterModule from "./operator_register/operator_register_module";
 import ReviewsView from "@/src/app/orders/utils/reviews_view";
+import { FaStar, FaUser, FaPhone, FaEnvelope } from "react-icons/fa";
+
+interface Review {
+  body: string;
+  stars: number;
+  name?: string;
+  surname?: string;
+  username?: string;
+  author_name?: string;
+  author_username?: string;
+}
 
 export default function ClientLayout({
   data,
@@ -13,8 +25,72 @@ export default function ClientLayout({
   data: ClientDto;
   isOwnProfile: boolean;
 }) {
+  const searchParams = useSearchParams();
+  const displayedUserId = searchParams.get("user_id");
+
   const [showRegister, setShowRegister] = useState(false);
   const [showReviews, setShowReviews] = useState(false);
+  const [recentReviews, setRecentReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [reviewsError, setReviewsError] = useState<string | null>(null);
+  const [averageRating, setAverageRating] = useState(0);
+  const [totalReviewsCount, setTotalReviewsCount] = useState(0);
+
+  useEffect(() => {
+    const fetchRecentReviews = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token || !displayedUserId) {
+          setReviewsLoading(false);
+          return;
+        }
+
+        const res = await fetch(
+          `/api/reviews/getUserReviews/${displayedUserId}`,
+          {
+            headers: {
+              "X-USER-TOKEN": `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (res.ok) {
+          const allReviews = await res.json();
+          setRecentReviews(allReviews.slice(0, 3));
+          setTotalReviewsCount(allReviews.length);
+
+          if (allReviews && allReviews.length > 0) {
+            const avgRating =
+              allReviews.reduce(
+                (sum: number, review: Review) => sum + review.stars,
+                0
+              ) / allReviews.length;
+            setAverageRating(Math.round(avgRating * 10) / 10);
+          } else {
+            setAverageRating(0);
+          }
+
+          setReviewsError(null);
+        } else {
+          setRecentReviews([]);
+          setAverageRating(0);
+          setTotalReviewsCount(0);
+          setReviewsError(null);
+        }
+      } catch (err) {
+        console.error("Error fetching reviews:", err);
+        setRecentReviews([]);
+        setAverageRating(0);
+        setTotalReviewsCount(0);
+        setReviewsError(null);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+
+    fetchRecentReviews();
+  }, [displayedUserId]);
 
   return (
     <>
@@ -36,13 +112,19 @@ export default function ClientLayout({
         <div className="flex flex-col gap-3 items-center min-h-[400px] lg:min-h-0">
           <div className="flex flex-col items-center">
             <div className="w-40 h-40 lg:w-48 lg:h-48 bg-[#D9D9D9] rounded-full flex items-center justify-center shrink-0 drop-shadow-lg/40 hover:ring-4 hover:ring-[#D9D9D9] transition-all hover:drop-shadow-xl/50">
-              <span className="text-6xl lg:text-7xl">👤</span>
+              <FaUser className="text-5xl lg:text-6xl text-gray-600" />
             </div>
-            <div className="flex text-black text-2xl lg:text-3xl pt-2">
+            <div className="flex text-black text-2xl lg:text-3xl pt-2 gap-1">
               {[...Array(5)].map((_, i) => (
-                <span key={i}>
-                  {i < Math.floor(data.rating || 0) ? "★" : "☆"}
-                </span>
+                <FaStar
+                  key={i}
+                  size={24}
+                  className={
+                    i < Math.floor(averageRating)
+                      ? "text-primary-400"
+                      : "text-gray-300"
+                  }
+                />
               ))}
             </div>
           </div>
@@ -54,11 +136,11 @@ export default function ClientLayout({
             <p className="text-gray-600 text-lg mb-4">@{data.username}</p>
             <div className="space-y-1 mb-6">
               <div className="flex items-center justify-center gap-2">
-                <span>📞</span>
+                <FaPhone className="text-primary-700" size={16} />
                 <p>{data.phone_number}</p>
               </div>
               <div className="flex items-center justify-center gap-2">
-                <span>✉️</span>
+                <FaEnvelope className="text-primary-700" size={16} />
                 <p className="break-all">{data.email}</p>
               </div>
             </div>
@@ -74,14 +156,36 @@ export default function ClientLayout({
           </h3>
 
           <div className="flex-1 overflow-y-auto pr-2">
-            {data.reviews?.length > 0 ? (
-              data.reviews.slice(0, 3).map((review, idx) => (
+            {reviewsLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-gray-600 text-sm italic animate-pulse">
+                  Ładowanie opinii...
+                </p>
+              </div>
+            ) : recentReviews?.length > 0 ? (
+              recentReviews.map((review, idx) => (
                 <div
                   key={idx}
                   className="mb-4 text-sm bg-white/30 p-3 rounded-xl"
                 >
-                  <p className="font-semibold text-xs text-gray-500 mb-1">
-                    Autor ID: {review.author_id}
+                  <div className="flex items-center gap-2 mb-2">
+                    {[...Array(5)].map((_, i) => (
+                      <FaStar
+                        key={i}
+                        size={12}
+                        className={
+                          i < review.stars ? "text-yellow-500" : "text-gray-300"
+                        }
+                      />
+                    ))}
+                  </div>
+                  <p className="font-semibold text-xs text-gray-600 mb-1">
+                    {review.author_name ||
+                      (review.name && review.surname
+                        ? `${review.name} ${review.surname}`
+                        : review.author_username ||
+                          review.username ||
+                          "Anonimowy")}
                   </p>
                   <p className="text-gray-800 leading-relaxed">{review.body}</p>
                 </div>

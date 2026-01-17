@@ -6,19 +6,23 @@ import AddToCalButton from "./add_to_cal_button";
 import {
   FaLock,
   FaUserPlus,
-  FaRobot,
+  FaClipboardList,
   FaSearchPlus,
   FaUserAlt,
 } from "react-icons/fa";
 import { getAddressFromCoordinates } from "../utils/geocoding";
 import OrderDetailsModule from "../utils/details_module";
 
+interface SchedulableOrder extends OrderResponse {
+  alreadyAdded: boolean;
+  city?: string;
+  street?: string;
+}
+
 export default function ActiveView({ isOperator }: { isOperator: boolean }) {
-  const [activeOrders, setActiveOrders] = useState<
-    (OrderResponse & { city?: string; street?: string })[]
-  >([]);
+  const [activeOrders, setActiveOrders] = useState<SchedulableOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(
+  const [selectedOrder, setSelectedOrder] = useState<SchedulableOrder | null>(
     null
   );
 
@@ -31,14 +35,18 @@ export default function ActiveView({ isOperator }: { isOperator: boolean }) {
     const fetchActiveOrders = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("/api/orders/getOrders/IN_PROGRESS", {
-          headers: { "X-USER-TOKEN": `Bearer ${token}` },
-        });
+        const res = await fetch(
+          "/api/calendar/getInProgressSchedulableOrders?size=100",
+          {
+            headers: { "X-USER-TOKEN": `Bearer ${token}` },
+          }
+        );
 
         if (res.ok) {
-          const data: OrderResponse[] = await res.json();
+          const data = await res.json();
+          const ordersArray = data.content || [];
           const enrichedOrders = await Promise.all(
-            data.map(async (order) => {
+            ordersArray.map(async (order: SchedulableOrder) => {
               const addr = await getAddressFromCoordinates(order.coordinates);
               return { ...order, city: addr.city, street: addr.street };
             })
@@ -96,7 +104,7 @@ export default function ActiveView({ isOperator }: { isOperator: boolean }) {
           >
             <div className="flex gap-5 items-center flex-1 text-black">
               <div className="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center text-3xl text-primary-800 shrink-0">
-                <FaRobot />
+                <FaClipboardList />
               </div>
               <div>
                 <h3 className="font-bold text-lg text-primary-950 leading-tight">
@@ -143,7 +151,10 @@ export default function ActiveView({ isOperator }: { isOperator: boolean }) {
                 </div>
               </div>
 
-              <AddToCalButton orderId={order.id} />
+              <AddToCalButton
+                orderId={order.id}
+                alreadyAdded={order.alreadyAdded}
+              />
             </div>
           </div>
         ))
