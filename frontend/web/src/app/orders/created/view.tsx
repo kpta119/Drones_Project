@@ -17,6 +17,7 @@ import {
   FaUserTie,
   FaCheckCircle,
 } from "react-icons/fa";
+import { API_URL } from '../../config';
 
 interface CreatedViewProps {
   onCreateNew: () => void;
@@ -35,7 +36,7 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
   const fetchMyOrders = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("/api/orders/getMyOrders", {
+      const res = await fetch(`${API_URL}/api/orders/getMyOrders`, {
         headers: { "X-USER-TOKEN": `Bearer ${token}` },
       });
       if (res.ok) {
@@ -59,7 +60,7 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
   const fetchApplicants = async (orderId: string) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`/api/operators/getOperatorsInfo/${orderId}`, {
+      const res = await fetch(`${API_URL}/api/operators/getOperatorsInfo/${orderId}`, {
         headers: { "X-USER-TOKEN": `Bearer ${token}` },
       });
       if (res.ok) {
@@ -87,7 +88,7 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
       const token = localStorage.getItem("token");
       const endpoint = action === "accept" ? "acceptOrder" : "rejectOrder";
       const res = await fetch(
-        `/api/orders/${endpoint}/${matchingOrderId}?operatorId=${operatorId}`,
+        `${API_URL}/api/orders/${endpoint}/${matchingOrderId}?operatorId=${operatorId}`,
         {
           method: "PATCH",
           headers: { "X-USER-TOKEN": `Bearer ${token}` },
@@ -110,7 +111,7 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
     if (!confirm("Czy na pewno chcesz anulować to zlecenie?")) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`/api/orders/cancelOrder/${id}`, {
+      const res = await fetch(`${API_URL}/api/orders/cancelOrder/${id}`, {
         method: "PATCH",
         headers: { "X-USER-TOKEN": `Bearer ${token}` },
       });
@@ -124,7 +125,7 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
     if (!confirm("Czy na pewno chcesz zakończyć to zlecenie?")) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`/api/orders/finishOrder/${id}`, {
+      const res = await fetch(`${API_URL}/api/orders/finishOrder/${id}`, {
         method: "PATCH",
         headers: { "X-USER-TOKEN": `Bearer ${token}` },
       });

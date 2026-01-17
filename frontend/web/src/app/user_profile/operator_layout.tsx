@@ -6,6 +6,7 @@ import { OperatorDto } from "./operator_dto";
 import ReviewsView from "@/src/app/orders/utils/reviews_view";
 import OperatorUpdateModule from "./operator_update/operator_update_module";
 import { FaStar, FaUser, FaPhone, FaEnvelope } from "react-icons/fa";
+import { API_URL } from '../config';
 
 interface Review {
   body: string;
@@ -42,7 +43,7 @@ export default function OperatorLayout({
         }
 
         const res = await fetch(
-          `/api/reviews/getUserReviews/${displayedUserId}`,
+          `${API_URL}/api/reviews/getUserReviews/${displayedUserId}`,
           {
             headers: {
               "X-USER-TOKEN": `Bearer ${token}`,

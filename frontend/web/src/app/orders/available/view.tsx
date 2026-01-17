@@ -5,6 +5,7 @@ import OfferMatch from "./offer_match";
 import { MatchedOrderDto } from "../types";
 import { getAddressFromCoordinates } from "../utils/geocoding";
 import { FaLock, FaUserPlus } from "react-icons/fa";
+import { API_URL } from '../../config';
 
 export default function AvailableView({ isOperator }: { isOperator: boolean }) {
   const [matches, setMatches] = useState<MatchedOrderDto[]>([]);
@@ -16,7 +17,7 @@ export default function AvailableView({ isOperator }: { isOperator: boolean }) {
   const fetchAvailable = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("/api/operators/getMatchedOrders", {
+      const res = await fetch(`${API_URL}/api/operators/getMatchedOrders`, {
         headers: { "X-USER-TOKEN": `Bearer ${token}` },
       });
       if (res.ok) {
@@ -60,7 +61,7 @@ export default function AvailableView({ isOperator }: { isOperator: boolean }) {
       const token = localStorage.getItem("token");
       const endpoint = action === "accept" ? "acceptOrder" : "rejectOrder";
 
-      const res = await fetch(`/api/orders/${endpoint}/${id}`, {
+      const res = await fetch(`${API_URL}/api/orders/${endpoint}/${id}`, {
         method: "PATCH",
         headers: {
           "X-USER-TOKEN": `Bearer ${token}`,

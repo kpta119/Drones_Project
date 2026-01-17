@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { FaTimes, FaStar } from "react-icons/fa";
+import { API_URL } from "../../config";
 
 interface ReviewData {
   body: string;
@@ -50,7 +51,7 @@ export default function ReviewsView({ userName, onClose }: ReviewsViewProps) {
 
         console.log("Fetching reviews for userId:", displayedUserId);
         const res = await fetch(
-          `/api/reviews/getUserReviews/${displayedUserId}`,
+          `${API_URL}/api/reviews/getUserReviews/${displayedUserId}`,
           {
             headers: {
               "X-USER-TOKEN": `Bearer ${token}`,
@@ -133,11 +134,10 @@ export default function ReviewsView({ userName, onClose }: ReviewsViewProps) {
                     <FaStar
                       key={i}
                       size={24}
-                      className={`${
-                        i < Math.floor(rating)
+                      className={`${i < Math.floor(rating)
                           ? "text-primary-400"
                           : "text-gray-200"
-                      }`}
+                        }`}
                     />
                   ))}
                 </div>
@@ -177,11 +177,10 @@ export default function ReviewsView({ userName, onClose }: ReviewsViewProps) {
                           <FaStar
                             key={i}
                             size={16}
-                            className={`${
-                              i < review.stars
+                            className={`${i < review.stars
                                 ? "text-primary-400"
                                 : "text-gray-200"
-                            }`}
+                              }`}
                           />
                         ))}
                       </div>
@@ -190,8 +189,8 @@ export default function ReviewsView({ userName, onClose }: ReviewsViewProps) {
                           (review.name && review.surname
                             ? `${review.name} ${review.surname}`
                             : review.author_username ||
-                              review.username ||
-                              "Anonimowy użytkownik")}
+                            review.username ||
+                            "Anonimowy użytkownik")}
                       </p>
                     </div>
                   </div>

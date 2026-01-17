@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 import { CertificatesInputModule } from "./cert_input_module";
 import { OperatorRegisterIntroModule } from "./intro_module";
 import { ServicesInputModule } from "./services_input_module";
+import { API_URL } from '../../config';
+import { ApiError } from "next/dist/server/api-utils";
 
 const LocationInputModule = dynamic(
   () => import("./location_module").then((mod) => mod.LocationInputModule),
@@ -67,7 +69,7 @@ export default function OperatorRegisterModule({
     };
 
     try {
-      const response = await fetch("/api/operators/createOperatorProfile", {
+      const response = await fetch(`${API_URL}/api/operators/createOperatorProfile`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -178,11 +180,10 @@ export default function OperatorRegisterModule({
           {steps.map((s) => (
             <li key={s.number} className="shrink-0 lg:w-full">
               <div
-                className={`p-3 lg:p-4 border-2 rounded-lg flex items-center gap-3 transition-all ${
-                  step >= s.number
+                className={`p-3 lg:p-4 border-2 rounded-lg flex items-center gap-3 transition-all ${step >= s.number
                     ? "bg-green-50 border-green-400 text-green-800"
                     : "bg-white border-gray-300 text-gray-600"
-                }`}
+                  }`}
               >
                 <span className="text-xs lg:text-sm font-semibold whitespace-nowrap">
                   {s.number + 1}. {s.label}

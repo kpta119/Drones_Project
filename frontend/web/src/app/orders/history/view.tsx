@@ -6,6 +6,7 @@ import { OrderResponse, OrderStatusLabels } from "../types";
 import OrderDetailsModule from "../utils/details_module";
 import ReviewModule from "../utils/review_module";
 import { FaSearchPlus, FaStar, FaUserTie } from "react-icons/fa";
+import { API_URL } from '../../config';
 
 interface OperatorInfo {
   name: string;
@@ -53,7 +54,7 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `/api/operators/getOperatorProfile/${operatorId}`,
+          `${API_URL}/api/operators/getOperatorProfile/${operatorId}`,
           {
             headers: { "X-USER-TOKEN": `Bearer ${token}` },
           }
@@ -81,7 +82,7 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
   const fetchMyOrders = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("/api/orders/getMyOrders", {
+      const res = await fetch(`${API_URL}/api/orders/getMyOrders`, {
         headers: { "X-USER-TOKEN": `Bearer ${token}` },
       });
       if (res.ok) {
@@ -140,7 +141,7 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
       }
 
       const res = await fetch(
-        `/api/reviews/createReview/${reviewingOrder.id}/${operatorId}`,
+        `${API_URL}/api/reviews/createReview/${reviewingOrder.id}/${operatorId}`,
         {
           method: "POST",
           headers: {
@@ -221,11 +222,10 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
                 <p className="text-gray-400 text-xs mt-2 uppercase tracking-widest font-bold">
                   Status:{" "}
                   <span
-                    className={`${
-                      order.status === "COMPLETED"
-                        ? "text-green-400"
-                        : "text-red-400"
-                    }`}
+                    className={`${order.status === "COMPLETED"
+                      ? "text-green-400"
+                      : "text-red-400"
+                      }`}
                   >
                     {OrderStatusLabels[order.status]}
                   </span>
@@ -239,8 +239,7 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
                       <div
                         onClick={() =>
                           window.open(
-                            `/user_profile?user_id=${
-                              (order as any).operator_id
+                            `/user_profile?user_id=${(order as any).operator_id
                             }`,
                             "_blank"
                           )
@@ -274,11 +273,11 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
 
                     {((order as any).reviewed ||
                       reviewedOrderIds.has(order.id)) && (
-                      <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 rounded-xl text-green-300 text-[10px] font-bold uppercase tracking-widest">
-                        <FaStar size={12} />
-                        Oceniono
-                      </div>
-                    )}
+                        <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 rounded-xl text-green-300 text-[10px] font-bold uppercase tracking-widest">
+                          <FaStar size={12} />
+                          Oceniono
+                        </div>
+                      )}
                   </>
                 )}
 
@@ -312,9 +311,8 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
           operatorId={(reviewingOrder as any).operator_id}
           operatorName={
             operatorNames[(reviewingOrder as any).operator_id]
-              ? `${operatorNames[(reviewingOrder as any).operator_id].name} ${
-                  operatorNames[(reviewingOrder as any).operator_id].surname
-                }`
+              ? `${operatorNames[(reviewingOrder as any).operator_id].name} ${operatorNames[(reviewingOrder as any).operator_id].surname
+              }`
               : "Operator"
           }
           orderId={reviewingOrder.id}

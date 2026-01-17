@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { API_URL } from '../../config';
 
 export default function RegisterForm() {
   const [regUsername, setRegUsername] = useState("");
@@ -15,7 +16,7 @@ export default function RegisterForm() {
     e.preventDefault();
     setRegMessage("");
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await fetch(`${API_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -98,11 +99,10 @@ export default function RegisterForm() {
           />
           {regMessage && (
             <p
-              className={`text-center text-sm ${
-                regMessage.includes("sukces")
+              className={`text-center text-sm ${regMessage.includes("sukces")
                   ? "text-green-500"
                   : "text-red-500"
-              }`}
+                }`}
             >
               {regMessage}
             </p>

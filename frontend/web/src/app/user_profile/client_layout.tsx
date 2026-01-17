@@ -7,6 +7,7 @@ import OperatorRegisterButton from "@/src/components/operator_register_button";
 import OperatorRegisterModule from "./operator_register/operator_register_module";
 import ReviewsView from "@/src/app/orders/utils/reviews_view";
 import { FaStar, FaUser, FaPhone, FaEnvelope } from "react-icons/fa";
+import { API_URL } from "../config";
 
 interface Review {
   body: string;
@@ -46,7 +47,7 @@ export default function ClientLayout({
         }
 
         const res = await fetch(
-          `/api/reviews/getUserReviews/${displayedUserId}`,
+          `${API_URL}/api/reviews/getUserReviews/${displayedUserId}`,
           {
             headers: {
               "X-USER-TOKEN": `Bearer ${token}`,
@@ -184,8 +185,8 @@ export default function ClientLayout({
                       (review.name && review.surname
                         ? `${review.name} ${review.surname}`
                         : review.author_username ||
-                          review.username ||
-                          "Anonimowy")}
+                        review.username ||
+                        "Anonimowy")}
                   </p>
                   <p className="text-gray-800 leading-relaxed">{review.body}</p>
                 </div>

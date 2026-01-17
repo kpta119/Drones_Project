@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { OrderResponse } from "../types";
 import SpecificationsEditor from "../utils/specifications_editor";
+import { API_URL } from '../../config';
 
 const OrderLocationPicker = dynamic(() => import("../utils/order_location"), {
   ssr: false,
@@ -36,9 +37,9 @@ export default function CreateOrderView({
     service: editData?.service || "",
     coordinates: editData?.coordinates
       ? {
-          lat: parseFloat(editData.coordinates.split(",")[0]),
-          lng: parseFloat(editData.coordinates.split(",")[1]),
-        }
+        lat: parseFloat(editData.coordinates.split(",")[0]),
+        lng: parseFloat(editData.coordinates.split(",")[1]),
+      }
       : { lat: 52.237, lng: 21.017 },
     fromDate: editData?.from_date?.split(":").slice(0, 2).join(":") || "",
     toDate: editData?.to_date?.split(":").slice(0, 2).join(":") || "",
@@ -49,7 +50,7 @@ export default function CreateOrderView({
     const fetchServices = async () => {
       const token = localStorage.getItem("token");
       try {
-        const res = await fetch("/api/services/getServices", {
+        const res = await fetch(`${API_URL}/api/services/getServices`, {
           headers: { "X-USER-TOKEN": `Bearer ${token}` },
         });
         if (res.ok) setServices(await res.json());
@@ -81,8 +82,8 @@ export default function CreateOrderView({
     };
 
     const url = editData
-      ? `/api/orders/editOrder/${editData.id}`
-      : "/api/orders/createOrder";
+      ? `${API_URL}/api/orders/editOrder/${editData.id}`
+      : `${API_URL}/api/orders/createOrder`;
 
     const method = editData ? "PATCH" : "POST";
 
@@ -126,9 +127,8 @@ export default function CreateOrderView({
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className={`h-2.5 w-10 rounded-full transition-all duration-500 ${
-                step === i ? "bg-primary-500 shadow-md" : "bg-primary-100"
-              }`}
+              className={`h-2.5 w-10 rounded-full transition-all duration-500 ${step === i ? "bg-primary-500 shadow-md" : "bg-primary-100"
+                }`}
             />
           ))}
         </div>
@@ -264,8 +264,8 @@ export default function CreateOrderView({
                 {loading
                   ? "Wysyłanie..."
                   : editData
-                  ? "Zapisz zmiany"
-                  : "Opublikuj ogłoszenie"}
+                    ? "Zapisz zmiany"
+                    : "Opublikuj ogłoszenie"}
               </button>
             </div>
           </div>

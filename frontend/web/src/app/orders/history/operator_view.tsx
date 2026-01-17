@@ -6,6 +6,7 @@ import { OrderStatusLabels } from "../types";
 import OrderDetailsModule from "../utils/details_module";
 import ReviewModule from "../utils/review_module";
 import { FaSearchPlus, FaStar, FaUser } from "react-icons/fa";
+import { API_URL } from '../../config';
 
 interface MatchedOrderDto {
   id: string;
@@ -20,11 +21,11 @@ interface MatchedOrderDto {
   to_date: string;
   created_at: string;
   order_status:
-    | "OPEN"
-    | "AWAITING_OPERATOR"
-    | "IN_PROGRESS"
-    | "COMPLETED"
-    | "CANCELLED";
+  | "OPEN"
+  | "AWAITING_OPERATOR"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "CANCELLED";
   client_status: "PENDING" | "ACCEPTED" | "REJECTED";
   operator_status: "PENDING" | "ACCEPTED" | "REJECTED";
 }
@@ -76,7 +77,7 @@ export default function OperatorHistoryView({
 
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`/api/user/getUserData?user_id=${clientId}`, {
+        const res = await fetch(`${API_URL}/api/user/getUserData?user_id=${clientId}`, {
           headers: { "X-USER-TOKEN": `Bearer ${token}` },
         });
         if (res.ok) {
@@ -102,7 +103,7 @@ export default function OperatorHistoryView({
   const fetchMatchedOrders = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("/api/operators/getMatchedOrders?size=100", {
+      const res = await fetch(`${API_URL}/api/operators/getMatchedOrders?size=100`, {
         headers: { "X-USER-TOKEN": `Bearer ${token}` },
       });
       if (res.ok) {
@@ -160,7 +161,7 @@ export default function OperatorHistoryView({
       }
 
       const res = await fetch(
-        `/api/reviews/createReview/${reviewingOrder.id}/${clientId}`,
+        `${API_URL}/api/reviews/createReview/${reviewingOrder.id}/${clientId}`,
         {
           method: "POST",
           headers: {
@@ -331,9 +332,8 @@ export default function OperatorHistoryView({
           operatorId={reviewingOrder.client_id}
           operatorName={
             clientNames[reviewingOrder.client_id]
-              ? `${clientNames[reviewingOrder.client_id].name} ${
-                  clientNames[reviewingOrder.client_id].surname
-                }`
+              ? `${clientNames[reviewingOrder.client_id].name} ${clientNames[reviewingOrder.client_id].surname
+              }`
               : "Klient"
           }
           orderId={reviewingOrder.id}

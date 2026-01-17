@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { FaCalendarPlus, FaCheck, FaTimes } from "react-icons/fa";
+import { API_URL } from '../../config';
 
 interface AddToCalButtonProps {
   orderId: string;
@@ -37,7 +38,7 @@ export default function AddToCalButton({
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`/api/calendar/addEvent/${orderId}`, {
+      const res = await fetch(`${API_URL}/api/calendar/addEvent/${orderId}`, {
         method: "POST",
         headers: {
           "X-USER-TOKEN": `Bearer ${token}`,
@@ -92,11 +93,10 @@ export default function AddToCalButton({
       <button
         onClick={handleAddToCalendar}
         disabled={isLoading}
-        className={`${baseClasses} ${
-          isNotGoogleConnected
+        className={`${baseClasses} ${isNotGoogleConnected
             ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border border-yellow-300"
             : "bg-gray-700 hover:bg-green-600 text-white"
-        } disabled:opacity-50 disabled:cursor-not-allowed`}
+          } disabled:opacity-50 disabled:cursor-not-allowed`}
       >
         <FaCalendarPlus size={14} />
         {isLoading ? "Dodawanie..." : "Google Calendar"}
@@ -104,13 +104,12 @@ export default function AddToCalButton({
 
       {showNotification && (
         <div
-          className={`fixed bottom-4 right-4 flex items-center gap-3 px-6 py-4 rounded-lg shadow-lg animate-fadeIn text-sm font-medium z-50 ${
-            isNotGoogleConnected || notificationMessage.includes("Zaloguj")
+          className={`fixed bottom-4 right-4 flex items-center gap-3 px-6 py-4 rounded-lg shadow-lg animate-fadeIn text-sm font-medium z-50 ${isNotGoogleConnected || notificationMessage.includes("Zaloguj")
               ? "bg-yellow-50 text-yellow-800 border border-yellow-200"
               : notificationMessage.includes("Dodano")
-              ? "bg-green-50 text-green-800 border border-green-200"
-              : "bg-red-50 text-red-800 border border-red-200"
-          }`}
+                ? "bg-green-50 text-green-800 border border-green-200"
+                : "bg-red-50 text-red-800 border border-red-200"
+            }`}
         >
           <span>{notificationMessage}</span>
           <button
