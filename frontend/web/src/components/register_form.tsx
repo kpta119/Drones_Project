@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { API_URL } from '../../config';
+import { API_URL } from '../app/config';
 
 export default function RegisterForm() {
   const [regUsername, setRegUsername] = useState("");
@@ -100,8 +100,8 @@ export default function RegisterForm() {
           {regMessage && (
             <p
               className={`text-center text-sm ${regMessage.includes("sukces")
-                  ? "text-green-500"
-                  : "text-red-500"
+                ? "text-green-500"
+                : "text-red-500"
                 }`}
             >
               {regMessage}
