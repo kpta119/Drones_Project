@@ -1,6 +1,7 @@
 package com.example.drones.services;
 
 import com.example.drones.user.UserEntity;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +14,7 @@ import java.util.List;
 public class OperatorServicesService {
 
     private final OperatorServicesRepository operatorServicesRepository;
+    private final EntityManager entityManager;
 
     @Transactional
     public List<String> addOperatorServices(UserEntity operator, List<String> services) {
@@ -30,6 +32,7 @@ public class OperatorServicesService {
     @Transactional
     public List<String> editOperatorServices(UserEntity operator, List<String> services) {
         operatorServicesRepository.deleteAllByOperator(operator);
+        entityManager.flush();
         return addOperatorServices(operator, services);
     }
 
