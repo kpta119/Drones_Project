@@ -373,7 +373,7 @@ Base URL: `/api/operators`.
 
 ### Pobierz portfolio operatora
 
-**GET** `/operators/getOperatorPortfolio/:operator_id`
+**GET** `/operators/getOperatorProfile/:operator_id`
 
 * **Response:** Zwraca profil operatora połączony z danymi użytkownika i wpisami portfolio.
 
