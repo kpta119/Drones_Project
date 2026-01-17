@@ -58,6 +58,13 @@ spring:
           starttls:
             enable: true
 
+server:
+  forward-headers-strategy: native
+  servlet:
+    session:
+      cookie:
+        secure: true
+        same-site: none
 
 security:
   jwt:
