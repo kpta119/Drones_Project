@@ -31,7 +31,6 @@ function AuthCallbackContent() {
       }
     } catch (error) {
       console.error("Błąd przetwarzania logowania:", error);
-      setStatus("Wystąpił błąd podczas logowania.");
     }
   }, [router, searchParams]);
 
