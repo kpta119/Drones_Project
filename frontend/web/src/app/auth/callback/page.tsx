@@ -15,17 +15,12 @@ function AuthCallbackContent() {
     const username = searchParams.get("username");
     const userId = searchParams.get("userId");
 
-    if (!token || !role) {
-      setStatus("Błąd: Nie znaleziono danych uwierzytelniających.");
-      return;
-    }
-
     try {
       const decodedUsername = (username || "").replaceAll("+", " ");
 
       // Zapisywanie do localStorage
-      localStorage.setItem("token", token);
-      localStorage.setItem("role", role);
+      localStorage.setItem("token", token || "");
+      localStorage.setItem("role", role || "");
       localStorage.setItem("username", decodedUsername);
       localStorage.setItem("userId", userId || "");
 
