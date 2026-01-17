@@ -4,7 +4,6 @@ import com.example.drones.common.config.auth.JwtService;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRepository;
 import com.example.drones.user.UserRole;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +16,7 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -101,30 +101,16 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         String token = jwtService.generateToken(user.getId());
         String role = user.getRole().name();
         String userId = user.getId().toString();
-        String username = (user.getDisplayName() != null) ? user.getDisplayName() : email;
+        String username = user.getDisplayName() != null ? user.getDisplayName() : "";
 
-        addHandoffCookie(response, "auth_token", token);
-        addHandoffCookie(response, "auth_role", role);
-        addHandoffCookie(response, "auth_userid", userId);
-        addHandoffCookie(response, "auth_email", email);
-        addHandoffCookie(response, "auth_username", username);
 
-        String targetUrl = frontendUrl + "/auth/callback";
+        String targetUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/auth/callback")
+                .queryParam("token", token)
+                .queryParam("role", role)
+                .queryParam("username", URLEncoder.encode(username, StandardCharsets.UTF_8))
+                .queryParam("userid", userId)
+                .build().toUriString();
+
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
-    }
-
-
-    private void addHandoffCookie(HttpServletResponse response, String name, String value) {
-        if (value == null) return;
-
-        String encodedValue = URLEncoder.encode(value, StandardCharsets.UTF_8);
-
-        Cookie cookie = new Cookie(name, encodedValue);
-        cookie.setPath("/");
-        cookie.setMaxAge(30);
-        cookie.setSecure(true);
-        cookie.setHttpOnly(false);
-
-        response.addCookie(cookie);
     }
 }

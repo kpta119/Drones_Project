@@ -1,25 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Cookies from "js-cookie";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [status, setStatus] = useState("Przetwarzanie logowania...");
 
   useEffect(() => {
-    // all data from cookies
-    const token = Cookies.get("auth_token");
-    const role = Cookies.get("auth_role");
-    // const userId = Cookies.get('auth_userid');
-    const username = Cookies.get("auth_username");
-    // const email = Cookies.get('auth_email');
+    // all data from URL params
+
+    const token = searchParams.get("token");
+    const role = searchParams.get("role");
+    const username = searchParams.get("username");
+    const userId = searchParams.get("userId");
+    // const email = searchParams.get("email");
 
     const decodedUsername = (username || "").replaceAll("+", " ");
     localStorage.setItem("token", token || "");
     localStorage.setItem("role", role || "");
     localStorage.setItem("username", decodedUsername);
+    localStorage.setItem("userId", userId || "");
     try {
       [
         "auth_token",
