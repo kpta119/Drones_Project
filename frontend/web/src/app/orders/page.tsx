@@ -22,8 +22,18 @@ export default function OrdersPage() {
   const [editingOrder, setEditingOrder] = useState<OrderResponse | null>(null);
 
   useEffect(() => {
-    const role = localStorage.getItem("role");
-    setUserRole(role ? role.toUpperCase() : "CLIENT");
+    const checkRole = () => {
+      const role = localStorage.getItem("role");
+      setUserRole(role ? role.toUpperCase() : "CLIENT");
+    };
+
+    // do ewentualnej zmiany?? (zmiana / TODO !!!)
+
+    checkRole();
+
+    const interval = setInterval(checkRole, 500);
+
+    return () => clearInterval(interval);
   }, []);
 
   const handleEdit = (order: OrderResponse) => {

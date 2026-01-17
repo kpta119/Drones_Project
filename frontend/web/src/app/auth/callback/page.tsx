@@ -12,11 +12,15 @@ export default function AuthCallbackPage() {
     const token = Cookies.get("auth_token");
     const role = Cookies.get("auth_role");
     const username = Cookies.get("auth_username");
+    const userId = Cookies.get("auth_userid");
 
     const decodedUsername = (username || "").replaceAll("+", " ");
     localStorage.setItem("token", token || "");
     localStorage.setItem("role", role || "");
-    localStorage.setItem("username", decodedUsername);
+    localStorage.setItem("name", decodedUsername);
+    localStorage.setItem("userId", userId || "");
+
+    window.dispatchEvent(new Event("authChanged"));
     try {
       [
         "auth_token",

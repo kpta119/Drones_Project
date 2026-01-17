@@ -14,17 +14,29 @@ export default function PageHeader() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const role = localStorage.getItem("role");
-    const nameAsEmail = localStorage.getItem("name");
+    const checkAuth = () => {
+      const token = localStorage.getItem("token");
+      const role = localStorage.getItem("role");
+      const nameAsEmail = localStorage.getItem("name");
 
-    if (token && role && nameAsEmail) {
-      setUser({
-        token,
-        role,
-        email: nameAsEmail,
-      });
-    }
+      if (token && role && nameAsEmail) {
+        setUser({
+          token,
+          role,
+          email: nameAsEmail,
+        });
+      } else {
+        setUser(null);
+      }
+    };
+
+    // Check on mount
+    checkAuth();
+
+    // Listen for custom auth change event
+    window.addEventListener("authChanged", checkAuth);
+
+    return () => window.removeEventListener("authChanged", checkAuth);
   }, []);
 
   return (
