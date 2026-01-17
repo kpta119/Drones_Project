@@ -146,7 +146,7 @@ public class CalendarServiceTests {
                 .build();
 
         when(userRepository.findById(operatorId)).thenReturn(Optional.of(operator));
-        when(ordersRepository.findInProgressOrdersByOperatorId(operatorId, pageable)).thenReturn(ordersPage);
+        when(ordersRepository.findInProgressAndAcceptedOrdersByOperatorId(operatorId, pageable)).thenReturn(ordersPage);
         when(ordersMapper.toSchedulableOrders(order)).thenReturn(schedulableOrder);
 
         // Mock markOrdersAddedToCalendar żeby nie wywoływać Google API
@@ -159,7 +159,7 @@ public class CalendarServiceTests {
         assertThat(result.getContent().getFirst().getId()).isEqualTo(orderId);
 
         verify(userRepository).findById(operatorId);
-        verify(ordersRepository).findInProgressOrdersByOperatorId(operatorId, pageable);
+        verify(ordersRepository).findInProgressAndAcceptedOrdersByOperatorId(operatorId, pageable);
         verify(ordersMapper).toSchedulableOrders(order);
     }
 
@@ -172,7 +172,7 @@ public class CalendarServiceTests {
                 .isInstanceOf(UserNotFoundException.class);
 
         verify(userRepository).findById(operatorId);
-        verify(ordersRepository, never()).findInProgressOrdersByOperatorId(any(), any());
+        verify(ordersRepository, never()).findInProgressAndAcceptedOrdersByOperatorId(any(), any());
     }
 
     @Test
@@ -191,7 +191,7 @@ public class CalendarServiceTests {
         Page<OrdersEntity> ordersPage = new PageImpl<>(ordersList, pageable, 1);
 
         when(userRepository.findById(operatorId)).thenReturn(Optional.of(operator));
-        when(ordersRepository.findInProgressOrdersByOperatorId(operatorId, pageable)).thenReturn(ordersPage);
+        when(ordersRepository.findInProgressAndAcceptedOrdersByOperatorId(operatorId, pageable)).thenReturn(ordersPage);
         when(ordersMapper.toSchedulableOrders(order)).thenReturn(schedulableOrder);
 
         // Mock markOrdersAddedToCalendar żeby nie wywoływać Google API
@@ -204,7 +204,7 @@ public class CalendarServiceTests {
         // Bez refresh token, markOrdersAddedToCalendar po prostu zwraca bez sprawdzania kalendarza
 
         verify(userRepository).findById(operatorId);
-        verify(ordersRepository).findInProgressOrdersByOperatorId(operatorId, pageable);
+        verify(ordersRepository).findInProgressAndAcceptedOrdersByOperatorId(operatorId, pageable);
     }
 
     @Test
@@ -213,7 +213,7 @@ public class CalendarServiceTests {
         Page<OrdersEntity> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
 
         when(userRepository.findById(operatorId)).thenReturn(Optional.of(operator));
-        when(ordersRepository.findInProgressOrdersByOperatorId(operatorId, pageable)).thenReturn(emptyPage);
+        when(ordersRepository.findInProgressAndAcceptedOrdersByOperatorId(operatorId, pageable)).thenReturn(emptyPage);
 
         // Mock markOrdersAddedToCalendar żeby nie wywoływać Google API
         doNothing().when(calendarService).markOrdersAddedToCalendar(anyList(), anyString());
@@ -225,7 +225,7 @@ public class CalendarServiceTests {
         assertThat(result.getTotalElements()).isEqualTo(0);
 
         verify(userRepository).findById(operatorId);
-        verify(ordersRepository).findInProgressOrdersByOperatorId(operatorId, pageable);
+        verify(ordersRepository).findInProgressAndAcceptedOrdersByOperatorId(operatorId, pageable);
     }
 
     @Test
@@ -268,7 +268,7 @@ public class CalendarServiceTests {
                 .build();
 
         when(userRepository.findById(operatorId)).thenReturn(Optional.of(operator));
-        when(ordersRepository.findInProgressOrdersByOperatorId(operatorId, pageable)).thenReturn(ordersPage);
+        when(ordersRepository.findInProgressAndAcceptedOrdersByOperatorId(operatorId, pageable)).thenReturn(ordersPage);
         when(ordersMapper.toSchedulableOrders(order)).thenReturn(schedulableOrder1);
         when(ordersMapper.toSchedulableOrders(order2)).thenReturn(schedulableOrder2);
         when(ordersMapper.toSchedulableOrders(order3)).thenReturn(schedulableOrder3);

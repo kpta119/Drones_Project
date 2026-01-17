@@ -25,6 +25,7 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
             SELECT u.* FROM users u
             JOIN operator_service os ON u.id = os.operator_id
             WHERE u.role = 'OPERATOR'
+              AND u.id != :creatorId
               AND os.service_name = :serviceName
               AND u.coordinates IS NOT NULL
               AND u.radius IS NOT NULL
@@ -39,7 +40,8 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
     List<UserEntity> findMatchingOperators(
             @Param("serviceName") String serviceName,
             @Param("orderLat") double orderLat,
-            @Param("orderLon") double orderLon
+            @Param("orderLon") double orderLon,
+            @Param("creatorId") UUID creatorId
     );
 
     Optional<UserEntity> findByProviderUserId(String providerUserId);

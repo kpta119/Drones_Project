@@ -4,6 +4,7 @@ import com.example.drones.auth.exceptions.InvalidCredentialsException;
 import com.example.drones.common.config.exceptions.UserNotFoundException;
 import com.example.drones.orders.dto.OrderRequest;
 import com.example.drones.orders.dto.OrderResponse;
+import com.example.drones.orders.dto.OrderResponseWithOperatorId;
 import com.example.drones.orders.dto.OrderUpdateRequest;
 import com.example.drones.orders.exceptions.*;
 import com.example.drones.services.ServicesEntity;
@@ -14,8 +15,8 @@ import com.example.drones.user.UserRepository;
 import com.example.drones.user.UserRole;
 import com.example.drones.user.exceptions.NotOperatorException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,10 +36,20 @@ public class OrdersService {
     private final NewMatchedOrdersRepository newMatchedOrdersRepository;
     private final Clock clock;
     private final MatchingService matchingService;
+    private final List<OrderStatus> statusesWithVisibleOperator = List.of(
+            OrderStatus.IN_PROGRESS,
+            OrderStatus.COMPLETED,
+            OrderStatus.CANCELLED
+    );
 
     @Transactional
-    @CacheEvict(value = "orders", key = "'open'")
     public OrderResponse createOrder(OrderRequest request, UUID userId) {
+        LocalDateTime now = LocalDateTime.now(clock);
+
+        if (request.getToDate().isBefore(now.toLocalDate().atStartOfDay())) {
+            throw new IllegalOrderStateException("The end date cannot be earlier than today.");
+        }
+
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
 
@@ -47,7 +58,7 @@ public class OrdersService {
 
         OrdersEntity orderEntity = ordersMapper.toEntity(request, serviceEntity);
 
-        orderEntity.setCreatedAt(LocalDateTime.now(clock));
+        orderEntity.setCreatedAt(now);
         orderEntity.setUser(user);
         OrdersEntity savedOrder = ordersRepository.save(orderEntity);
 
@@ -57,7 +68,6 @@ public class OrdersService {
     }
 
     @Transactional
-    @CacheEvict(value = "orders", allEntries = true)
     public OrderResponse editOrder(UUID orderId, OrderUpdateRequest request, UUID userId) {
         OrdersEntity order = ordersRepository.findById(orderId)
                 .orElseThrow(OrderNotFoundException::new);
@@ -83,7 +93,6 @@ public class OrdersService {
     }
 
     @Transactional
-    @CacheEvict(value = "orders", allEntries = true)
     public OrderResponse acceptOrder(UUID orderId, UUID operatorIdParam, UUID currentUserId) {
         UserEntity currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(UserNotFoundException::new);
@@ -104,8 +113,15 @@ public class OrdersService {
 
             match = newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, currentUserId)
                     .orElseThrow(MatchedOrderNotFoundException::new);
+
+            if (match.getOperatorStatus() == MatchedOrderStatus.ACCEPTED) {
+                throw new OrderAlreadyAcceptedByYouException();
+            }
+
             match.setOperatorStatus(MatchedOrderStatus.ACCEPTED);
-            foundOrder.setStatus(OrderStatus.AWAITING_OPERATOR);
+            if (foundOrder.getStatus() == OrderStatus.OPEN) {
+                foundOrder.setStatus(OrderStatus.AWAITING_OPERATOR);
+            }
         } else {
             // Client accepts
             if (!foundOrder.getUser().getId().equals(currentUserId)) {
@@ -114,6 +130,18 @@ public class OrdersService {
 
             match = newMatchedOrdersRepository.findByOrderIdAndOperatorId(orderId, operatorIdParam)
                     .orElseThrow(MatchedOrderNotFoundException::new);
+
+            if (match.getClientStatus() == MatchedOrderStatus.ACCEPTED) {
+                throw new OrderAlreadyAcceptedByYouException();
+            }
+
+            boolean alreadyAcceptedSomeone = newMatchedOrdersRepository
+                    .existsByOrderIdAndClientStatus(orderId, MatchedOrderStatus.ACCEPTED);
+            if (alreadyAcceptedSomeone) {
+                throw new OrderAlreadyHasAcceptedOperatorException();
+            }
+
+
             match.setClientStatus(MatchedOrderStatus.ACCEPTED);
             if (match.getOperatorStatus() == MatchedOrderStatus.ACCEPTED) {
                 foundOrder.setStatus(OrderStatus.IN_PROGRESS);
@@ -126,7 +154,6 @@ public class OrdersService {
     }
 
     @Transactional
-    @CacheEvict(value = "orders", allEntries = true)
     public void rejectOrder(UUID orderId, UUID operatorIdParam, UUID currentUserId) {
         UserEntity currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(UserNotFoundException::new);
@@ -162,7 +189,6 @@ public class OrdersService {
     }
 
     @Transactional
-    @CacheEvict(value = "orders", allEntries = true)
     public OrderResponse cancelOrder(UUID orderId, UUID currentUserId) {
         OrdersEntity order = ordersRepository.findById(orderId)
                 .orElseThrow(OrderNotFoundException::new);
@@ -180,27 +206,40 @@ public class OrdersService {
         return ordersMapper.toResponse(savedOrder);
     }
 
-    @Cacheable(value = "orders", key = "#statusStr")
-    public List<OrderResponse> getOrdersByStatus(String statusStr) {
-        OrderStatus status;
-        try {
-            status = OrderStatus.valueOf(statusStr.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalOrderStatusException(statusStr);
-        }
-
-        List<OrdersEntity> orders = ordersRepository.findAllByStatus(status);
-
-        return orders.stream()
-                .map(ordersMapper::toResponse)
-                .toList();
+    public Page<OrderResponseWithOperatorId> getMyOrders(UUID userId, OrderStatus status, Pageable pageable) {
+        userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+        return ordersRepository.findAllByUserIdAndOrderStatus(userId, status, statusesWithVisibleOperator, pageable );
     }
 
-    public List<OrderResponse> getMyOrders(UUID userId) {
-        List<OrdersEntity> orders = ordersRepository.findAllByUser_IdOrderByCreatedAtDesc(userId);
+    @Transactional
+    public OrderResponse finishOrder(UUID orderId, UUID currentUserId) {
+        OrdersEntity order = ordersRepository.findById(orderId)
+                .orElseThrow(OrderNotFoundException::new);
 
-        return orders.stream()
-                .map(ordersMapper::toResponse)
-                .toList();
+        if (!order.getUser().getId().equals(currentUserId)) {
+            throw new NotOwnerOfOrderException();
+        }
+
+        if (order.getStatus() == OrderStatus.COMPLETED) {
+            throw new IllegalOrderStateException("The order has been already finished.");
+        }
+
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new IllegalOrderStateException("You cannot complete the order that has been cancelled.");
+        }
+
+        boolean hasAcceptedMatch = order.getMatchedOrders().stream()
+                .anyMatch(match -> match.getOperatorStatus() == MatchedOrderStatus.ACCEPTED
+                        && match.getClientStatus() == MatchedOrderStatus.ACCEPTED);
+
+        if (!hasAcceptedMatch) {
+            throw new IllegalOrderStateException("The order must be accepted by both client and operator before completion.");
+        }
+
+        order.setStatus(OrderStatus.COMPLETED);
+
+        OrdersEntity savedOrder = ordersRepository.save(order);
+        return ordersMapper.toResponse(savedOrder);
     }
 }

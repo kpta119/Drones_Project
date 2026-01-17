@@ -12,6 +12,8 @@ public interface NewMatchedOrdersRepository extends JpaRepository<NewMatchedOrde
 
     Optional<NewMatchedOrderEntity> findByOrderIdAndOperatorId(UUID orderId, UUID userId);
 
+    boolean existsByOrderIdAndClientStatus(UUID orderId, MatchedOrderStatus clientStatus);
+
     @Query("""
                         SELECT nmo.operator
                         FROM NewMatchedOrderEntity nmo

@@ -2,6 +2,7 @@ package com.example.drones.services;
 
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRole;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +23,9 @@ public class OperatorServicesServiceUnitTests {
 
     @Mock
     private OperatorServicesRepository operatorServicesRepository;
+
+    @Mock
+    private EntityManager entityManager;
 
     @InjectMocks
     private OperatorServicesService operatorServicesService;

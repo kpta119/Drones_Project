@@ -1,5 +1,6 @@
 package com.example.drones.orders;
 
+import com.example.drones.orders.dto.OrderResponseWithOperatorId;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,7 +14,6 @@ import java.util.UUID;
 
 @Repository
 public interface OrdersRepository extends JpaRepository<OrdersEntity, UUID>, JpaSpecificationExecutor<OrdersEntity> {
-    List<OrdersEntity> findAllByStatus(OrderStatus status);
 
     @Query("""
                         SELECT o
@@ -24,7 +24,34 @@ public interface OrdersRepository extends JpaRepository<OrdersEntity, UUID>, Jpa
             """)
     Optional<OrdersEntity> findByIdWithUser(UUID orderId);
 
-    List<OrdersEntity> findAllByUser_IdOrderByCreatedAtDesc(UUID userId);
+    @Query("""
+            SELECT new com.example.drones.orders.dto.OrderResponseWithOperatorId(
+                    o.id,
+                    o.userId,
+                    o.title,
+                    o.description,
+                    o.service.name,
+                    o.parameters,
+                    o.coordinates,
+                    o.fromDate,
+                    o.toDate,
+                    o.status,
+                    o.createdAt,
+                    CASE
+                        WHEN o.status IN :visibleStatuses THEN nmo.operator.id
+                        ELSE null
+                    END
+                    )
+                    FROM OrdersEntity o
+                    LEFT JOIN NewMatchedOrderEntity nmo ON nmo.order = o
+                        AND nmo.clientStatus = 'ACCEPTED'
+                        AND nmo.operatorStatus = 'ACCEPTED'
+                    WHERE o.user.id = :userId
+                    AND (:#{#status == null} = true OR o.status = :status)
+                    ORDER BY o.createdAt desc
+            
+            """)
+    Page<OrderResponseWithOperatorId> findAllByUserIdAndOrderStatus(UUID userId, OrderStatus status, List<OrderStatus> visibleStatuses, Pageable pageable);
 
     @Query("""
             SELECT o
@@ -42,6 +69,8 @@ public interface OrdersRepository extends JpaRepository<OrdersEntity, UUID>, Jpa
             INNER JOIN o.matchedOrders nmo
             WHERE o.status = 'IN_PROGRESS'
             AND nmo.operator.id = :operatorId
+            AND nmo.clientStatus = 'ACCEPTED'
+            AND nmo.operatorStatus = 'ACCEPTED'
             """)
-    Page<OrdersEntity> findInProgressOrdersByOperatorId(UUID operatorId, Pageable pageable);
+    Page<OrdersEntity> findInProgressAndAcceptedOrdersByOperatorId(UUID operatorId, Pageable pageable);
 }
