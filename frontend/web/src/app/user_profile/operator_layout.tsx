@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { OperatorDto } from "./operator_dto";
 import ReviewsView from "@/src/app/orders/utils/reviews_view";
+import OperatorUpdateModule from "./operator_update/operator_update_module";
 
 export default function OperatorLayout({
   data,
@@ -12,6 +13,8 @@ export default function OperatorLayout({
   isOwnProfile: boolean;
 }) {
   const [showReviews, setShowReviews] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-2 gap-8 lg:gap-10 p-5 lg:ps-5 lg:pt-10 lg:pb-10 m-auto font-montserrat w-full max-w-7xl h-auto lg:h-[85vh]">
       <style>{`
@@ -58,13 +61,22 @@ export default function OperatorLayout({
               </div>
             </div>
 
-            <div className="flex flex-col w-full pt-4">
+            <div className="flex flex-col w-full pt-4 gap-2">
               <button
                 onClick={() => setShowReviews(true)}
                 className="flex-1 bg-[#D9D9D9] text-black rounded-xl py-1 font-semibold hover:bg-gray-400 hover:ring-2 hover:ring-gray-400 transition-all text-sm"
               >
                 Czytaj opinie
               </button>
+
+              {isOwnProfile && (
+                <button
+                  onClick={() => setShowEdit(true)}
+                  className="flex-1 bg-primary-600 text-white rounded-xl py-1 font-semibold hover:bg-primary-700 transition-all text-sm"
+                >
+                  Edytuj dane
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -104,6 +116,22 @@ export default function OperatorLayout({
           userName={`${data.name} ${data.surname}`}
           onClose={() => setShowReviews(false)}
         />
+      )}
+
+      {showEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl w-full max-w-5xl h-[90vh] overflow-auto p-6 relative">
+            <button
+              onClick={() => setShowEdit(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+            >
+              ✕
+            </button>
+            <OperatorUpdateModule
+              onClose={() => setShowEdit(false)}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
