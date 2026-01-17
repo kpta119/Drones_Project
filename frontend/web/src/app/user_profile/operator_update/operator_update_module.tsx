@@ -28,6 +28,13 @@ export interface RegistrationData {
   radius: number;
 }
 
+interface OperatorDataApiResponse {
+  certificates?: string[];
+  operator_services?: string[];
+  coordinates?: string;
+  radius?: number;
+}
+
 export const checkInput = (value: string): string => {
   const pattern = /[^a-zA-Z0-9\s\-]/g;
   return value.replace(pattern, "");
@@ -38,7 +45,7 @@ interface OperatorRegisterModuleProps {
   userIdFromUrl?: string;
 }
 
-const mapApiResponseToRegistrationData = (response: any): RegistrationData => {
+const mapApiResponseToRegistrationData = (response: OperatorDataApiResponse): RegistrationData => {
   const coords = response.coordinates ?? "52.237,21.017";
   const [lat, lng] = coords.split(",").map((v: string) => Number(v.trim()));
 
@@ -88,9 +95,11 @@ export default function OperatorRegisterModule({ onClose, userIdFromUrl }: Opera
 
         const operatorData = await response.json();
         setData(mapApiResponseToRegistrationData(operatorData));
-      } catch (err: any) {
-        console.error(err);
-        setError(err.message || "Błąd pobierania danych operatora");
+      } catch (err) {
+        if (err instanceof Error) {
+          console.error(err);
+          setError(err.message || "Błąd pobierania danych operatora");
+        }
       } finally {
         setLoading(false);
       }
