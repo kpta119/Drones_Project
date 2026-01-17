@@ -117,7 +117,7 @@ export default function CreateOrderView({
   };
 
   return (
-    <div className="w-full max-w-4xl bg-white border-2 border-primary-100 rounded-[3rem] p-8 lg:p-12 shadow-2xl animate-fadeIn text-black font-montserrat">
+    <div className="w-full max-w-4xl max-h-[90vh] bg-white border-2 border-primary-100 rounded-[3rem] p-8 lg:p-12 shadow-2xl animate-fadeIn text-black font-montserrat flex flex-col overflow-hidden">
       <div className="flex justify-between items-center mb-10">
         <h2 className="text-3xl font-bold text-primary-900 uppercase tracking-tight">
           {editData ? "Edytuj ofertę" : "Wystaw ofertę"}
@@ -140,135 +140,137 @@ export default function CreateOrderView({
         </div>
       )}
 
-      {step === 1 && (
-        <div className="space-y-6 animate-fadeIn">
-          <div>
-            <label className="block text-xs font-bold text-primary-800 mb-2 uppercase tracking-widest">
-              Tytuł ogłoszenia
-            </label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) =>
-                setFormData({ ...formData, title: e.target.value })
-              }
-              className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-300 focus:bg-white rounded-2xl outline-none font-bold transition-all text-black"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-primary-800 mb-2 uppercase tracking-widest">
-              Rodzaj usługi
-            </label>
-            <select
-              value={formData.service}
-              onChange={(e) =>
-                setFormData({ ...formData, service: e.target.value })
-              }
-              className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-300 focus:bg-white rounded-2xl outline-none appearance-none font-bold transition-all text-black"
-            >
-              <option value="">Wybierz usługę...</option>
-              {services.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-primary-800 mb-2 uppercase tracking-widest">
-              Szczegółowe wymagania
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              rows={4}
-              className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-300 focus:bg-white rounded-2xl outline-none font-medium transition-all text-black"
-            />
-          </div>
-          <div className="flex justify-end pt-4">
-            <button
-              onClick={() => setStep(2)}
-              disabled={!formData.title || !formData.service}
-              className="px-16 py-4 bg-primary-300 text-primary-900 rounded-2xl font-bold shadow-lg hover:bg-primary-400 disabled:opacity-30 transition-all uppercase tracking-widest text-sm"
-            >
-              Dalej
-            </button>
-          </div>
-        </div>
-      )}
-
-      {step === 2 && (
-        <OrderLocationPicker
-          coordinates={formData.coordinates}
-          setCoordinates={(coords) =>
-            setFormData({ ...formData, coordinates: coords })
-          }
-          onNext={() => setStep(3)}
-          onPrev={() => setStep(1)}
-        />
-      )}
-
-      {step === 3 && (
-        <div className="space-y-8 animate-fadeIn text-black">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="flex-1 overflow-y-auto pr-4">
+        {step === 1 && (
+          <div className="space-y-6 animate-fadeIn">
             <div>
               <label className="block text-xs font-bold text-primary-800 mb-2 uppercase tracking-widest">
-                Zlecenie od:
+                Tytuł ogłoszenia
               </label>
               <input
-                type="datetime-local"
-                value={formData.fromDate}
+                type="text"
+                value={formData.title}
                 onChange={(e) =>
-                  setFormData({ ...formData, fromDate: e.target.value })
+                  setFormData({ ...formData, title: e.target.value })
                 }
-                className="w-full px-6 py-4 bg-gray-50 rounded-2xl font-bold border-2 border-transparent focus:border-primary-300 outline-none text-black"
+                className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-300 focus:bg-white rounded-2xl outline-none font-bold transition-all text-black"
               />
             </div>
             <div>
               <label className="block text-xs font-bold text-primary-800 mb-2 uppercase tracking-widest">
-                Zlecenie do:
+                Rodzaj usługi
               </label>
-              <input
-                type="datetime-local"
-                value={formData.toDate}
+              <select
+                value={formData.service}
                 onChange={(e) =>
-                  setFormData({ ...formData, toDate: e.target.value })
+                  setFormData({ ...formData, service: e.target.value })
                 }
-                className="w-full px-6 py-4 bg-gray-50 rounded-2xl font-bold border-2 border-transparent focus:border-primary-300 outline-none text-black"
+                className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-300 focus:bg-white rounded-2xl outline-none appearance-none font-bold transition-all text-black"
+              >
+                <option value="">Wybierz usługę...</option>
+                {services.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-primary-800 mb-2 uppercase tracking-widest">
+                Szczegółowe wymagania
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                rows={4}
+                className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-300 focus:bg-white rounded-2xl outline-none font-medium transition-all text-black"
               />
             </div>
+            <div className="flex justify-end pt-4">
+              <button
+                onClick={() => setStep(2)}
+                disabled={!formData.title || !formData.service}
+                className="px-8 lg:px-16 py-3 lg:py-4 bg-primary-300 text-primary-900 rounded-2xl font-bold shadow-lg hover:bg-primary-400 disabled:opacity-30 transition-all uppercase tracking-widest text-xs lg:text-sm"
+              >
+                Dalej
+              </button>
+            </div>
           </div>
+        )}
 
-          <SpecificationsEditor
-            specifications={formData.parameters}
-            onUpdate={(specs) =>
-              setFormData({ ...formData, parameters: specs })
+        {step === 2 && (
+          <OrderLocationPicker
+            coordinates={formData.coordinates}
+            setCoordinates={(coords) =>
+              setFormData({ ...formData, coordinates: coords })
             }
+            onNext={() => setStep(3)}
+            onPrev={() => setStep(1)}
           />
+        )}
 
-          <div className="flex justify-between items-center pt-10">
-            <button
-              onClick={() => setStep(2)}
-              className="text-primary-800 font-bold uppercase tracking-widest text-xs hover:text-black transition-colors"
-            >
-              Wróć
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={loading || !formData.fromDate || !formData.toDate}
-              className="px-20 py-5 bg-primary-300 text-primary-900 rounded-2xl font-bold shadow-xl hover:bg-primary-400 disabled:opacity-30 transition-all uppercase tracking-widest"
-            >
-              {loading
-                ? "Wysyłanie..."
-                : editData
-                ? "Zapisz zmiany"
-                : "Opublikuj ogłoszenie"}
-            </button>
+        {step === 3 && (
+          <div className="space-y-8 animate-fadeIn text-black">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <label className="block text-xs font-bold text-primary-800 mb-2 uppercase tracking-widest">
+                  Zlecenie od:
+                </label>
+                <input
+                  type="datetime-local"
+                  value={formData.fromDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, fromDate: e.target.value })
+                  }
+                  className="w-full px-6 py-4 bg-gray-50 rounded-2xl font-bold border-2 border-transparent focus:border-primary-300 outline-none text-black"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-primary-800 mb-2 uppercase tracking-widest">
+                  Zlecenie do:
+                </label>
+                <input
+                  type="datetime-local"
+                  value={formData.toDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, toDate: e.target.value })
+                  }
+                  className="w-full px-6 py-4 bg-gray-50 rounded-2xl font-bold border-2 border-transparent focus:border-primary-300 outline-none text-black"
+                />
+              </div>
+            </div>
+
+            <SpecificationsEditor
+              specifications={formData.parameters}
+              onUpdate={(specs) =>
+                setFormData({ ...formData, parameters: specs })
+              }
+            />
+
+            <div className="flex justify-between items-center pt-10">
+              <button
+                onClick={() => setStep(2)}
+                className="text-primary-800 font-bold uppercase tracking-widest text-xs hover:text-black transition-colors"
+              >
+                Wróć
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={loading || !formData.fromDate || !formData.toDate}
+                className="px-3 lg:px-20 py-3 lg:py-5 bg-primary-300 text-primary-900 rounded-2xl font-bold shadow-xl hover:bg-primary-400 disabled:opacity-30 transition-all uppercase tracking-widest text-xs lg:text-base"
+              >
+                {loading
+                  ? "Wysyłanie..."
+                  : editData
+                  ? "Zapisz zmiany"
+                  : "Opublikuj ogłoszenie"}
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

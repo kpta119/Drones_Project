@@ -1,8 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { OperatorDto } from "./operator_dto";
 import ReviewsView from "@/src/app/orders/utils/reviews_view";
+import { FaStar, FaUser, FaPhone, FaEnvelope } from "react-icons/fa";
+
+interface Review {
+  body: string;
+  stars: number;
+  name?: string;
+  surname?: string;
+  username?: string;
+  author_name?: string;
+  author_username?: string;
+}
 
 export default function OperatorLayout({
   data,
@@ -11,7 +23,58 @@ export default function OperatorLayout({
   data: OperatorDto;
   isOwnProfile: boolean;
 }) {
+  const searchParams = useSearchParams();
+  const displayedUserId = searchParams.get("user_id");
+
   const [showReviews, setShowReviews] = useState(false);
+  const [averageRating, setAverageRating] = useState(0);
+  const [totalReviewsCount, setTotalReviewsCount] = useState(0);
+
+  useEffect(() => {
+    const fetchRating = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token || !displayedUserId) {
+          return;
+        }
+
+        const res = await fetch(
+          `/api/reviews/getUserReviews/${displayedUserId}`,
+          {
+            headers: {
+              "X-USER-TOKEN": `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (res.ok) {
+          const allReviews = await res.json();
+          setTotalReviewsCount(allReviews.length);
+
+          if (allReviews && allReviews.length > 0) {
+            const avgRating =
+              allReviews.reduce(
+                (sum: number, review: Review) => sum + review.stars,
+                0
+              ) / allReviews.length;
+            setAverageRating(Math.round(avgRating * 10) / 10);
+          } else {
+            setAverageRating(0);
+          }
+        } else {
+          setAverageRating(0);
+          setTotalReviewsCount(0);
+        }
+      } catch (err) {
+        console.error("Error fetching rating:", err);
+        setAverageRating(0);
+        setTotalReviewsCount(0);
+      }
+    };
+
+    fetchRating();
+  }, [displayedUserId]);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-2 gap-8 lg:gap-10 p-5 lg:ps-5 lg:pt-10 lg:pb-10 m-auto font-montserrat w-full max-w-7xl h-auto lg:h-[85vh]">
       <style>{`
@@ -28,13 +91,19 @@ export default function OperatorLayout({
         <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start lg:items-center h-full">
           <div className="flex flex-col items-center gap-1">
             <div className="w-40 h-40 lg:w-48 lg:h-48 bg-[#D9D9D9] rounded-full flex items-center justify-center shrink-0 drop-shadow-lg ring-2 ring-primary-700 hover:ring-4 hover:ring-[#D9D9D9] transition-all">
-              <span className="text-6xl lg:text-7xl">👤</span>
+              <FaUser className="text-5xl lg:text-6xl text-gray-600" />
             </div>
-            <div className="flex text-black text-2xl lg:text-3xl pt-2">
+            <div className="flex text-black text-2xl lg:text-3xl pt-2 gap-1">
               {[...Array(5)].map((_, i) => (
-                <span key={i}>
-                  {i < Math.floor(data.rating || 0) ? "★" : "☆"}
-                </span>
+                <FaStar
+                  key={i}
+                  size={24}
+                  className={
+                    i < Math.floor(averageRating)
+                      ? "text-primary-400"
+                      : "text-gray-300"
+                  }
+                />
               ))}
             </div>
             <p className="text-sm font-semibold text-center shine-text">
@@ -49,11 +118,11 @@ export default function OperatorLayout({
             <p className="text-gray-600 text-lg mb-4">@{data.username}</p>
             <div className="space-y-1 mb-6">
               <div className="flex items-center justify-center sm:justify-start gap-2">
-                <span>📞</span>
+                <FaPhone className="text-primary-700" size={16} />
                 <p>{data.phone_number}</p>
               </div>
               <div className="flex items-center justify-center sm:justify-start gap-2">
-                <span>✉️</span>
+                <FaEnvelope className="text-primary-700" size={16} />
                 <p className="break-all">{data.email}</p>
               </div>
             </div>

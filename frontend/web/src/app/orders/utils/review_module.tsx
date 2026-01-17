@@ -105,7 +105,7 @@ export default function ReviewModule({
           </div>
           {rating > 0 && (
             <p className="text-center mt-4 text-sm font-bold text-primary-700">
-              Twoja ocena: {rating} / 5 ★
+              Twoja ocena: {rating} / 5
             </p>
           )}
         </div>
