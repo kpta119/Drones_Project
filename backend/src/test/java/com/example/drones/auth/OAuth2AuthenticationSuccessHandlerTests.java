@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -55,7 +54,7 @@ public class OAuth2AuthenticationSuccessHandlerTests {
     @Mock
     private RedirectStrategy redirectStrategy;
     @Captor
-    private ArgumentCaptor<String> headerCaptor;
+    private ArgumentCaptor<String> redirectUrlCaptor;
     @InjectMocks
     private OAuth2AuthenticationSuccessHandler successHandler;
     private static final String FRONTEND_URL = "http://localhost:3000";
@@ -93,8 +92,7 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         successHandler.onAuthenticationSuccess(request, response, oAuth2AuthenticationToken);
         verify(userRepository, never()).save(any());
         verify(jwtService).generateToken(USER_ID);
-        verify(response, atLeast(5)).addHeader(eq("Set-Cookie"), anyString());
-        verify(redirectStrategy).sendRedirect(request, response, FRONTEND_URL + "/auth/callback");
+        verify(redirectStrategy).sendRedirect(eq(request), eq(response), contains("/auth/callback?token="));
     }
 
     @Test
@@ -115,7 +113,7 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         UserEntity savedUser = userCaptor.getValue();
         assertThat(savedUser.getProviderUserId()).isEqualTo(PROVIDER_ID);
         assertThat(savedUser.getEmail()).isEqualTo(EMAIL);
-        verify(redirectStrategy).sendRedirect(request, response, FRONTEND_URL + "/auth/callback");
+        verify(redirectStrategy).sendRedirect(eq(request), eq(response), contains("/auth/callback?token="));
     }
 
     @Test
@@ -143,7 +141,7 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         assertThat(savedUser.getName()).isEqualTo(GIVEN_NAME);
         assertThat(savedUser.getSurname()).isEqualTo(FAMILY_NAME);
         assertThat(savedUser.getRole()).isEqualTo(UserRole.INCOMPLETE);
-        verify(redirectStrategy).sendRedirect(request, response, FRONTEND_URL + "/auth/callback");
+        verify(redirectStrategy).sendRedirect(eq(request), eq(response), contains("/auth/callback?token="));
     }
 
     @Test
@@ -183,7 +181,7 @@ public class OAuth2AuthenticationSuccessHandlerTests {
                 .thenReturn(oAuth2AuthorizedClient);
         successHandler.onAuthenticationSuccess(request, response, oAuth2AuthenticationToken);
         verify(userRepository, never()).save(any());
-        verify(redirectStrategy).sendRedirect(request, response, FRONTEND_URL + "/auth/callback");
+        verify(redirectStrategy).sendRedirect(eq(request), eq(response), contains("/auth/callback?token="));
     }
 
     @Test
@@ -199,11 +197,11 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         when(authorizedClientRepository.loadAuthorizedClient(anyString(), any(), any())).thenReturn(null);
         successHandler.onAuthenticationSuccess(request, response, oAuth2AuthenticationToken);
         verify(userRepository, never()).save(any());
-        verify(redirectStrategy).sendRedirect(request, response, FRONTEND_URL + "/auth/callback");
+        verify(redirectStrategy).sendRedirect(eq(request), eq(response), contains("/auth/callback?token="));
     }
 
     @Test
-    public void givenUserWithDisplayName_whenOnAuthenticationSuccess_thenCookiesContainDisplayName() throws IOException {
+    public void givenUserWithDisplayName_whenOnAuthenticationSuccess_thenRedirectUrlContainsDisplayName() throws IOException {
         UserEntity existingUser = UserEntity.builder()
                 .id(USER_ID)
                 .email(EMAIL)
@@ -215,23 +213,16 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         when(jwtService.generateToken(USER_ID)).thenReturn(JWT_TOKEN);
         when(authorizedClientRepository.loadAuthorizedClient(anyString(), any(), any())).thenReturn(null);
         successHandler.onAuthenticationSuccess(request, response, oAuth2AuthenticationToken);
-        verify(response, atLeast(5)).addHeader(eq("Set-Cookie"), headerCaptor.capture());
-
-        String usernameCookieHeader = headerCaptor.getAllValues().stream()
-                .filter(header -> header.startsWith("auth_username="))
-                .findFirst()
-                .orElseThrow();
-
+        verify(redirectStrategy).sendRedirect(eq(request), eq(response), redirectUrlCaptor.capture());
+        String redirectUrl = redirectUrlCaptor.getValue();
         String expectedEncodedUsername = URLEncoder.encode("CustomName", StandardCharsets.UTF_8);
-        assertThat(usernameCookieHeader).startsWith("auth_username=" + expectedEncodedUsername);
-        assertThat(usernameCookieHeader).contains("Path=/");
-        assertThat(usernameCookieHeader).contains("Max-Age=30");
-        assertThat(usernameCookieHeader).contains("Secure");
-        assertThat(usernameCookieHeader).contains("SameSite=None");
+        assertThat(redirectUrl).contains("username=" + expectedEncodedUsername);
+        assertThat(redirectUrl).contains("token=" + JWT_TOKEN);
+        assertThat(redirectUrl).contains("role=CLIENT");
     }
 
     @Test
-    public void givenUserWithoutDisplayName_whenOnAuthenticationSuccess_thenCookiesContainEmail() throws IOException {
+    public void givenUserWithoutDisplayName_whenOnAuthenticationSuccess_thenRedirectUrlContainsEmptyUsername() throws IOException {
         UserEntity existingUser = UserEntity.builder()
                 .id(USER_ID)
                 .email(EMAIL)
@@ -242,19 +233,15 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         when(jwtService.generateToken(USER_ID)).thenReturn(JWT_TOKEN);
         when(authorizedClientRepository.loadAuthorizedClient(anyString(), any(), any())).thenReturn(null);
         successHandler.onAuthenticationSuccess(request, response, oAuth2AuthenticationToken);
-        verify(response, atLeast(5)).addHeader(eq("Set-Cookie"), headerCaptor.capture());
-
-        String usernameCookieHeader = headerCaptor.getAllValues().stream()
-                .filter(header -> header.startsWith("auth_username="))
-                .findFirst()
-                .orElseThrow();
-
-        String expectedEncodedEmail = URLEncoder.encode(EMAIL, StandardCharsets.UTF_8);
-        assertThat(usernameCookieHeader).startsWith("auth_username=" + expectedEncodedEmail);
+        verify(redirectStrategy).sendRedirect(eq(request), eq(response), redirectUrlCaptor.capture());
+        String redirectUrl = redirectUrlCaptor.getValue();
+        assertThat(redirectUrl).contains("username=");
+        assertThat(redirectUrl).contains("token=" + JWT_TOKEN);
+        assertThat(redirectUrl).contains("role=CLIENT");
     }
 
     @Test
-    public void givenAuthenticationSuccess_whenOnAuthenticationSuccess_thenAllCookiesAreSet() throws IOException {
+    public void givenAuthenticationSuccess_whenOnAuthenticationSuccess_thenAllQueryParamsAreSet() throws IOException {
         UserEntity existingUser = UserEntity.builder()
                 .id(USER_ID)
                 .email(EMAIL)
@@ -266,32 +253,16 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         when(jwtService.generateToken(USER_ID)).thenReturn(JWT_TOKEN);
         when(authorizedClientRepository.loadAuthorizedClient(anyString(), any(), any())).thenReturn(null);
         successHandler.onAuthenticationSuccess(request, response, oAuth2AuthenticationToken);
-        verify(response, times(5)).addHeader(eq("Set-Cookie"), headerCaptor.capture());
-
-        Map<String, String> cookieMap = new java.util.HashMap<>();
-        for (String header : headerCaptor.getAllValues()) {
-            String[] parts = header.split(";")[0].split("=", 2);
-            if (parts.length == 2) {
-                cookieMap.put(parts[0], parts[1]);
-            }
-        }
-
-        assertThat(cookieMap).containsKeys("auth_token", "auth_role", "auth_userid", "auth_email", "auth_username");
-        assertThat(cookieMap.get("auth_token")).isEqualTo(URLEncoder.encode(JWT_TOKEN, StandardCharsets.UTF_8));
-        assertThat(cookieMap.get("auth_role")).isEqualTo("CLIENT");
-        assertThat(cookieMap.get("auth_userid")).isEqualTo(URLEncoder.encode(USER_ID.toString(), StandardCharsets.UTF_8));
-        assertThat(cookieMap.get("auth_email")).isEqualTo(URLEncoder.encode(EMAIL, StandardCharsets.UTF_8));
-
-        for (String header : headerCaptor.getAllValues()) {
-            assertThat(header).contains("Path=/");
-            assertThat(header).contains("Max-Age=30");
-            assertThat(header).contains("Secure");
-            assertThat(header).contains("SameSite=None");
-        }
+        verify(redirectStrategy).sendRedirect(eq(request), eq(response), redirectUrlCaptor.capture());
+        String redirectUrl = redirectUrlCaptor.getValue();
+        assertThat(redirectUrl).contains("token=" + JWT_TOKEN);
+        assertThat(redirectUrl).contains("role=CLIENT");
+        assertThat(redirectUrl).contains("userid=" + USER_ID);
+        assertThat(redirectUrl).contains("username=" + URLEncoder.encode("JohnDoe", StandardCharsets.UTF_8));
     }
 
     @Test
-    public void givenOperatorUser_whenOnAuthenticationSuccess_thenRoleCookieIsOperator() throws IOException {
+    public void givenOperatorUser_whenOnAuthenticationSuccess_thenRoleIsOperator() throws IOException {
         UserEntity existingUser = UserEntity.builder()
                 .id(USER_ID)
                 .email(EMAIL)
@@ -303,13 +274,8 @@ public class OAuth2AuthenticationSuccessHandlerTests {
         when(jwtService.generateToken(USER_ID)).thenReturn(JWT_TOKEN);
         when(authorizedClientRepository.loadAuthorizedClient(anyString(), any(), any())).thenReturn(null);
         successHandler.onAuthenticationSuccess(request, response, oAuth2AuthenticationToken);
-        verify(response, atLeast(5)).addHeader(eq("Set-Cookie"), headerCaptor.capture());
-
-        String roleCookieHeader = headerCaptor.getAllValues().stream()
-                .filter(header -> header.startsWith("auth_role="))
-                .findFirst()
-                .orElseThrow();
-
-        assertThat(roleCookieHeader).startsWith("auth_role=OPERATOR");
+        verify(redirectStrategy).sendRedirect(eq(request), eq(response), redirectUrlCaptor.capture());
+        String redirectUrl = redirectUrlCaptor.getValue();
+        assertThat(redirectUrl).contains("role=OPERATOR");
     }
 }

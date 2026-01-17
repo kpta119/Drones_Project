@@ -1,52 +1,58 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function AuthCallbackPage() {
+function AuthCallbackContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [status, setStatus] = useState("Przetwarzanie logowania...");
 
   useEffect(() => {
-    // all data from cookies
-    const token = Cookies.get("auth_token");
-    const role = Cookies.get("auth_role");
-    // const userId = Cookies.get('auth_userid');
-    const username = Cookies.get("auth_username");
-    // const email = Cookies.get('auth_email');
+    // Pobieranie danych z parametrów URL
+    const token = searchParams.get("token");
+    const role = searchParams.get("role");
+    const username = searchParams.get("username");
+    const userId = searchParams.get("userId");
 
-    const decodedUsername = (username || "").replaceAll("+", " ");
-    localStorage.setItem("token", token || "");
-    localStorage.setItem("role", role || "");
-    localStorage.setItem("username", decodedUsername);
     try {
-      [
-        "auth_token",
-        "auth_role",
-        "auth_userid",
-        "auth_email",
-        "auth_username",
-      ].forEach((cookieName) => Cookies.remove(cookieName));
+      const decodedUsername = (username || "").replaceAll("+", " ");
+
+      // Zapisywanie do localStorage
+      localStorage.setItem("token", token || "");
+      localStorage.setItem("role", role || "");
+      localStorage.setItem("username", decodedUsername);
+      localStorage.setItem("userId", userId || "");
 
       if (role === "INCOMPLETE") {
-        router.push("/complete-profile");
+        router.replace("/complete-profile");
       } else {
-        router.push("/user_profile");
+        router.replace("/user_profile");
       }
     } catch (error) {
       console.error("Błąd przetwarzania logowania:", error);
     }
-  }, [router]);
+  }, [router, searchParams]);
 
   return (
+    <div className="text-center">
+      <h2 className="text-xl font-semibold mb-2">Logowanie...</h2>
+      <p className="text-gray-500">{status}</p>
+      <div className="mt-4 h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto"></div>
+    </div>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
     <div className="flex h-screen w-full items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h2 className="text-xl font-semibold mb-2">Logowanie...</h2>
-        <p className="text-gray-500">{status}</p>
-        {/* Tu możesz wrzucić kręcący się spinner */}
-        <div className="mt-4 h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto"></div>
-      </div>
+      <Suspense fallback={
+        <div className="text-center">
+          <p className="text-gray-500">Inicjalizacja...</p>
+        </div>
+      }>
+        <AuthCallbackContent />
+      </Suspense>
     </div>
   );
 }
