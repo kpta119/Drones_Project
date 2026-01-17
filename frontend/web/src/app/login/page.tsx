@@ -20,7 +20,7 @@ export default function AuthPage() {
   }, [router]);
 
   const handleGoogleLogin = () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL
+    const apiUrl = process.env.BACKEND_URL
     window.location.href = `${apiUrl}/api/auth/oauth2/authorization/google`;
   };
 
