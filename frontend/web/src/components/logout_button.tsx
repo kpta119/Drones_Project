@@ -13,7 +13,7 @@ export default function LogoutButton({ setUser }: Props) {
     const token = localStorage.getItem("token");
 
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+      await fetch(`${process.env.BACKEND_URL}/api/auth/logout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
