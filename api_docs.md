@@ -386,6 +386,8 @@ Base URL: `/api/operators`.
       "operator_services": ["Fotografia", "Wideo"],
       "email": "jan@example.com",
       "phone_number": "123456789",
+      "coordinates": "52.230000, 21.010000",
+      "radius": 300,
       "portfolio": {
           "title": "Wesele w Krakowie",
           "description": "Ujęcia z drona...",
