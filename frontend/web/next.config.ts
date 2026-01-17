@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",                    // Your frontend calls this
-        destination: "http://127.0.0.1:8080/api/:path*", // Proxy target URL
+        destination: `${process.env.NEXT_PUBLIC_API_URL}/api/:path*`,
       },
     ];
   },
