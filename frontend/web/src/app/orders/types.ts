@@ -27,6 +27,7 @@ export interface OrderResponse {
   created_at: string;
   parameters: Record<string, string>;
   operator_id?: string;
+  is_already_added?: boolean | null;
 }
 
 export interface MatchedOrderDto {
