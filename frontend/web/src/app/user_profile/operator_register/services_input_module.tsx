@@ -21,7 +21,7 @@ export function ServicesInputModule({
     const fetchServices = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("/api/services/getServices", {
+        const response = await fetch(`/services/getServices`, {
           headers: { "X-USER-TOKEN": `Bearer ${token}` },
         });
         const resData = await response.json();

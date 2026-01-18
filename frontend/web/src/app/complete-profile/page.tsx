@@ -25,7 +25,7 @@ export default function CompleteProfilePage() {
     }
 
     try {
-      const res = await fetch("/api/user/editUserData", {
+      const res = await fetch(`/user/editUserData`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
