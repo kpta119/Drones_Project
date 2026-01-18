@@ -10,6 +10,7 @@ import { FaSearchPlus, FaStar, FaUser } from "react-icons/fa";
 interface MatchedOrderDto {
   id: string;
   client_id: string;
+  operator_id?: string;
   title: string;
   description: string;
   service: string;
@@ -27,9 +28,16 @@ interface MatchedOrderDto {
     | "CANCELLED";
   client_status: "PENDING" | "ACCEPTED" | "REJECTED";
   operator_status: "PENDING" | "ACCEPTED" | "REJECTED";
+  isClientOrder?: boolean;
+  status?: string;
 }
 
 interface ClientInfo {
+  name: string;
+  surname: string;
+}
+
+interface OperatorInfo {
   name: string;
   surname: string;
 }
@@ -41,6 +49,9 @@ export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
   const [clientNames, setClientNames] = useState<Record<string, ClientInfo>>(
     {}
   );
+  const [operatorNames, setOperatorNames] = useState<
+    Record<string, OperatorInfo>
+  >({});
   const [reviewedOrderIds, setReviewedOrderIds] = useState<Set<string>>(
     new Set()
   );
@@ -72,12 +83,9 @@ export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
 
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(
-          `/user/getUserData?user_id=${clientId}`,
-          {
-            headers: { "X-USER-TOKEN": `Bearer ${token}` },
-          }
-        );
+        const res = await fetch(`/user/getUserData?user_id=${clientId}`, {
+          headers: { "X-USER-TOKEN": `Bearer ${token}` },
+        });
         if (res.ok) {
           const data = await res.json();
           const clientInfo = {
@@ -98,39 +106,120 @@ export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
     [clientNames]
   );
 
+  const fetchOperatorInfo = useCallback(
+    async (operatorId: string) => {
+      if (operatorNames[operatorId]) {
+        return operatorNames[operatorId];
+      }
+
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`/operators/getOperatorProfile/${operatorId}`, {
+          headers: { "X-USER-TOKEN": `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const operatorInfo = {
+            name: data.name || "",
+            surname: data.surname || "",
+          };
+          setOperatorNames((prev) => ({
+            ...prev,
+            [operatorId]: operatorInfo,
+          }));
+          return operatorInfo;
+        }
+      } catch (err) {
+        console.error("Error fetching operator info:", err);
+      }
+      return { name: "Operator", surname: "" };
+    },
+    [operatorNames]
+  );
+
   const fetchMatchedOrders = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(
+
+      // Pobierz created ordery (gdzie był CLIENT)
+      const myOrdersRes = await fetch(`/orders/getMyOrders`, {
+        headers: { "X-USER-TOKEN": `Bearer ${token}` },
+      });
+
+      // Pobierz matched ordery (gdzie był OPERATOR)
+      const matchedOrdersRes = await fetch(
         `/operators/getMatchedOrders?size=100`,
         {
           headers: { "X-USER-TOKEN": `Bearer ${token}` },
         }
       );
-      if (res.ok) {
-        const data = await res.json();
-        const filtered = (data.content || []).filter(
-          (order: MatchedOrderDto) =>
-            order.order_status === "COMPLETED" &&
-            order.operator_status === "ACCEPTED" &&
-            order.client_status === "ACCEPTED"
-        );
-        setMatchedOrders(filtered);
 
-        const clientIds = filtered
-          .map((order: MatchedOrderDto) => order.client_id)
-          .filter((id: string) => !clientNames[id]);
+      const allOrders: MatchedOrderDto[] = [];
 
-        for (const clientId of clientIds) {
-          await fetchClientInfo(clientId);
-        }
+      // Created ordery - gdzie był CLIENT, ocenia OPERATORA
+      if (myOrdersRes.ok) {
+        const myOrdersData = await myOrdersRes.json();
+        const myOrders = (myOrdersData.content || [])
+          .filter(
+            (order: MatchedOrderDto) =>
+              order.status === "COMPLETED" || order.status === "CANCELLED"
+          )
+          .map(
+            (order: MatchedOrderDto) =>
+              ({
+                ...order,
+                order_status: order.status || "COMPLETED",
+                isClientOrder: true, // Flag że był CLIENT
+              } as MatchedOrderDto)
+          );
+        allOrders.push(...myOrders);
+      }
+
+      // Matched ordery - gdzie był OPERATOR, ocenia KLIENTA
+      if (matchedOrdersRes.ok) {
+        const matchedOrdersData = await matchedOrdersRes.json();
+        const matchedOrders = (matchedOrdersData.content || [])
+          .filter(
+            (order: MatchedOrderDto) =>
+              order.order_status === "COMPLETED" ||
+              order.order_status === "CANCELLED"
+          )
+          .map((order: MatchedOrderDto) => ({
+            ...order,
+            isClientOrder: false, // Flag że był OPERATOR
+          }));
+        allOrders.push(...matchedOrders);
+      }
+
+      setMatchedOrders(allOrders);
+
+      // Pobierz nazwy klientów
+      const clientIds = allOrders
+        .filter((order: MatchedOrderDto) => !order.isClientOrder)
+        .map((order: MatchedOrderDto) => order.client_id)
+        .filter((id: string) => !clientNames[id]);
+
+      for (const clientId of clientIds) {
+        await fetchClientInfo(clientId);
+      }
+
+      // Pobierz nazwy operatorów
+      const operatorIds = allOrders
+        .filter(
+          (order: MatchedOrderDto) => order.isClientOrder && order.operator_id
+        )
+        .map((order: MatchedOrderDto) => order.operator_id as string)
+        .filter((id: string) => !operatorNames[id]);
+
+      for (const operatorId of operatorIds) {
+        await fetchOperatorInfo(operatorId);
       }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [clientNames, fetchClientInfo]);
+  }, [clientNames, operatorNames, fetchClientInfo, fetchOperatorInfo]);
 
   useEffect(() => {
     fetchMatchedOrders();
@@ -144,39 +233,40 @@ export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
 
     try {
       const token = localStorage.getItem("token");
-      const clientId = reviewingOrder.client_id;
+      const isClientOrder = reviewingOrder.isClientOrder;
 
-      console.log("Submitting review for client:", {
-        orderId: reviewingOrder.id,
-        clientId,
-        rating: review.rating,
-        comment: review.comment,
-      });
+      let targetId: string;
+      let endpoint: string;
 
-      if (
-        !clientId ||
-        typeof clientId !== "string" ||
-        clientId === "undefined"
-      ) {
-        throw new Error("Brak przypisanego klienta do tego zlecenia");
+      if (isClientOrder) {
+        // Byłeś CLIENT - oceniasz OPERATORA
+        targetId = reviewingOrder.operator_id || "";
+        endpoint = `/reviews/createReview/${reviewingOrder.id}/${targetId}`;
+
+        if (!targetId || targetId === "undefined") {
+          throw new Error("Brak przypisanego operatora do tego zlecenia");
+        }
+      } else {
+        // Byłeś OPERATOR - oceniasz KLIENTA
+        targetId = reviewingOrder.client_id;
+        endpoint = `/reviews/createReview/${reviewingOrder.id}/${targetId}`;
+
+        if (!targetId || targetId === "undefined") {
+          throw new Error("Brak klienta w tym zleceniu");
+        }
       }
 
-      const res = await fetch(
-        `/reviews/createReview/${reviewingOrder.id}/${clientId}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-USER-TOKEN": `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            stars: review.rating,
-            body: review.comment,
-          }),
-        }
-      );
-
-      console.log("Review response status:", res.status);
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-USER-TOKEN": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          stars: review.rating,
+          body: review.comment,
+        }),
+      });
 
       if (res.ok) {
         const updatedSet = new Set([...reviewedOrderIds, reviewingOrder.id]);
@@ -251,35 +341,75 @@ export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
               <div className="flex flex-wrap justify-center items-center gap-3">
                 {order.order_status === "COMPLETED" && (
                   <>
-                    <div
-                      onClick={() =>
-                        window.open(
-                          `/user_profile?user_id=${order.client_id}`,
-                          "_blank"
-                        )
-                      }
-                      className="group flex items-center bg-primary-300 rounded-xl hover:bg-primary-400 transition-all cursor-pointer overflow-hidden h-10 shadow-sm"
-                    >
-                      <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[150px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest text-primary-950 pl-0 group-hover:pl-4">
-                        Klient
-                      </span>
-                      <div className="p-3 text-primary-950">
-                        <FaUser size={14} />
-                      </div>
-                    </div>
-
-                    {!reviewedOrderIds.has(order.id) && (
-                      <button
-                        onClick={() => setReviewingOrder(order)}
-                        className="group flex items-center bg-yellow-500/20 rounded-xl hover:bg-yellow-500/40 transition-all cursor-pointer overflow-hidden h-10"
-                      >
-                        <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest text-yellow-300 pl-0 group-hover:pl-4">
-                          Oceń klienta
-                        </span>
-                        <div className="p-3 text-yellow-300">
-                          <FaStar size={14} />
+                    {order.isClientOrder ? (
+                      // Zlecenie gdzie był CLIENT - pokazuj OPERATORA
+                      <>
+                        <div
+                          onClick={() =>
+                            window.open(
+                              `/user_profile?user_id=${order.operator_id}`,
+                              "_blank"
+                            )
+                          }
+                          className="group flex items-center bg-primary-300 rounded-xl hover:bg-primary-400 transition-all cursor-pointer overflow-hidden h-10 shadow-sm"
+                        >
+                          <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[150px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest text-primary-950 pl-0 group-hover:pl-4">
+                            Wykonawca
+                          </span>
+                          <div className="p-3 text-primary-950">
+                            <FaUser size={14} />
+                          </div>
                         </div>
-                      </button>
+
+                        {!reviewedOrderIds.has(order.id) &&
+                          order.operator_id && (
+                            <button
+                              onClick={() => setReviewingOrder(order)}
+                              className="group flex items-center bg-yellow-500/20 rounded-xl hover:bg-yellow-500/40 transition-all cursor-pointer overflow-hidden h-10"
+                            >
+                              <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest text-yellow-300 pl-0 group-hover:pl-4">
+                                Oceń wykonawcę
+                              </span>
+                              <div className="p-3 text-yellow-300">
+                                <FaStar size={14} />
+                              </div>
+                            </button>
+                          )}
+                      </>
+                    ) : (
+                      // Zlecenie gdzie był OPERATOR - pokazuj KLIENTA
+                      <>
+                        <div
+                          onClick={() =>
+                            window.open(
+                              `/user_profile?user_id=${order.client_id}`,
+                              "_blank"
+                            )
+                          }
+                          className="group flex items-center bg-primary-300 rounded-xl hover:bg-primary-400 transition-all cursor-pointer overflow-hidden h-10 shadow-sm"
+                        >
+                          <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[150px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest text-primary-950 pl-0 group-hover:pl-4">
+                            Klient
+                          </span>
+                          <div className="p-3 text-primary-950">
+                            <FaUser size={14} />
+                          </div>
+                        </div>
+
+                        {!reviewedOrderIds.has(order.id) && (
+                          <button
+                            onClick={() => setReviewingOrder(order)}
+                            className="group flex items-center bg-yellow-500/20 rounded-xl hover:bg-yellow-500/40 transition-all cursor-pointer overflow-hidden h-10"
+                          >
+                            <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest text-yellow-300 pl-0 group-hover:pl-4">
+                              Oceń klienta
+                            </span>
+                            <div className="p-3 text-yellow-300">
+                              <FaStar size={14} />
+                            </div>
+                          </button>
+                        )}
+                      </>
                     )}
 
                     {reviewedOrderIds.has(order.id) && (
@@ -331,7 +461,16 @@ export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
       {reviewingOrder && (
         <ReviewModule
           operatorName={
-            clientNames[reviewingOrder.client_id]
+            reviewingOrder.isClientOrder
+              ? // Byłeś CLIENT - pokazuj nazwę OPERATORA
+                reviewingOrder.operator_id &&
+                operatorNames[reviewingOrder.operator_id]
+                ? `${operatorNames[reviewingOrder.operator_id].name} ${
+                    operatorNames[reviewingOrder.operator_id].surname
+                  }`
+                : "Operator"
+              : // Byłeś OPERATOR - pokazuj nazwę KLIENTA
+              clientNames[reviewingOrder.client_id]
               ? `${clientNames[reviewingOrder.client_id].name} ${
                   clientNames[reviewingOrder.client_id].surname
                 }`
@@ -339,7 +478,7 @@ export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
           }
           onClose={() => setReviewingOrder(null)}
           onSubmit={handleReviewSubmit}
-          isClientReview={true}
+          isClientReview={!reviewingOrder.isClientOrder}
         />
       )}
     </div>

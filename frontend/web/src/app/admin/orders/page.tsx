@@ -73,15 +73,6 @@ export default function AdminOrders() {
       if (serviceFilter) url += `&service=${encodeURIComponent(serviceFilter)}`;
       url += `&sort_by=${sortBy}`;
 
-      console.log("🔍 Fetching orders with URL:", url);
-      console.log("Filters:", {
-        searchOrderId,
-        statusFilter,
-        searchClientId,
-        serviceFilter,
-        sortBy,
-      });
-
       const response = await fetch(url, {
         method: "GET",
         headers: {
@@ -94,7 +85,6 @@ export default function AdminOrders() {
         throw new Error(`Failed to fetch orders: ${response.status}`);
 
       const data = (await response.json()) as ApiResponse<Order>;
-      console.log("📦 Received data:", data);
       setOrders(data.content || []);
       setTotalPages(data.page?.totalPages || 0);
       setError("");

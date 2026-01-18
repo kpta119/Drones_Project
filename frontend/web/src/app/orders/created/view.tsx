@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import {
   OrderResponse,
@@ -32,7 +32,6 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
   const [applicants, setApplicants] = useState<OperatorApplicantDto[]>([]);
   const [currentAppIndex, setCurrentAppIndex] = useState(0);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const isMounted = useRef(true);
 
   useEffect(() => {
     const fetchMyOrders = async () => {
@@ -41,7 +40,7 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
         const res = await fetch(`/orders/getMyOrders`, {
           headers: { "X-USER-TOKEN": `Bearer ${token}` },
         });
-        if (res.ok && isMounted.current) {
+        if (res.ok) {
           const data = await res.json();
           const orders = Array.isArray(data) ? data : data.content || [];
           const filtered = orders.filter(
@@ -56,20 +55,14 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
     };
 
     fetchMyOrders();
-    return () => {
-      isMounted.current = false;
-    };
   }, [refreshTrigger]);
 
   const fetchApplicants = async (orderId: string) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(
-        `/operators/getOperatorsInfo/${orderId}`,
-        {
-          headers: { "X-USER-TOKEN": `Bearer ${token}` },
-        }
-      );
+      const res = await fetch(`/operators/getOperatorsInfo/${orderId}`, {
+        headers: { "X-USER-TOKEN": `Bearer ${token}` },
+      });
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];

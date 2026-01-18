@@ -50,12 +50,9 @@ export default function HistoryView({}: HistoryViewProps) {
 
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(
-          `/operators/getOperatorProfile/${operatorId}`,
-          {
-            headers: { "X-USER-TOKEN": `Bearer ${token}` },
-          }
-        );
+        const res = await fetch(`/operators/getOperatorProfile/${operatorId}`, {
+          headers: { "X-USER-TOKEN": `Bearer ${token}` },
+        });
         if (res.ok) {
           const data = await res.json();
           const operatorInfo = {
@@ -85,6 +82,7 @@ export default function HistoryView({}: HistoryViewProps) {
       if (res.ok) {
         const data = await res.json();
         const orders = Array.isArray(data) ? data : data.content || [];
+
         const filtered = orders.filter(
           (order: OrderResponse) =>
             order.status === "COMPLETED" || order.status === "CANCELLED"
@@ -129,13 +127,6 @@ export default function HistoryView({}: HistoryViewProps) {
       const operatorId = (reviewingOrder as unknown as Record<string, unknown>)
         .operator_id;
 
-      console.log("Submitting review:", {
-        orderId: reviewingOrder.id,
-        operatorId,
-        rating: review.rating,
-        comment: review.comment,
-      });
-
       if (
         !operatorId ||
         typeof operatorId !== "string" ||
@@ -158,8 +149,6 @@ export default function HistoryView({}: HistoryViewProps) {
           }),
         }
       );
-
-      console.log("Review response status:", res.status);
 
       if (res.ok) {
         const updatedSet = new Set([...reviewedOrderIds, reviewingOrder.id]);
