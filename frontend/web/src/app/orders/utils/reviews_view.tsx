@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
+import { PortfolioData } from "@/src/app/user_profile/portfolio/portfolio_view";
 
 const Portfolio = () => {
-  const [portfolioData, setPortfolioData] = useState<any>(null);
+  const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
   useEffect(() => {
@@ -49,17 +51,15 @@ const Portfolio = () => {
   return (
     <div className="flex justify-center mt-8 mb-8 px-4">
       <div className="bg-white w-full max-w-5xl rounded-3xl shadow-xl flex gap-6 p-8">
-        <div style={{ width: photoSize, height: photoSize, position: "relative", flexShrink: 0 }}>
+        <div style={{ width: photoSize, height: photoSize, position: "relative", flexShrink: 0, borderRadius: "1rem", overflow: "hidden" }}>
           {hasPhotos ? (
-            <img
+            <Image
               src={photos[currentPhotoIndex].url}
               alt={photos[currentPhotoIndex].name || "Portfolio photo"}
+              fill
               style={{
-                width: "100%",
-                height: "100%",
                 objectFit: "cover",
                 objectPosition: "center",
-                borderRadius: "1rem",
               }}
             />
           ) : (

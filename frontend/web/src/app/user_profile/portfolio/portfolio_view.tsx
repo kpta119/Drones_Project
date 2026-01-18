@@ -1,9 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
+
+export interface PortfolioPhoto {
+    url: string;
+    name?: string;
+}
+
+export interface PortfolioData {
+    title: string;
+    description: string;
+    photos: PortfolioPhoto[];
+}
 
 const Portfolio = () => {
-    const [portfolioData, setPortfolioData] = useState<any>(null);
+    const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
     useEffect(() => {
@@ -60,12 +72,11 @@ const Portfolio = () => {
                 }}
             >
                 {hasPhotos ? (
-                    <img
+                    <Image
                         src={photos[currentPhotoIndex].url}
                         alt={photos[currentPhotoIndex].name || "Portfolio photo"}
+                        fill
                         style={{
-                            width: "100%",
-                            height: "100%",
                             objectFit: "cover",
                             objectPosition: "center",
                             transition: "transform 0.3s ease",
@@ -156,7 +167,7 @@ const Portfolio = () => {
                                 gap: "8px",
                             }}
                         >
-                            {photos.map((_: any, index: number) => (
+                            {photos.map((_: PortfolioPhoto, index: number) => (
                                 <div
                                     key={index}
                                     onClick={() => setCurrentPhotoIndex(index)}

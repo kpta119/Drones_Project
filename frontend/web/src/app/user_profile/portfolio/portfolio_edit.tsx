@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 import { FaTimes } from "react-icons/fa";
 
 interface Photo {
@@ -216,11 +217,12 @@ export default function EditPortfolio({ onClose }: { onClose: () => void }) {
                         <p className="font-bold mb-2">Obecne zdjęcia:</p>
                         <div className="flex flex-wrap gap-4">
                             {portfolioData.photos.map((photo) => (
-                                <div key={photo.id} className="relative">
-                                    <img
+                                <div key={photo.id} className="relative w-28 h-20">
+                                    <Image
                                         src={photo.url}
                                         alt={photo.name}
-                                        className="w-28 h-20 object-cover rounded-2xl border border-gray-200"
+                                        fill
+                                        className="object-cover rounded-2xl border border-gray-200"
                                     />
                                     <button
                                         type="button"
@@ -232,11 +234,12 @@ export default function EditPortfolio({ onClose }: { onClose: () => void }) {
                                 </div>
                             ))}
                             {newPhotos.map((file, index) => (
-                                <div key={index} className="relative">
-                                    <img
+                                <div key={index} className="relative w-28 h-20">
+                                    <Image
                                         src={URL.createObjectURL(file)}
                                         alt={file.name}
-                                        className="w-28 h-20 object-cover rounded-2xl border border-gray-200"
+                                        fill
+                                        className="object-cover rounded-2xl border border-gray-200"
                                     />
                                     <button
                                         type="button"
