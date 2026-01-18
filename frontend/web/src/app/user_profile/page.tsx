@@ -1,16 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import OperatorLayout from "./operator_layout";
 import ClientLayout from "./client_layout";
 import type { OperatorDto } from "./operator_dto";
 import type { ClientDto } from "./client_dto";
 
-export default function ProfilePage() {
+function ProfileContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const userIdFromUrl = searchParams.get("user_id");
+
   const [profileData, setProfileData] = useState<
     ClientDto | OperatorDto | null
   >(null);
   const [isOperator, setIsOperator] = useState(false);
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,66 +24,82 @@ export default function ProfilePage() {
     const loadProfile = async () => {
       try {
         const token = localStorage.getItem("token");
+        if (!token) {
+          router.replace("/login");
+          return;
+        }
 
-        const userResponse = await fetch(`/api/user/getUserData`, {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        const myIdFromToken = payload.userId || payload.id || payload.sub;
+
+        if (!userIdFromUrl) {
+          router.replace(`/user_profile?user_id=${myIdFromToken}`);
+          return;
+        }
+
+        const url = `/user/getUserData?user_id=${userIdFromUrl}`;
+
+        const userResponse = await fetch(url, {
           headers: {
             "X-USER-TOKEN": `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         });
 
-        if (!userResponse.ok) {
-          throw new Error("Failed to get user data");
-        }
-
+        if (!userResponse.ok) throw new Error("Profil nie odnaleziony");
         const userData = await userResponse.json();
 
-        if (userData.role === "OPERATOR") {
-          setIsOperator(true);
-        } else {
-          setIsOperator(false);
+        const isOwner = userIdFromUrl === myIdFromToken;
+
+        // Admins cannot access their own profile, redirect to admin page
+        if (isOwner && userData.role === "ADMIN") {
+          router.replace("/admin");
+          return;
         }
 
-        console.log(userData);
-
+        setIsOwnProfile(isOwner);
+        setIsOperator(userData.role === "OPERATOR");
         setProfileData(userData);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
+      } catch (err: unknown) {
+        const error = err instanceof Error ? err.message : "Nieznany błąd";
+        setError(error);
       } finally {
         setLoading(false);
       }
     };
 
     loadProfile();
-  }, []);
+  }, [userIdFromUrl, router]);
 
-  if (loading) {
+  if (loading)
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen font-montserrat text-black">
         Ładowanie...
       </div>
     );
-  }
-
-  if (error) {
+  if (error)
     return (
-      <div className="flex items-center justify-center min-h-screen text-red-600">
+      <div className="flex items-center justify-center min-h-screen text-red-600 font-montserrat">
         {error}
       </div>
     );
-  }
-
-  if (!profileData) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        Brak danych
-      </div>
-    );
-  }
+  if (!profileData) return null;
 
   return isOperator ? (
-    <OperatorLayout data={profileData as OperatorDto} />
+    <OperatorLayout
+      data={profileData as OperatorDto}
+      isOwnProfile={isOwnProfile}
+    />
   ) : (
-    <ClientLayout data={profileData as ClientDto} />
+    <ClientLayout data={profileData as ClientDto} isOwnProfile={isOwnProfile} />
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={null}>
+      <div className="mt-9"></div>
+      <ProfileContent />
+    </Suspense>
   );
 }
