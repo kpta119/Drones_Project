@@ -142,13 +142,17 @@ export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
       const token = localStorage.getItem("token");
 
       // Pobierz created ordery (gdzie był CLIENT)
-      const myOrdersRes = await fetch(`/orders/getMyOrders`, {
+      const myOrdersRes = await fetch(`/orders/getMyOrders?status=COMPLETED`, {
         headers: { "X-USER-TOKEN": `Bearer ${token}` },
       });
+      const myOrdersCanceled = await fetch(`/orders/getMyOrders?status=CANCELLED`, {
+          headers: { "X-USER-TOKEN": `Bearer ${token}` },
+        }
+      );
 
       // Pobierz matched ordery (gdzie był OPERATOR)
       const matchedOrdersRes = await fetch(
-        `/operators/getMatchedOrders?size=100`,
+        `/operators/getMatchedOrders?size=100&status=COMPLETED&operator_status=ACCEPTED`,
         {
           headers: { "X-USER-TOKEN": `Bearer ${token}` },
         }
@@ -159,7 +163,14 @@ export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
       // Created ordery - gdzie był CLIENT, ocenia OPERATORA
       if (myOrdersRes.ok) {
         const myOrdersData = await myOrdersRes.json();
-        const myOrders = (myOrdersData.content || [])
+        const myOrdersDataCanceled = await myOrdersCanceled.json();
+        const myOrdersDataCombined = {
+          content: [
+            ...(myOrdersData.content || []),
+            ...(myOrdersDataCanceled.content || []),
+          ],
+        };
+        const myOrders = (myOrdersDataCombined.content || [])
           .filter(
             (order: MatchedOrderDto) =>
               order.status === "COMPLETED" || order.status === "CANCELLED"
