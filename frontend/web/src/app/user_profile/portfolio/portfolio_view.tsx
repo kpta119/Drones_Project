@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 
 export interface PortfolioPhoto {
@@ -15,6 +16,9 @@ export interface PortfolioData {
 }
 
 const Portfolio = () => {
+    const searchParams = useSearchParams();
+    const displayedUserId = searchParams.get("user_id");
+
     const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
@@ -22,7 +26,8 @@ const Portfolio = () => {
         const fetchPortfolio = async () => {
             try {
                 const token = localStorage.getItem("token");
-                const operatorId = localStorage.getItem("userId");
+                // Użyj user_id z URL, a jeśli nie ma to użyj własnego userId
+                const operatorId = displayedUserId || localStorage.getItem("userId");
                 if (!token || !operatorId) return;
 
                 const res = await fetch(`/operators/getOperatorProfile/${operatorId}`, {
@@ -39,7 +44,7 @@ const Portfolio = () => {
         };
 
         fetchPortfolio();
-    }, []);
+    }, [displayedUserId]);
 
     if (!portfolioData) return <p></p>;
 
@@ -76,10 +81,10 @@ const Portfolio = () => {
                         src={photos[currentPhotoIndex].url}
                         alt={photos[currentPhotoIndex].name || "Portfolio photo"}
                         fill
+                        unoptimized
                         style={{
                             objectFit: "cover",
                             objectPosition: "center",
-                            transition: "transform 0.3s ease",
                         }}
                     />
                 ) : (
