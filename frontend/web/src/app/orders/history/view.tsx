@@ -6,18 +6,16 @@ import { OrderResponse, OrderStatusLabels } from "../types";
 import OrderDetailsModule from "../utils/details_module";
 import ReviewModule from "../utils/review_module";
 import { FaSearchPlus, FaStar, FaUserTie } from "react-icons/fa";
-import { API_URL } from '../../config';
+import { API_URL } from "../../config";
 
 interface OperatorInfo {
   name: string;
   surname: string;
 }
 
-interface HistoryViewProps {
-  onEdit?: (order: OrderResponse) => void;
-}
+type HistoryViewProps = Record<string, never>;
 
-export default function HistoryView({ onEdit }: HistoryViewProps) {
+export default function HistoryView({}: HistoryViewProps) {
   const [myOrders, setMyOrders] = useState<OrderResponse[]>([]);
   const [operatorNames, setOperatorNames] = useState<
     Record<string, OperatorInfo>
@@ -95,12 +93,18 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
         setMyOrders(filtered);
 
         const operatorIds = filtered
-          .filter((order: any) => order.operator_id)
-          .map((order: any) => order.operator_id);
+          .filter(
+            (order: OrderResponse) =>
+              (order as unknown as Record<string, unknown>).operator_id
+          )
+          .map(
+            (order: OrderResponse) =>
+              (order as unknown as Record<string, unknown>).operator_id
+          );
 
         for (const operatorId of operatorIds) {
-          if (!operatorNames[operatorId]) {
-            await fetchOperatorInfo(operatorId);
+          if (!operatorNames[operatorId as string]) {
+            await fetchOperatorInfo(operatorId as string);
           }
         }
       }
@@ -123,7 +127,8 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
 
     try {
       const token = localStorage.getItem("token");
-      const operatorId = (reviewingOrder as any).operator_id;
+      const operatorId = (reviewingOrder as unknown as Record<string, unknown>)
+        .operator_id;
 
       console.log("Submitting review:", {
         orderId: reviewingOrder.id,
@@ -222,10 +227,11 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
                 <p className="text-gray-400 text-xs mt-2 uppercase tracking-widest font-bold">
                   Status:{" "}
                   <span
-                    className={`${order.status === "COMPLETED"
-                      ? "text-green-400"
-                      : "text-red-400"
-                      }`}
+                    className={`${
+                      order.status === "COMPLETED"
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }`}
                   >
                     {OrderStatusLabels[order.status]}
                   </span>
@@ -235,11 +241,14 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
               <div className="flex flex-wrap justify-center items-center gap-3">
                 {order.status === "COMPLETED" && (
                   <>
-                    {(order as any).operator_id && (
+                    {(order as unknown as Record<string, unknown>)
+                      .operator_id && (
                       <div
                         onClick={() =>
                           window.open(
-                            `/user_profile?user_id=${(order as any).operator_id
+                            `/user_profile?user_id=${
+                              (order as unknown as Record<string, unknown>)
+                                .operator_id
                             }`,
                             "_blank"
                           )
@@ -255,9 +264,11 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
                       </div>
                     )}
 
-                    {!(order as any).reviewed &&
+                    {!((order as unknown as Record<string, unknown>)
+                      .reviewed as boolean) &&
                       !reviewedOrderIds.has(order.id) &&
-                      (order as any).operator_id && (
+                      ((order as unknown as Record<string, unknown>)
+                        .operator_id as string) && (
                         <button
                           onClick={() => setReviewingOrder(order)}
                           className="group flex items-center bg-yellow-500/20 rounded-xl hover:bg-yellow-500/40 transition-all cursor-pointer overflow-hidden h-10"
@@ -271,13 +282,14 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
                         </button>
                       )}
 
-                    {((order as any).reviewed ||
+                    {(((order as unknown as Record<string, unknown>)
+                      .reviewed as boolean) ||
                       reviewedOrderIds.has(order.id)) && (
-                        <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 rounded-xl text-green-300 text-[10px] font-bold uppercase tracking-widest">
-                          <FaStar size={12} />
-                          Oceniono
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 rounded-xl text-green-300 text-[10px] font-bold uppercase tracking-widest">
+                        <FaStar size={12} />
+                        Oceniono
+                      </div>
+                    )}
                   </>
                 )}
 
@@ -302,20 +314,33 @@ export default function HistoryView({ onEdit }: HistoryViewProps) {
         <OrderDetailsModule
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
-          assignedOperatorId={(selectedOrder as any).operator_id}
+          assignedOperatorId={
+            (selectedOrder as unknown as Record<string, unknown>)
+              .operator_id as string | undefined
+          }
         />
       )}
 
       {reviewingOrder && (
         <ReviewModule
-          operatorId={(reviewingOrder as any).operator_id}
           operatorName={
-            operatorNames[(reviewingOrder as any).operator_id]
-              ? `${operatorNames[(reviewingOrder as any).operator_id].name} ${operatorNames[(reviewingOrder as any).operator_id].surname
-              }`
+            operatorNames[
+              (reviewingOrder as unknown as Record<string, unknown>)
+                .operator_id as string
+            ]
+              ? `${
+                  operatorNames[
+                    (reviewingOrder as unknown as Record<string, unknown>)
+                      .operator_id as string
+                  ].name
+                } ${
+                  operatorNames[
+                    (reviewingOrder as unknown as Record<string, unknown>)
+                      .operator_id as string
+                  ].surname
+                }`
               : "Operator"
           }
-          orderId={reviewingOrder.id}
           onClose={() => setReviewingOrder(null)}
           onSubmit={handleReviewSubmit}
         />

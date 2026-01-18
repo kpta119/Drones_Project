@@ -52,11 +52,18 @@ function ProfileContent() {
 
         const isOwner = userIdFromUrl === myIdFromToken;
 
+        // Admins cannot access their own profile, redirect to admin page
+        if (isOwner && userData.role === "ADMIN") {
+          router.replace("/admin");
+          return;
+        }
+
         setIsOwnProfile(isOwner);
         setIsOperator(userData.role === "OPERATOR");
         setProfileData(userData);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        const error = err instanceof Error ? err.message : "Nieznany błąd";
+        setError(error);
       } finally {
         setLoading(false);
       }

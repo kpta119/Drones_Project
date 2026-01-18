@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import ReviewsView from "@/src/app/orders/utils/reviews_view";
 
@@ -10,22 +10,16 @@ function ReviewsContent() {
   const userIdFromUrl = searchParams.get("user_id");
   const userNameFromUrl = searchParams.get("user_name");
 
-  const [isLoading, setIsLoading] = useState(true);
-
   useEffect(() => {
     if (!userIdFromUrl || !userNameFromUrl) {
       router.replace("/");
-      return;
     }
-    setIsLoading(false);
   }, [userIdFromUrl, userNameFromUrl, router]);
 
-  if (isLoading) return null;
   if (!userIdFromUrl || !userNameFromUrl) return null;
 
   return (
     <ReviewsView
-      userId={userIdFromUrl}
       userName={decodeURIComponent(userNameFromUrl)}
       onClose={() => router.back()}
     />

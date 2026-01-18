@@ -12,10 +12,10 @@ import {
 } from "react-icons/fa";
 import { getAddressFromCoordinates } from "../utils/geocoding";
 import OrderDetailsModule from "../utils/details_module";
-import { API_URL } from '../../config';
+import { API_URL } from "../../config";
 
 interface SchedulableOrder extends OrderResponse {
-  alreadyAdded: boolean;
+  alreadyAdded?: boolean | null;
   city?: string;
   street?: string;
 }
@@ -47,9 +47,18 @@ export default function ActiveView({ isOperator }: { isOperator: boolean }) {
           const data = await res.json();
           const ordersArray = data.content || [];
           const enrichedOrders = await Promise.all(
-            ordersArray.map(async (order: SchedulableOrder) => {
-              const addr = await getAddressFromCoordinates(order.coordinates);
-              return { ...order, city: addr.city, street: addr.street };
+            ordersArray.map(async (order: Record<string, unknown>) => {
+              const addr = await getAddressFromCoordinates(
+                order.coordinates as string
+              );
+              const alreadyAdded =
+                (order.is_already_added as boolean | null) ?? null;
+              return {
+                ...order,
+                alreadyAdded,
+                city: addr.city,
+                street: addr.street,
+              };
             })
           );
           setActiveOrders(enrichedOrders);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import AvailableView from "./available/view";
 import CreatedView from "./created/view";
 import ActiveView from "./active/view";
@@ -17,24 +18,36 @@ export type OrdersView =
   | "create";
 
 export default function OrdersPage() {
+  const router = useRouter();
   const [view, setView] = useState<OrdersView>("created");
   const [userRole, setUserRole] = useState<string | null>(null);
   const [editingOrder, setEditingOrder] = useState<OrderResponse | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkRole = () => {
+      const token = localStorage.getItem("token");
       const role = localStorage.getItem("role");
+      if (!token) {
+        router.replace("/login");
+        return;
+      }
+
+      if (role === "ADMIN") {
+        router.replace("/admin");
+        return;
+      }
+
       setUserRole(role ? role.toUpperCase() : "CLIENT");
+      setLoading(false);
     };
-
     // do ewentualnej zmiany?? (zmiana / TODO !!!)
-
     checkRole();
 
     const interval = setInterval(checkRole, 500);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [router]);
 
   const handleEdit = (order: OrderResponse) => {
     setEditingOrder(order);
@@ -50,6 +63,14 @@ export default function OrdersPage() {
     setEditingOrder(null);
     setView("created");
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white font-montserrat text-black flex items-center justify-center">
+        <div className="animate-pulse text-gray-500">Ładowanie...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white font-montserrat text-black">
@@ -107,14 +128,11 @@ export default function OrdersPage() {
           <ActiveView isOperator={userRole === "OPERATOR"} />
         )}
         {view === "history" && userRole === "OPERATOR" && (
-          <OperatorHistoryView onEdit={handleEdit} />
+          <OperatorHistoryView />
         )}
-        {view === "history" && userRole !== "OPERATOR" && (
-          <HistoryView onEdit={handleEdit} />
-        )}
+        {view === "history" && userRole !== "OPERATOR" && <HistoryView />}
         {view === "create" && (
           <CreateOrderView
-            onCancel={handleBackToCreated}
             onSuccess={handleBackToCreated}
             editData={editingOrder}
           />

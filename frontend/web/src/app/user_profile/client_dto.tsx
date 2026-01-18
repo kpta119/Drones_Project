@@ -5,7 +5,7 @@ export interface ClientDto {
   surname: string;
   email: string;
   phone_number: string;
-  role: "CLIENT" | "OPERATOR";
+  role: "CLIENT" | "OPERATOR" | "ADMIN";
   reviews: ReviewDto[];
   rating: number;
 }

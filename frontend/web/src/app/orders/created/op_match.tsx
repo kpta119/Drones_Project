@@ -78,10 +78,10 @@ export default function OpMatch({
                 O operatorze:
               </h4>
               <p className="text-gray-200 text-xs leading-relaxed italic bg-white/5 p-4 rounded-2xl border border-white/10">
-                "
+                &quot;
                 {applicant.description ||
                   "Ten operator nie dodał jeszcze opisu do swojego profilu."}
-                "
+                &quot;
               </p>
             </div>
             {applicant.certificates.length > 0 && (

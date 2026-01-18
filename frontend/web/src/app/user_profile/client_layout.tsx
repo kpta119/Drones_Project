@@ -33,9 +33,7 @@ export default function ClientLayout({
   const [showReviews, setShowReviews] = useState(false);
   const [recentReviews, setRecentReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
-  const [reviewsError, setReviewsError] = useState<string | null>(null);
   const [averageRating, setAverageRating] = useState(0);
-  const [totalReviewsCount, setTotalReviewsCount] = useState(0);
 
   useEffect(() => {
     const fetchRecentReviews = async () => {
@@ -59,7 +57,6 @@ export default function ClientLayout({
         if (res.ok) {
           const allReviews = await res.json();
           setRecentReviews(allReviews.slice(0, 3));
-          setTotalReviewsCount(allReviews.length);
 
           if (allReviews && allReviews.length > 0) {
             const avgRating =
@@ -71,20 +68,14 @@ export default function ClientLayout({
           } else {
             setAverageRating(0);
           }
-
-          setReviewsError(null);
         } else {
           setRecentReviews([]);
           setAverageRating(0);
-          setTotalReviewsCount(0);
-          setReviewsError(null);
         }
       } catch (err) {
         console.error("Error fetching reviews:", err);
         setRecentReviews([]);
         setAverageRating(0);
-        setTotalReviewsCount(0);
-        setReviewsError(null);
       } finally {
         setReviewsLoading(false);
       }
@@ -95,20 +86,24 @@ export default function ClientLayout({
 
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-2 justify-center items-center gap-10 p-5 lg:pl-10 lg:pr-10 lg:pt-10 lg:pb-10 m-auto font-montserrat w-full max-w-7xl h-auto lg:h-[85vh]">
+      <div
+        className="grid grid-cols-2 grid-rows-1 justify-center items-center pl-10 pr-10 pt-10 pb-10 m-auto font-montserrat w-7xl"
+        style={{ height: "85vh" }}
+      >
         <style>{`
-          @keyframes colorShine {
-            0%, 100% { color: var(--color-primary-500); }
-            50% { color: var(--color-primary-900); }
+        @keyframes colorShine {
+          0%, 100% {
+            color: var(--color-primary-500);
           }
-          .shine-text { animation: colorShine 5s ease-in-out infinite; }
+          50% {
+            color: var(--color-primary-900);
+          }
+        }
 
-          @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-          @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-
-          .animate-fadeIn { animation: fadeIn 0.3s ease-in-out; }
-          .animate-scaleIn { animation: scaleIn 0.3s ease-in-out; }
-        `}</style>
+        .shine-text {
+          animation: colorShine 5s ease-in-out infinite;
+        }
+      `}</style>
 
         <div className="flex flex-col gap-3 items-center min-h-[400px] lg:min-h-0">
           <div className="flex flex-col items-center">
@@ -145,14 +140,14 @@ export default function ClientLayout({
                 <p className="break-all">{data.email}</p>
               </div>
             </div>
-            {isOwnProfile && (
+            {isOwnProfile && data.role !== "ADMIN" && (
               <OperatorRegisterButton onClick={() => setShowRegister(true)} />
             )}
           </div>
         </div>
 
-        <div className="bg-[#D9D9D9] rounded-3xl lg:rounded-4xl p-6 h-full w-full lg:w-[90%] flex flex-col min-h-[350px] lg:min-h-0 mx-auto">
-          <h3 className="font-light text-lg mb-4 text-center">
+        <div className="bg-[#D9D9D9] rounded-4xl p-6 h-full w-[90%] flex flex-col">
+          <h3 className="font-light text-lg mb-3 text-center">
             Najnowsze opinie na temat {data.username}
           </h3>
 
@@ -185,8 +180,8 @@ export default function ClientLayout({
                       (review.name && review.surname
                         ? `${review.name} ${review.surname}`
                         : review.author_username ||
-                        review.username ||
-                        "Anonimowy")}
+                          review.username ||
+                          "Anonimowy")}
                   </p>
                   <p className="text-gray-800 leading-relaxed">{review.body}</p>
                 </div>
