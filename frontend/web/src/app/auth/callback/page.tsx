@@ -32,6 +32,8 @@ export default function AuthCallbackPage() {
 
       if (role === "INCOMPLETE") {
         router.push("/complete-profile");
+      } else if (role === "ADMIN") {
+        router.push("/admin");
       } else {
         router.push("/user_profile");
       }
