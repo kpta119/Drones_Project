@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { API_URL } from "../config";
 
 interface SystemStats {
@@ -26,13 +27,33 @@ interface SystemStats {
 }
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchStats();
-  }, []);
+    const checkAuth = () => {
+      const token = localStorage.getItem("token");
+      const role = localStorage.getItem("role");
+
+      // Redirect to login if no token
+      if (!token) {
+        router.replace("/login");
+        return;
+      }
+
+      // Redirect to orders if not ADMIN
+      if (role !== "ADMIN") {
+        router.replace("/orders");
+        return;
+      }
+
+      fetchStats();
+    };
+
+    checkAuth();
+  }, [router]);
 
   const fetchStats = async () => {
     try {

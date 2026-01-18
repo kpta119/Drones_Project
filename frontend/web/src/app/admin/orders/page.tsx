@@ -53,79 +53,45 @@ export default function AdminOrders() {
   const [error, setError] = useState("");
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  // const [searchOrderId, setSearchOrderId] = useState("");
-  // const [statusFilter, setStatusFilter] = useState("");
-  // const [searchClientId, setSearchClientId] = useState("");
-  // const [serviceFilter, setServiceFilter] = useState("");
+  const [searchOrderId, setSearchOrderId] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [searchClientId, setSearchClientId] = useState("");
+  const [serviceFilter, setServiceFilter] = useState("");
+  const [sortBy, setSortBy] = useState<"NEWEST" | "OLDEST">("NEWEST");
   const [services, setServices] = useState<string[]>([]);
-
-  const ITEMS_PER_PAGE = 20;
 
   useEffect(() => {
     fetchOrders();
-  }, [page]);
+  }, [
+    page,
+    statusFilter,
+    serviceFilter,
+    sortBy,
+    searchOrderId,
+    searchClientId,
+  ]);
 
   useEffect(() => {
     fetchServices();
   }, []);
 
-  // useEffect(() => {
-  //   applyFilters();
-  // }, [statusFilter, serviceFilter, allOrders, searchOrderId, searchClientId]);
+  const handleStatusChange = (newStatus: string) => {
+    setStatusFilter(newStatus);
+    setPage(0);
+  };
 
-  // useEffect(() => {
-  //   applyPagination();
-  // }, [filteredOrders, page]);
+  const handleServiceChange = (newService: string) => {
+    setServiceFilter(newService);
+    setPage(0);
+  };
 
-  // const applyFilters = () => {
-  //   let filtered = [...allOrders];
-  //
-  //   if (statusFilter) {
-  //     filtered = filtered.filter((order) => order.status === statusFilter);
-  //   }
-  //
-  //   if (serviceFilter) {
-  //     filtered = filtered.filter((order) => order.service_name === serviceFilter);
-  //   }
-  //
-  //   if (searchOrderId) {
-  //     filtered = filtered.filter((order) =>
-  //       order.order_id.includes(searchOrderId)
-  //     );
-  //   }
-  //
-  //   if (searchClientId) {
-  //     filtered = filtered.filter((order) =>
-  //       order.client_id.includes(searchClientId)
-  //     );
-  //   }
-  //
-  //   setFilteredOrders(filtered);
-  //   setPage(0);
-  // };
-  //
-  // const applyPagination = () => {
-  //   const startIndex = page * ITEMS_PER_PAGE;
-  //   const endIndex = startIndex + ITEMS_PER_PAGE;
-  //   setPaginatedOrders(filteredOrders.slice(startIndex, endIndex));
-  //   setTotalPages(Math.ceil(filteredOrders.length / ITEMS_PER_PAGE));
-  // };
+  const handleOrderIdSearch = () => {
+    setPage(0);
+  };
 
-  // const handleStatusChange = (newStatus: string) => {
-  //   setStatusFilter(newStatus);
-  // };
-
-  // const handleServiceChange = (newService: string) => {
-  //   setServiceFilter(newService);
-  // };
-
-  // const handleOrderIdSearch = () => {
-  //   applyFilters();
-  // };
-
-  // const handleClientIdSearch = () => {
-  //   applyFilters();
-  // };
+  const handleClientIdSearch = () => {
+    setPage(0);
+  };
 
   const fetchServices = async () => {
     try {
@@ -154,7 +120,25 @@ export default function AdminOrders() {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const url = `${API_URL}/api/admin/getOrders?page=${page}&size=20`;
+
+      // Build URL with filter parameters (backend expects snake_case)
+      let url = `${API_URL}/api/admin/getOrders?page=${page}&size=20`;
+      if (searchOrderId)
+        url += `&order_id=${encodeURIComponent(searchOrderId)}`;
+      if (statusFilter) url += `&order_status=${statusFilter}`;
+      if (searchClientId)
+        url += `&client_id=${encodeURIComponent(searchClientId)}`;
+      if (serviceFilter) url += `&service=${encodeURIComponent(serviceFilter)}`;
+      url += `&sort_by=${sortBy}`;
+
+      console.log("🔍 Fetching orders with URL:", url);
+      console.log("Filters:", {
+        searchOrderId,
+        statusFilter,
+        searchClientId,
+        serviceFilter,
+        sortBy,
+      });
 
       const response = await fetch(url, {
         method: "GET",
@@ -168,12 +152,14 @@ export default function AdminOrders() {
         throw new Error(`Failed to fetch orders: ${response.status}`);
 
       const data = (await response.json()) as ApiResponse<Order>;
+      console.log("📦 Received data:", data);
       setOrders(data.content || []);
       setTotalPages(data.page?.totalPages || 0);
       setError("");
     } catch (err: unknown) {
       const error =
         err instanceof Error ? err.message : "Failed to load orders";
+      console.error("❌ Error fetching orders:", error);
       setError(error);
     } finally {
       setLoading(false);
@@ -201,8 +187,7 @@ export default function AdminOrders() {
       <h1 className="text-3xl font-bold mb-6">Historia Zleceń</h1>
       {error && <div className="text-red-600 mb-5">Błąd: {error}</div>}
 
-      {/* Filtry - czekamy na backend aby obsługiwał filtry */}
-      {/* <div className="mb-5 grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-4 md:grid-cols-4">
         <div>
           <label className="block text-sm font-semibold mb-2">
             ID Zlecenia
@@ -268,7 +253,31 @@ export default function AdminOrders() {
             ))}
           </select>
         </div>
-      </div> */}
+      </div>
+
+      <div className="mb-5 flex items-center gap-3">
+        <span className="text-sm font-semibold">Sortuj:</span>
+        <button
+          onClick={() => setSortBy("NEWEST")}
+          className={`px-4 py-2 rounded font-semibold transition-colors ${
+            sortBy === "NEWEST"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-300 text-gray-700 hover:bg-gray-400"
+          }`}
+        >
+          ↓ Najnowsze
+        </button>
+        <button
+          onClick={() => setSortBy("OLDEST")}
+          className={`px-4 py-2 rounded font-semibold transition-colors ${
+            sortBy === "OLDEST"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-300 text-gray-700 hover:bg-gray-400"
+          }`}
+        >
+          ↑ Najstarsze
+        </button>
+      </div>
 
       <div className="overflow-x-auto">
         <table className="w-full border-collapse mb-5">
