@@ -20,6 +20,7 @@ public interface NewMatchedOrdersRepository extends JpaRepository<NewMatchedOrde
                         LEFT JOIN FETCH nmo.operator.portfolio p
                         WHERE nmo.order.id = :orderId
                         AND nmo.operatorStatus = 'ACCEPTED'
+                        AND nmo.clientStatus = 'PENDING'
             
             """)
     List<UserEntity> findInterestedOperatorByOrderId(UUID orderId);
