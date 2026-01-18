@@ -1,6 +1,7 @@
 package com.example.drones.admin;
 
 import com.example.drones.admin.dto.OrderDto;
+import com.example.drones.admin.dto.OrderFilters;
 import com.example.drones.admin.dto.SystemStatsDto;
 import com.example.drones.admin.dto.UserDto;
 import com.example.drones.orders.OrderStatus;
@@ -94,7 +95,7 @@ public class AdminControllerTests {
     }
 
     @Test
-    public void givenPageable_whenGetOrder_thenReturnsPageOfOrders() {
+    public void givenPageable_whenGetOrders_thenReturnsPageOfOrders() {
         UUID orderId1 = UUID.randomUUID();
         UUID orderId2 = UUID.randomUUID();
         UUID clientId = UUID.randomUUID();
@@ -131,16 +132,17 @@ public class AdminControllerTests {
 
         Pageable pageable = PageRequest.of(0, 20);
         Page<OrderDto> expectedPage = new PageImpl<>(List.of(orderDto1, orderDto2), pageable, 2);
-        when(adminService.getOrders(pageable)).thenReturn(expectedPage);
+        OrderFilters filters = new OrderFilters(null, null, null, null, null);
+        when(adminService.getOrders(pageable, filters)).thenReturn(expectedPage);
 
-        ResponseEntity<Page<OrderDto>> response = adminController.getOrder(pageable);
+        ResponseEntity<Page<OrderDto>> response = adminController.getOrders(pageable, filters);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getContent()).hasSize(2);
         assertThat(response.getBody().getContent()).containsExactly(orderDto1, orderDto2);
         assertThat(response.getBody().getTotalElements()).isEqualTo(2);
-        verify(adminService).getOrders(pageable);
+        verify(adminService).getOrders(pageable, filters);
     }
 
     @Test

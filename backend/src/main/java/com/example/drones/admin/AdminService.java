@@ -1,8 +1,6 @@
 package com.example.drones.admin;
 
-import com.example.drones.admin.dto.OrderDto;
-import com.example.drones.admin.dto.SystemStatsDto;
-import com.example.drones.admin.dto.UserDto;
+import com.example.drones.admin.dto.*;
 import com.example.drones.admin.exceptions.NoSuchUserException;
 import com.example.drones.orders.MatchedOrderStatus;
 import com.example.drones.orders.OrderStatus;
@@ -10,7 +8,9 @@ import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -35,13 +35,21 @@ class AdminService {
         return adminMapper.toUserDto(user);
     }
 
-    public Page<OrderDto> getOrders(Pageable pageable) {
+    public Page<OrderDto> getOrders(Pageable pageable, OrderFilters filters) {
         List<OrderStatus> statusesWithVisibleOperator = List.of(
                 OrderStatus.IN_PROGRESS,
                 OrderStatus.COMPLETED,
                 OrderStatus.CANCELLED
         );
-        return adminRepository.findAllOrders(statusesWithVisibleOperator, MatchedOrderStatus.ACCEPTED, pageable);
+        Sort sort = switch (filters.sortBy()) {
+            case null -> Sort.by("createdAt").descending();
+            case OLDEST -> Sort.by("createdAt").ascending();
+            case NEWEST -> Sort.by("createdAt").descending();
+        };
+
+        pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+
+        return adminRepository.findAllOrders(statusesWithVisibleOperator, MatchedOrderStatus.ACCEPTED, filters, pageable);
     }
 
     public SystemStatsDto getSystemStats() {
