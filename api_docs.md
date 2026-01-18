@@ -482,7 +482,7 @@ Base URL: `/api/operators`.
 
 ### Edytuj wpis w Portfolio
 
-**PATCH** `/api/user/editPortfolio`
+**PATCH** `/operators/editPortfolio`
 
 * **Request:**
 
