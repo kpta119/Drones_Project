@@ -140,7 +140,7 @@ export default function ClientLayout({
                 <p className="break-all">{data.email}</p>
               </div>
             </div>
-            {isOwnProfile && (
+            {isOwnProfile && data.role !== "ADMIN" && (
               <OperatorRegisterButton onClick={() => setShowRegister(true)} />
             )}
           </div>
