@@ -1,6 +1,7 @@
 package com.example.drones.admin;
 
 import com.example.drones.admin.dto.OrderDto;
+import com.example.drones.admin.dto.OrderFilters;
 import com.example.drones.admin.dto.UserDto;
 import com.example.drones.orders.MatchedOrderStatus;
 import com.example.drones.orders.OrderStatus;
@@ -56,10 +57,15 @@ interface AdminRepository extends JpaRepository<UserEntity, UUID> {
             LEFT JOIN NewMatchedOrderEntity nmo ON nmo.order = o
                 AND nmo.clientStatus = :acceptedStatus
                 AND nmo.operatorStatus = :acceptedStatus
-            """)
+           WHERE (:#{#filters.clientId} IS NULL OR o.userId = :#{#filters.clientId})
+             AND (:#{#filters.orderId} IS NULL OR o.id = :#{#filters.orderId})
+             AND (:#{#filters.service} IS NULL OR o.service.name = :#{#filters.service})
+             AND (:#{#filters.orderStatus} IS NULL OR o.status = :#{#filters.orderStatus})
+           """)
     Page<OrderDto> findAllOrders(
             @Param("visibleStatuses") List<OrderStatus> visibleStatuses,
             @Param("acceptedStatus") MatchedOrderStatus acceptedStatus,
+            @Param("filters") OrderFilters filters,
             Pageable pageable
     );
 

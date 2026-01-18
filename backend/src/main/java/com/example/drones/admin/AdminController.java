@@ -1,6 +1,7 @@
 package com.example.drones.admin;
 
 import com.example.drones.admin.dto.OrderDto;
+import com.example.drones.admin.dto.OrderFilters;
 import com.example.drones.admin.dto.SystemStatsDto;
 import com.example.drones.admin.dto.UserDto;
 import com.example.drones.user.UserRole;
@@ -40,10 +41,11 @@ class AdminController {
 
     @GetMapping("/getOrders")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Page<OrderDto>> getOrder(
-            @PageableDefault(size = 20) Pageable pageable
+    public ResponseEntity<Page<OrderDto>> getOrders(
+            @PageableDefault(size = 20) Pageable pageable,
+            @ModelAttribute OrderFilters filters
     ) {
-        Page<OrderDto> response = adminService.getOrders(pageable);
+        Page<OrderDto> response = adminService.getOrders(pageable, filters);
         return ResponseEntity.ok().body(response);
     }
 

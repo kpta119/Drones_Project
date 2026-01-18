@@ -6,7 +6,7 @@ import { OperatorDto } from "./operator_dto";
 import ReviewsView from "@/src/app/orders/utils/reviews_view";
 import OperatorUpdateModule from "./operator_update/operator_update_module";
 import { FaStar, FaUser, FaPhone, FaEnvelope } from "react-icons/fa";
-import { API_URL } from '../config';
+import { API_URL } from "../config";
 
 interface Review {
   body: string;
@@ -80,19 +80,27 @@ export default function OperatorLayout({
     fetchRating();
   }, [displayedUserId]);
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-2 gap-8 lg:gap-10 p-5 lg:ps-5 lg:pt-10 lg:pb-10 m-auto font-montserrat w-full max-w-7xl h-auto lg:h-[85vh]">
+    <div
+      className="grid grid-cols-2 grid-rows-2 gap-10 ps-5 pt-10 pb-10 m-auto font-montserrat w-7xl"
+      style={{ height: "85vh" }}
+    >
       <style>{`
         @keyframes colorShine {
-          0%, 100% { color: var(--color-primary-500); }
-          50% { color: var(--color-primary-900); }
+          0%, 100% {
+            color: var(--color-primary-500);
+          }
+          50% {
+            color: var(--color-primary-900);
+          }
         }
+
         .shine-text {
           animation: colorShine 5s ease-in-out infinite;
         }
       `}</style>
 
-      <div className="order-1 rounded-2xl p-4 lg:p-8 flex flex-col min-h-[300px] lg:min-h-0">
-        <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start lg:items-center h-full">
+      <div className="rounded-2xl p-8 flex flex-col">
+        <div className="flex gap-6">
           <div className="flex flex-col items-center gap-1">
             <div className="w-40 h-40 lg:w-48 lg:h-48 bg-[#D9D9D9] rounded-full flex items-center justify-center shrink-0 drop-shadow-lg ring-2 ring-primary-700 hover:ring-4 hover:ring-[#D9D9D9] transition-all">
               <FaUser className="text-5xl lg:text-6xl text-gray-600" />
@@ -115,8 +123,8 @@ export default function OperatorLayout({
             </p>
           </div>
 
-          <div className="flex flex-col justify-center text-center sm:text-left sm:pl-5 flex-1 ms-0 sm:ms-4 h-full">
-            <h2 className="text-2xl lg:text-3xl font-light">
+          <div className="flex flex-col justify-center pl-5 flex-1 ms-4">
+            <h2 className="text-3xl font-light">
               {data.name} {data.surname}
             </h2>
             <p className="text-gray-600 text-lg mb-4">@{data.username}</p>
@@ -152,29 +160,14 @@ export default function OperatorLayout({
         </div>
       </div>
 
-      <div className="order-2 bg-gray-300 rounded-2xl p-6 min-h-[200px] lg:min-h-0">
+      <div className="bg-gray-300 rounded-2xl p-6">
         <h3 className="font-semibold mb-3">O mnie:</h3>
-        <p className="text-gray-700 text-sm">
-          {data.description || "Brak opisu."}
-        </p>
+        <p className="text-gray-700 text-sm">{data.description}</p>
       </div>
 
-      <div className="order-3 lg:order-4 bg-gray-300 rounded-2xl p-6 min-h-[200px] lg:min-h-0">
-        <h3 className="font-semibold mb-3">Usługi:</h3>
-        <ul className="text-sm space-y-2 text-gray-700">
-          {data.operatorServices?.length ? (
-            data.operatorServices.map((service) => (
-              <li key={service.id}>• {service.serviceName}</li>
-            ))
-          ) : (
-            <li>Brak zdefiniowanych usług.</li>
-          )}
-        </ul>
-      </div>
-
-      <div className="order-4 lg:order-3 bg-gray-300 rounded-2xl overflow-hidden relative min-h-[250px] lg:min-h-0">
+      <div className="bg-gray-300 rounded-2xl overflow-hidden relative">
         <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent flex items-center justify-center hover:bg-black/30 hover:cursor-pointer transition-all">
-          <p className="text-white text-lg font-semibold text-center px-4">
+          <p className="text-white text-lg font-semibold">
             Sprawdź zdjęcia{" "}
             <span className="font-extrabold">{data.username}</span>
           </p>
@@ -197,9 +190,7 @@ export default function OperatorLayout({
             >
               ✕
             </button>
-            <OperatorUpdateModule
-              onClose={() => setShowEdit(false)}
-            />
+            <OperatorUpdateModule onClose={() => setShowEdit(false)} />
           </div>
         </div>
       )}

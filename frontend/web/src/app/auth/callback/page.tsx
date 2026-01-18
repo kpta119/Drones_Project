@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function AuthCallbackPage() {
+function AuthCallbackContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [status, setStatus] = useState("Przetwarzanie logowania...");
 
   useEffect(() => {
-    const token = Cookies.get("auth_token");
-    const role = Cookies.get("auth_role");
-    const username = Cookies.get("auth_username");
-    const userId = Cookies.get("auth_userid");
+    const token = searchParams.get("token");
+    const role = searchParams.get("role");
+    const username = searchParams.get("username");
+    const userId = searchParams.get("userid");
 
     const decodedUsername = (username || "").replaceAll("+", " ");
     localStorage.setItem("token", token || "");
@@ -22,25 +22,17 @@ export default function AuthCallbackPage() {
 
     window.dispatchEvent(new Event("authChanged"));
     try {
-      [
-        "auth_token",
-        "auth_role",
-        "auth_userid",
-        "auth_email",
-        "auth_username",
-      ].forEach((cookieName) => Cookies.remove(cookieName));
-
       if (role === "INCOMPLETE") {
         router.push("/complete-profile");
       } else if (role === "ADMIN") {
         router.push("/admin");
       } else {
-        router.push("/user_profile");
+        router.replace("/user_profile");
       }
     } catch (error) {
       console.error("Błąd przetwarzania logowania:", error);
     }
-  }, [router]);
+  }, [router, searchParams]);
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-gray-50">
@@ -49,6 +41,22 @@ export default function AuthCallbackPage() {
         <p className="text-gray-500">{status}</p>
         <div className="mt-4 h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto"></div>
       </div>
+    </div>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <div className="flex h-screen w-full items-center justify-center bg-gray-50">
+      <Suspense
+        fallback={
+          <div className="text-center">
+            <p className="text-gray-500">Inicjalizacja...</p>
+          </div>
+        }
+      >
+        <AuthCallbackContent />
+      </Suspense>
     </div>
   );
 }
