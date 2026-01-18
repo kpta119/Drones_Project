@@ -6,7 +6,6 @@ import { OrderStatusLabels } from "../types";
 import OrderDetailsModule from "../utils/details_module";
 import ReviewModule from "../utils/review_module";
 import { FaSearchPlus, FaStar, FaUser } from "react-icons/fa";
-import { API_URL } from "../../config";
 
 interface MatchedOrderDto {
   id: string;
@@ -74,7 +73,7 @@ export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `${API_URL}/api/user/getUserData?user_id=${clientId}`,
+          `/api/user/getUserData?user_id=${clientId}`,
           {
             headers: { "X-USER-TOKEN": `Bearer ${token}` },
           }
@@ -103,7 +102,7 @@ export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `${API_URL}/api/operators/getMatchedOrders?size=100`,
+        `/api/operators/getMatchedOrders?size=100`,
         {
           headers: { "X-USER-TOKEN": `Bearer ${token}` },
         }
@@ -163,7 +162,7 @@ export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
       }
 
       const res = await fetch(
-        `${API_URL}/api/reviews/createReview/${reviewingOrder.id}/${clientId}`,
+        `/api/reviews/createReview/${reviewingOrder.id}/${clientId}`,
         {
           method: "POST",
           headers: {

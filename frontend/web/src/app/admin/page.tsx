@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { API_URL } from "../config";
 
 interface SystemStats {
   users: {
@@ -37,13 +36,11 @@ export default function AdminDashboard() {
       const token = localStorage.getItem("token");
       const role = localStorage.getItem("role");
 
-      // Redirect to login if no token
       if (!token) {
         router.replace("/login");
         return;
       }
 
-      // Redirect to orders if not ADMIN
       if (role !== "ADMIN") {
         router.replace("/orders");
         return;
@@ -60,7 +57,7 @@ export default function AdminDashboard() {
       setLoading(true);
       const token = localStorage.getItem("token");
 
-      const url = `${API_URL}/api/admin/getStats`;
+      const url = `/api/admin/getStats`;
 
       const response = await fetch(url, {
         method: "GET",

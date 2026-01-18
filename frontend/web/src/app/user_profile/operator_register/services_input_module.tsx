@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { RegistrationData } from "./operator_register_module";
-import { API_URL } from '../../config';
 
 interface ServicesInputModuleProps {
   onNext: () => void;
@@ -22,7 +21,7 @@ export function ServicesInputModule({
     const fetchServices = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`${API_URL}/api/services/getServices`, {
+        const response = await fetch(`/api/services/getServices`, {
           headers: { "X-USER-TOKEN": `Bearer ${token}` },
         });
         const resData = await response.json();

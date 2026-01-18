@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { API_URL } from "../../config";
 
 interface Order {
   order_id: string;
@@ -65,7 +64,7 @@ export default function AdminOrders() {
       setLoading(true);
       const token = localStorage.getItem("token");
 
-      let url = `${API_URL}/api/admin/getOrders?page=${page}&size=20`;
+      let url = `/api/admin/getOrders?page=${page}&size=20`;
       if (searchOrderId)
         url += `&order_id=${encodeURIComponent(searchOrderId)}`;
       if (statusFilter) url += `&order_status=${statusFilter}`;
@@ -145,7 +144,7 @@ export default function AdminOrders() {
   const fetchServices = async () => {
     try {
       const token = localStorage.getItem("token");
-      const url = `${API_URL}/api/services/getServices`;
+      const url = `/api/services/getServices`;
 
       const response = await fetch(url, {
         method: "GET",

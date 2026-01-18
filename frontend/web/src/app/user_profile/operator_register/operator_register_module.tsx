@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { CertificatesInputModule } from "./cert_input_module";
 import { OperatorRegisterIntroModule } from "./intro_module";
 import { ServicesInputModule } from "./services_input_module";
-import { API_URL } from "../../config";
 
 const LocationInputModule = dynamic(
   () => import("./location_module").then((mod) => mod.LocationInputModule),
@@ -69,7 +68,7 @@ export default function OperatorRegisterModule({
 
     try {
       const response = await fetch(
-        `${API_URL}/api/operators/createOperatorProfile`,
+        `/api/operators/createOperatorProfile`,
         {
           method: "POST",
           headers: {

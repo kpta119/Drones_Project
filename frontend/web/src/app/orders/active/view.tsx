@@ -12,7 +12,6 @@ import {
 } from "react-icons/fa";
 import { getAddressFromCoordinates } from "../utils/geocoding";
 import OrderDetailsModule from "../utils/details_module";
-import { API_URL } from "../../config";
 
 interface SchedulableOrder extends OrderResponse {
   alreadyAdded?: boolean | null;
@@ -37,7 +36,7 @@ export default function ActiveView({ isOperator }: { isOperator: boolean }) {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `${API_URL}/api/calendar/getInProgressSchedulableOrders?size=100`,
+          `/api/calendar/getInProgressSchedulableOrders?size=100`,
           {
             headers: { "X-USER-TOKEN": `Bearer ${token}` },
           }

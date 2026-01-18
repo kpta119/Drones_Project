@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { API_URL } from '../app/config';
 
 export default function LoginForm() {
   const [loginEmail, setLoginEmail] = useState("");
@@ -14,7 +13,7 @@ export default function LoginForm() {
     setLoginError("");
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/auth/login`, {
+      const res = await fetch(`/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: loginEmail, password: loginPassword }),

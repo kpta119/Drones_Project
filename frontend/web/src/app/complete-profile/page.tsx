@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { API_URL } from '../config';
 
 export default function CompleteProfilePage() {
   const router = useRouter();
@@ -26,7 +25,7 @@ export default function CompleteProfilePage() {
     }
 
     try {
-      const res = await fetch(`${API_URL}/api/user/editUserData`, {
+      const res = await fetch(`/api/user/editUserData`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { OrderResponse } from "../types";
 import SpecificationsEditor from "../utils/specifications_editor";
-import { API_URL } from "../../config";
 
 const OrderLocationPicker = dynamic(() => import("../utils/order_location"), {
   ssr: false,
@@ -48,7 +47,7 @@ export default function CreateOrderView({
     const fetchServices = async () => {
       const token = localStorage.getItem("token");
       try {
-        const res = await fetch(`${API_URL}/api/services/getServices`, {
+        const res = await fetch(`/api/services/getServices`, {
           headers: { "X-USER-TOKEN": `Bearer ${token}` },
         });
         if (res.ok) setServices(await res.json());
@@ -80,8 +79,8 @@ export default function CreateOrderView({
     };
 
     const url = editData
-      ? `${API_URL}/api/orders/editOrder/${editData.id}`
-      : `${API_URL}/api/orders/createOrder`;
+      ? `/api/orders/editOrder/${editData.id}`
+      : `/api/orders/createOrder`;
 
     const method = editData ? "PATCH" : "POST";
 

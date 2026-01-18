@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { FaTimes, FaStar } from "react-icons/fa";
-import { API_URL } from "../../config";
 
 interface ReviewData {
   body: string;
@@ -51,7 +50,7 @@ export default function ReviewsView({ userName, onClose }: ReviewsViewProps) {
 
         console.log("Fetching reviews for userId:", displayedUserId);
         const res = await fetch(
-          `${API_URL}/api/reviews/getUserReviews/${displayedUserId}`,
+          `/api/reviews/getUserReviews/${displayedUserId}`,
           {
             headers: {
               "X-USER-TOKEN": `Bearer ${token}`,

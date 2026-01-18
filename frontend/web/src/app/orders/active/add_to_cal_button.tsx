@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { FaCalendarPlus, FaCheck, FaTimes } from "react-icons/fa";
-import { API_URL } from "../../config";
 
 interface AddToCalButtonProps {
   orderId: string;
@@ -39,7 +38,7 @@ export default function AddToCalButton({
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_URL}/api/calendar/addEvent/${orderId}`, {
+      const res = await fetch(`/api/calendar/addEvent/${orderId}`, {
         method: "POST",
         headers: {
           "X-USER-TOKEN": `Bearer ${token}`,

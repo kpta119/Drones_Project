@@ -6,7 +6,6 @@ import { OrderResponse, OrderStatusLabels } from "../types";
 import OrderDetailsModule from "../utils/details_module";
 import ReviewModule from "../utils/review_module";
 import { FaSearchPlus, FaStar, FaUserTie } from "react-icons/fa";
-import { API_URL } from "../../config";
 
 interface OperatorInfo {
   name: string;
@@ -52,7 +51,7 @@ export default function HistoryView({}: HistoryViewProps) {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `${API_URL}/api/operators/getOperatorProfile/${operatorId}`,
+          `/api/operators/getOperatorProfile/${operatorId}`,
           {
             headers: { "X-USER-TOKEN": `Bearer ${token}` },
           }
@@ -80,7 +79,7 @@ export default function HistoryView({}: HistoryViewProps) {
   const fetchMyOrders = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_URL}/api/orders/getMyOrders`, {
+      const res = await fetch(`/api/orders/getMyOrders`, {
         headers: { "X-USER-TOKEN": `Bearer ${token}` },
       });
       if (res.ok) {
@@ -146,7 +145,7 @@ export default function HistoryView({}: HistoryViewProps) {
       }
 
       const res = await fetch(
-        `${API_URL}/api/reviews/createReview/${reviewingOrder.id}/${operatorId}`,
+        `/api/reviews/createReview/${reviewingOrder.id}/${operatorId}`,
         {
           method: "POST",
           headers: {

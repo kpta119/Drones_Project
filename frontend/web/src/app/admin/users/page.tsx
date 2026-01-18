@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { API_URL } from "../../config";
 
 interface User {
   id: string;
@@ -47,7 +46,7 @@ export default function AdminUsers() {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      let url = `${API_URL}/api/admin/getUsers?page=${page}&size=20`;
+      let url = `/api/admin/getUsers?page=${page}&size=20`;
       if (searchQuery) url += `&query=${encodeURIComponent(searchQuery)}`;
       if (roleFilter) url += `&role=${roleFilter}`;
 
@@ -83,7 +82,7 @@ export default function AdminUsers() {
       setBanningId(userId);
       const token = localStorage.getItem("token");
 
-      const response = await fetch(`${API_URL}/api/admin/banUser/${userId}`, {
+      const response = await fetch(`/api/admin/banUser/${userId}`, {
         method: "PATCH",
         headers: {
           "X-USER-TOKEN": `Bearer ${token}`,

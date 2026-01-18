@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { CertificatesInputModule } from "../operator_register/cert_input_module";
 import { ServicesInputModule } from "../operator_register/services_input_module";
 import { useRouter } from "next/navigation";
-import { API_URL } from '../../config';
 
 const LocationInputModule = dynamic(
   () =>
@@ -83,7 +82,7 @@ export default function OperatorRegisterModule({ onClose, userIdFromUrl }: Opera
           return;
         }
 
-        const url = `${API_URL}/api/operators/getOperatorProfile/${localStorage.getItem("userId")}`;
+        const url = `/api/operators/getOperatorProfile/${localStorage.getItem("userId")}`;
 
         const response = await fetch(url, {
           headers: {
@@ -128,7 +127,7 @@ export default function OperatorRegisterModule({ onClose, userIdFromUrl }: Opera
     };
 
     try {
-      const response = await fetch(`${API_URL}/api/operators/editOperatorProfile`, {
+      const response = await fetch(`/api/operators/editOperatorProfile`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

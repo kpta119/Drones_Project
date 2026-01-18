@@ -6,7 +6,6 @@ import OperatorLayout from "./operator_layout";
 import ClientLayout from "./client_layout";
 import type { OperatorDto } from "./operator_dto";
 import type { ClientDto } from "./client_dto";
-import { API_URL } from "../config";
 
 function ProfileContent() {
   const searchParams = useSearchParams();
@@ -38,7 +37,7 @@ function ProfileContent() {
           return;
         }
 
-        const url = `${API_URL}/api/user/getUserData?user_id=${userIdFromUrl}`;
+        const url = `/api/user/getUserData?user_id=${userIdFromUrl}`;
 
         const userResponse = await fetch(url, {
           headers: {
