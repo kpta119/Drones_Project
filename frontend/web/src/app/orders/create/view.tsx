@@ -47,7 +47,7 @@ export default function CreateOrderView({
     const fetchServices = async () => {
       const token = localStorage.getItem("token");
       try {
-        const res = await fetch(`/api/services/getServices`, {
+        const res = await fetch(`/services/getServices`, {
           headers: { "X-USER-TOKEN": `Bearer ${token}` },
         });
         if (res.ok) setServices(await res.json());
@@ -79,8 +79,8 @@ export default function CreateOrderView({
     };
 
     const url = editData
-      ? `/api/orders/editOrder/${editData.id}`
-      : `/api/orders/createOrder`;
+      ? `/orders/editOrder/${editData.id}`
+      : `/orders/createOrder`;
 
     const method = editData ? "PATCH" : "POST";
 

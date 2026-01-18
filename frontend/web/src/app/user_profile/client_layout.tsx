@@ -44,7 +44,7 @@ export default function ClientLayout({
         }
 
         const res = await fetch(
-          `/api/reviews/getUserReviews/${displayedUserId}`,
+          `/reviews/getUserReviews/${displayedUserId}`,
           {
             headers: {
               "X-USER-TOKEN": `Bearer ${token}`,

@@ -46,7 +46,7 @@ export default function AdminUsers() {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      let url = `/api/admin/getUsers?page=${page}&size=20`;
+      let url = `/admin/getUsers?page=${page}&size=20`;
       if (searchQuery) url += `&query=${encodeURIComponent(searchQuery)}`;
       if (roleFilter) url += `&role=${roleFilter}`;
 
@@ -82,7 +82,7 @@ export default function AdminUsers() {
       setBanningId(userId);
       const token = localStorage.getItem("token");
 
-      const response = await fetch(`/api/admin/banUser/${userId}`, {
+      const response = await fetch(`/admin/banUser/${userId}`, {
         method: "PATCH",
         headers: {
           "X-USER-TOKEN": `Bearer ${token}`,

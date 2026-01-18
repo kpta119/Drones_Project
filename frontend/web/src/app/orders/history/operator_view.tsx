@@ -73,7 +73,7 @@ export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `/api/user/getUserData?user_id=${clientId}`,
+          `/user/getUserData?user_id=${clientId}`,
           {
             headers: { "X-USER-TOKEN": `Bearer ${token}` },
           }
@@ -102,7 +102,7 @@ export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `/api/operators/getMatchedOrders?size=100`,
+        `/operators/getMatchedOrders?size=100`,
         {
           headers: { "X-USER-TOKEN": `Bearer ${token}` },
         }
@@ -162,7 +162,7 @@ export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
       }
 
       const res = await fetch(
-        `/api/reviews/createReview/${reviewingOrder.id}/${clientId}`,
+        `/reviews/createReview/${reviewingOrder.id}/${clientId}`,
         {
           method: "POST",
           headers: {

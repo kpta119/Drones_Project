@@ -38,7 +38,7 @@ export default function AddToCalButton({
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`/api/calendar/addEvent/${orderId}`, {
+      const res = await fetch(`/calendar/addEvent/${orderId}`, {
         method: "POST",
         headers: {
           "X-USER-TOKEN": `Bearer ${token}`,

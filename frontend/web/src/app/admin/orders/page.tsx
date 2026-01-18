@@ -64,7 +64,7 @@ export default function AdminOrders() {
       setLoading(true);
       const token = localStorage.getItem("token");
 
-      let url = `/api/admin/getOrders?page=${page}&size=20`;
+      let url = `/admin/getOrders?page=${page}&size=20`;
       if (searchOrderId)
         url += `&order_id=${encodeURIComponent(searchOrderId)}`;
       if (statusFilter) url += `&order_status=${statusFilter}`;
@@ -144,7 +144,7 @@ export default function AdminOrders() {
   const fetchServices = async () => {
     try {
       const token = localStorage.getItem("token");
-      const url = `/api/services/getServices`;
+      const url = `/services/getServices`;
 
       const response = await fetch(url, {
         method: "GET",

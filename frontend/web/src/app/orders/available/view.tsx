@@ -16,7 +16,7 @@ export default function AvailableView({ isOperator }: { isOperator: boolean }) {
   const fetchAvailable = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`/api/operators/getMatchedOrders`, {
+      const res = await fetch(`/operators/getMatchedOrders`, {
         headers: { "X-USER-TOKEN": `Bearer ${token}` },
       });
       if (res.ok) {
@@ -60,7 +60,7 @@ export default function AvailableView({ isOperator }: { isOperator: boolean }) {
       const token = localStorage.getItem("token");
       const endpoint = action === "accept" ? "acceptOrder" : "rejectOrder";
 
-      const res = await fetch(`/api/orders/${endpoint}/${id}`, {
+      const res = await fetch(`/orders/${endpoint}/${id}`, {
         method: "PATCH",
         headers: {
           "X-USER-TOKEN": `Bearer ${token}`,

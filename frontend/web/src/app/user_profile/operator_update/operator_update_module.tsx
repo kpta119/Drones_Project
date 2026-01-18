@@ -82,7 +82,7 @@ export default function OperatorRegisterModule({ onClose, userIdFromUrl }: Opera
           return;
         }
 
-        const url = `/api/operators/getOperatorProfile/${localStorage.getItem("userId")}`;
+        const url = `/operators/getOperatorProfile/${localStorage.getItem("userId")}`;
 
         const response = await fetch(url, {
           headers: {
@@ -127,7 +127,7 @@ export default function OperatorRegisterModule({ onClose, userIdFromUrl }: Opera
     };
 
     try {
-      const response = await fetch(`/api/operators/editOperatorProfile`, {
+      const response = await fetch(`/operators/editOperatorProfile`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

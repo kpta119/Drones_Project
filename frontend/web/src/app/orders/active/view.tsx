@@ -36,7 +36,7 @@ export default function ActiveView({ isOperator }: { isOperator: boolean }) {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `/api/calendar/getInProgressSchedulableOrders?size=100`,
+          `/calendar/getInProgressSchedulableOrders?size=100`,
           {
             headers: { "X-USER-TOKEN": `Bearer ${token}` },
           }

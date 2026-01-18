@@ -57,7 +57,7 @@ export default function AdminDashboard() {
       setLoading(true);
       const token = localStorage.getItem("token");
 
-      const url = `/api/admin/getStats`;
+      const url = `/admin/getStats`;
 
       const response = await fetch(url, {
         method: "GET",

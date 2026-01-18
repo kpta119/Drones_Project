@@ -50,7 +50,7 @@ export default function ReviewsView({ userName, onClose }: ReviewsViewProps) {
 
         console.log("Fetching reviews for userId:", displayedUserId);
         const res = await fetch(
-          `/api/reviews/getUserReviews/${displayedUserId}`,
+          `/reviews/getUserReviews/${displayedUserId}`,
           {
             headers: {
               "X-USER-TOKEN": `Bearer ${token}`,

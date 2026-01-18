@@ -37,7 +37,7 @@ function ProfileContent() {
           return;
         }
 
-        const url = `/api/user/getUserData?user_id=${userIdFromUrl}`;
+        const url = `/user/getUserData?user_id=${userIdFromUrl}`;
 
         const userResponse = await fetch(url, {
           headers: {

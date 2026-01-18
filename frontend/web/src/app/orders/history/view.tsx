@@ -51,7 +51,7 @@ export default function HistoryView({}: HistoryViewProps) {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `/api/operators/getOperatorProfile/${operatorId}`,
+          `/operators/getOperatorProfile/${operatorId}`,
           {
             headers: { "X-USER-TOKEN": `Bearer ${token}` },
           }
@@ -79,7 +79,7 @@ export default function HistoryView({}: HistoryViewProps) {
   const fetchMyOrders = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`/api/orders/getMyOrders`, {
+      const res = await fetch(`/orders/getMyOrders`, {
         headers: { "X-USER-TOKEN": `Bearer ${token}` },
       });
       if (res.ok) {
@@ -145,7 +145,7 @@ export default function HistoryView({}: HistoryViewProps) {
       }
 
       const res = await fetch(
-        `/api/reviews/createReview/${reviewingOrder.id}/${operatorId}`,
+        `/reviews/createReview/${reviewingOrder.id}/${operatorId}`,
         {
           method: "POST",
           headers: {

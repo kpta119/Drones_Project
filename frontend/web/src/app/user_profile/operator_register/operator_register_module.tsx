@@ -68,7 +68,7 @@ export default function OperatorRegisterModule({
 
     try {
       const response = await fetch(
-        `/api/operators/createOperatorProfile`,
+        `/operators/createOperatorProfile`,
         {
           method: "POST",
           headers: {

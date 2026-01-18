@@ -41,7 +41,7 @@ export default function OperatorLayout({
         }
 
         const res = await fetch(
-          `/api/reviews/getUserReviews/${displayedUserId}`,
+          `/reviews/getUserReviews/${displayedUserId}`,
           {
             headers: {
               "X-USER-TOKEN": `Bearer ${token}`,

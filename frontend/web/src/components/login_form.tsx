@@ -13,7 +13,7 @@ export default function LoginForm() {
     setLoginError("");
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/auth/login`, {
+      const res = await fetch(`/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: loginEmail, password: loginPassword }),

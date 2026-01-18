@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
       process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
     return [
       {
-        source: "/api/:path*",
+        source: "/:path*",
         destination: `${backendUrl}/api/:path*`,
       },
     ];
