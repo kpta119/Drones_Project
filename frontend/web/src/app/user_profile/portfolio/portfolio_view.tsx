@@ -48,7 +48,17 @@ const Portfolio = () => {
 
     return (
         <div style={{ display: "flex", height: "55vh", width: "100%", gap: "2rem", alignItems: "flex-start" }}>
-            <div style={{ position: "relative", width: "30vw", height: photoSize, flexShrink: 0 }}>
+            <div
+                style={{
+                    position: "relative",
+                    width: "30vw",
+                    height: photoSize,
+                    flexShrink: 0,
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
+                }}
+            >
                 {hasPhotos ? (
                     <img
                         src={photos[currentPhotoIndex].url}
@@ -58,7 +68,7 @@ const Portfolio = () => {
                             height: "100%",
                             objectFit: "cover",
                             objectPosition: "center",
-                            borderRadius: "8px",
+                            transition: "transform 0.3s ease",
                         }}
                     />
                 ) : (
@@ -69,10 +79,11 @@ const Portfolio = () => {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            backgroundColor: "#f0f0f0",
-                            borderRadius: "8px",
-                            color: "#999",
-                            fontSize: "1.2rem",
+                            backgroundColor: "linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%)",
+                            background: "linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%)",
+                            color: "#888",
+                            fontSize: "1.1rem",
+                            fontWeight: 500,
                         }}
                     >
                         Brak zdjęć w portfolio
@@ -86,15 +97,25 @@ const Portfolio = () => {
                             style={{
                                 position: "absolute",
                                 top: "50%",
-                                left: "10px",
+                                left: "12px",
                                 transform: "translateY(-50%)",
-                                background: "rgba(0,0,0,0.5)",
-                                color: "#fff",
+                                background: "rgba(255, 255, 255, 0.9)",
+                                color: "#333",
                                 border: "none",
-                                padding: "0.5rem",
+                                width: "40px",
+                                height: "40px",
                                 borderRadius: "50%",
                                 cursor: "pointer",
+                                fontSize: "1.4rem",
+                                fontWeight: "bold",
+                                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+                                transition: "all 0.2s ease",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
                             }}
+                            onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-50%) scale(1.1)")}
+                            onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(-50%)")}
                         >
                             ‹
                         </button>
@@ -103,18 +124,54 @@ const Portfolio = () => {
                             style={{
                                 position: "absolute",
                                 top: "50%",
-                                right: "10px",
+                                right: "12px",
                                 transform: "translateY(-50%)",
-                                background: "rgba(0,0,0,0.5)",
-                                color: "#fff",
+                                background: "rgba(255, 255, 255, 0.9)",
+                                color: "#333",
                                 border: "none",
-                                padding: "0.5rem",
+                                width: "40px",
+                                height: "40px",
                                 borderRadius: "50%",
                                 cursor: "pointer",
+                                fontSize: "1.4rem",
+                                fontWeight: "bold",
+                                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+                                transition: "all 0.2s ease",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
                             }}
+                            onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-50%) scale(1.1)")}
+                            onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(-50%)")}
                         >
                             ›
                         </button>
+                        <div
+                            style={{
+                                position: "absolute",
+                                bottom: "12px",
+                                left: "50%",
+                                transform: "translateX(-50%)",
+                                display: "flex",
+                                gap: "8px",
+                            }}
+                        >
+                            {photos.map((_: any, index: number) => (
+                                <div
+                                    key={index}
+                                    onClick={() => setCurrentPhotoIndex(index)}
+                                    style={{
+                                        width: "10px",
+                                        height: "10px",
+                                        borderRadius: "50%",
+                                        backgroundColor: index === currentPhotoIndex ? "#fff" : "rgba(255,255,255,0.5)",
+                                        cursor: "pointer",
+                                        transition: "all 0.2s ease",
+                                        boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                                    }}
+                                />
+                            ))}
+                        </div>
                     </>
                 )}
             </div>
@@ -125,14 +182,37 @@ const Portfolio = () => {
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "flex-start",
-                    alignItems: "center",
-                    textAlign: "center",
+                    alignItems: "flex-start",
+                    padding: "1.5rem",
+                    backgroundColor: "#fafafa",
+                    borderRadius: "12px",
+                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
+                    maxHeight: "50vh",
+                    overflowY: "auto",
                 }}
             >
-                <h2 style={{ fontSize: "1.5rem", marginBottom: "0.5rem", wordBreak: "break-word" }}>
+                <h2
+                    style={{
+                        fontSize: "1.75rem",
+                        fontWeight: 600,
+                        marginBottom: "1rem",
+                        color: "#1a1a1a",
+                        wordBreak: "break-word",
+                        lineHeight: 1.3,
+                    }}
+                >
                     {title || "Brak tytułu"}
                 </h2>
-                <p style={{ fontSize: "1rem", lineHeight: "1.5", wordBreak: "break-word" }}>
+                <p
+                    style={{
+                        fontSize: "1.05rem",
+                        lineHeight: 1.7,
+                        color: "#4a4a4a",
+                        wordBreak: "break-word",
+                        whiteSpace: "pre-wrap",
+                        textAlign: "justify",
+                    }}
+                >
                     {description || "Brak opisu"}
                 </p>
             </div>
