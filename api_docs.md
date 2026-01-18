@@ -669,6 +669,7 @@ Base URL: `/api/admin`.
 
 **GET** `/admin/getOrders`
 
+* **Parametry (Query):** `order_id` (wyszukiwanie konkretnego orderu, jest to porównywanie równownościowe a nie LIKE), `client_id"` (porównywanie równościowe, a nie Like), `order_status`, `service`, `sort_by` (NEWEST albo OLDEST) `page` (strona, domyślnie 0), `size` (wielkośc strony, domyślnie 20), 
 * **Response:** Pełny zrzut zamówień ze szczegółami stron.
 
     ```json
