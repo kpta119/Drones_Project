@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { API_URL } from "../../config";
 
 interface User {
@@ -37,15 +37,13 @@ export default function AdminUsers() {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [tempSearchQuery, setTempSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [banningId, setBanningId] = useState<string | null>(null);
   const [confirmBanId, setConfirmBanId] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  useEffect(() => {
-    fetchUsers();
-  }, [page, roleFilter]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
@@ -74,7 +72,11 @@ export default function AdminUsers() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, roleFilter, searchQuery]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers, refreshTrigger]);
 
   const handleBanUser = async (userId: string) => {
     try {
@@ -91,7 +93,8 @@ export default function AdminUsers() {
 
       if (!response.ok) throw new Error("Failed to ban user");
       setConfirmBanId(null);
-      fetchUsers();
+      setPage(0);
+      setRefreshTrigger((prev) => prev + 1);
     } catch (err: unknown) {
       const error = err instanceof Error ? err.message : "Failed to ban user";
       setError(error);
@@ -112,14 +115,14 @@ export default function AdminUsers() {
         <input
           type="text"
           placeholder="Szukaj użytkownika..."
-          value={searchQuery}
+          value={tempSearchQuery}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               setPage(0);
-              fetchUsers();
+              setSearchQuery(tempSearchQuery);
             }
           }}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => setTempSearchQuery(e.target.value)}
           className="px-2 py-2 rounded border border-gray-300 flex-1"
         />
         <select
@@ -181,7 +184,7 @@ export default function AdminUsers() {
                       <button
                         onClick={() =>
                           window.open(
-                            `/user_profile?userId=${user.id}`,
+                            `/user_profile?user_id=${user.id}`,
                             "_blank"
                           )
                         }

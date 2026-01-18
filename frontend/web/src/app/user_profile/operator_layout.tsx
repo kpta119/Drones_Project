@@ -32,7 +32,6 @@ export default function OperatorLayout({
   const [showEdit, setShowEdit] = useState(false);
 
   const [averageRating, setAverageRating] = useState(0);
-  const [totalReviewsCount, setTotalReviewsCount] = useState(0);
 
   useEffect(() => {
     const fetchRating = async () => {
@@ -54,7 +53,6 @@ export default function OperatorLayout({
 
         if (res.ok) {
           const allReviews = await res.json();
-          setTotalReviewsCount(allReviews.length);
 
           if (allReviews && allReviews.length > 0) {
             const avgRating =
@@ -68,12 +66,10 @@ export default function OperatorLayout({
           }
         } else {
           setAverageRating(0);
-          setTotalReviewsCount(0);
         }
       } catch (err) {
         console.error("Error fetching rating:", err);
         setAverageRating(0);
-        setTotalReviewsCount(0);
       }
     };
 

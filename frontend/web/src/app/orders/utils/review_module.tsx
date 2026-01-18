@@ -4,18 +4,14 @@ import { useState } from "react";
 import { FaTimes, FaStar } from "react-icons/fa";
 
 interface ReviewModuleProps {
-  operatorId: string;
   operatorName: string;
-  orderId: string;
   onClose: () => void;
   onSubmit: (review: { rating: number; comment: string }) => Promise<void>;
   isClientReview?: boolean;
 }
 
 export default function ReviewModule({
-  operatorId,
   operatorName,
-  orderId,
   onClose,
   onSubmit,
   isClientReview = false,
@@ -41,9 +37,11 @@ export default function ReviewModule({
         comment,
       });
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage =
-        err?.message || "Błąd przy wysyłaniu recenzji. Spróbuj ponownie.";
+        err instanceof Error
+          ? err.message
+          : "Błąd przy wysyłaniu recenzji. Spróbuj ponownie.";
       setError(errorMessage);
       console.error(err);
     } finally {

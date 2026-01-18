@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import {
   OrderResponse,
@@ -17,11 +17,11 @@ import {
   FaUserTie,
   FaCheckCircle,
 } from "react-icons/fa";
-import { API_URL } from '../../config';
+import { API_URL } from "../../config";
 
 interface CreatedViewProps {
   onCreateNew: () => void;
-  onEdit: (order: OrderResponse) => void;
+  onEdit?: (order: OrderResponse) => void;
 }
 
 export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
@@ -32,37 +32,45 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
   );
   const [applicants, setApplicants] = useState<OperatorApplicantDto[]>([]);
   const [currentAppIndex, setCurrentAppIndex] = useState(0);
-
-  const fetchMyOrders = useCallback(async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_URL}/api/orders/getMyOrders`, {
-        headers: { "X-USER-TOKEN": `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const orders = Array.isArray(data) ? data : data.content || [];
-        const filtered = orders.filter(
-          (order: OrderResponse) =>
-            order.status !== "COMPLETED" && order.status !== "CANCELLED"
-        );
-        setMyOrders(filtered);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  }, []);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const isMounted = useRef(true);
 
   useEffect(() => {
+    const fetchMyOrders = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${API_URL}/api/orders/getMyOrders`, {
+          headers: { "X-USER-TOKEN": `Bearer ${token}` },
+        });
+        if (res.ok && isMounted.current) {
+          const data = await res.json();
+          const orders = Array.isArray(data) ? data : data.content || [];
+          const filtered = orders.filter(
+            (order: OrderResponse) =>
+              order.status !== "COMPLETED" && order.status !== "CANCELLED"
+          );
+          setMyOrders(filtered);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
     fetchMyOrders();
-  }, [fetchMyOrders]);
+    return () => {
+      isMounted.current = false;
+    };
+  }, [refreshTrigger]);
 
   const fetchApplicants = async (orderId: string) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_URL}/api/operators/getOperatorsInfo/${orderId}`, {
-        headers: { "X-USER-TOKEN": `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${API_URL}/api/operators/getOperatorsInfo/${orderId}`,
+        {
+          headers: { "X-USER-TOKEN": `Bearer ${token}` },
+        }
+      );
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
@@ -99,7 +107,7 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
           setCurrentAppIndex((prev) => prev + 1);
         } else {
           setMatchingOrderId(null);
-          fetchMyOrders();
+          setRefreshTrigger((prev) => prev + 1);
         }
       }
     } catch (err) {
@@ -115,7 +123,7 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
         method: "PATCH",
         headers: { "X-USER-TOKEN": `Bearer ${token}` },
       });
-      if (res.ok) fetchMyOrders();
+      if (res.ok) setRefreshTrigger((prev) => prev + 1);
     } catch (err) {
       console.error(err);
     }
@@ -129,7 +137,7 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
         method: "PATCH",
         headers: { "X-USER-TOKEN": `Bearer ${token}` },
       });
-      if (res.ok) fetchMyOrders();
+      if (res.ok) setRefreshTrigger((prev) => prev + 1);
     } catch (err) {
       console.error(err);
     }
@@ -180,11 +188,15 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
               <div className="flex flex-wrap justify-center items-center gap-3">
                 {(order.status === "IN_PROGRESS" ||
                   order.status === "COMPLETED") &&
-                  (order as any).operator_id && (
+                  ((order as unknown as Record<string, unknown>)
+                    .operator_id as string) && (
                     <div
                       onClick={() =>
                         window.open(
-                          `/user_profile?user_id=${(order as any).operator_id}`,
+                          `/user_profile?user_id=${
+                            (order as unknown as Record<string, unknown>)
+                              .operator_id as string
+                          }`,
                           "_blank"
                         )
                       }
@@ -222,7 +234,7 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
 
                 {order.status === "OPEN" && (
                   <div
-                    onClick={() => onEdit(order)}
+                    onClick={() => onEdit?.(order)}
                     className="group flex items-center bg-white/10 rounded-xl hover:bg-primary-500 hover:text-black transition-all cursor-pointer overflow-hidden h-10"
                   >
                     <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-500 ease-in-out font-bold text-[10px] uppercase tracking-widest text-black pl-0 group-hover:pl-4">
@@ -272,7 +284,10 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
         <OrderDetailsModule
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
-          assignedOperatorId={(selectedOrder as any).operator_id}
+          assignedOperatorId={
+            (selectedOrder as unknown as Record<string, unknown>)
+              .operator_id as string | undefined
+          }
         />
       )}
 

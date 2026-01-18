@@ -55,8 +55,9 @@ function ProfileContent() {
         setIsOwnProfile(isOwner);
         setIsOperator(userData.role === "OPERATOR");
         setProfileData(userData);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        const error = err instanceof Error ? err.message : "Nieznany błąd";
+        setError(error);
       } finally {
         setLoading(false);
       }

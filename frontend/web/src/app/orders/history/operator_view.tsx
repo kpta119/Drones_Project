@@ -6,7 +6,7 @@ import { OrderStatusLabels } from "../types";
 import OrderDetailsModule from "../utils/details_module";
 import ReviewModule from "../utils/review_module";
 import { FaSearchPlus, FaStar, FaUser } from "react-icons/fa";
-import { API_URL } from '../../config';
+import { API_URL } from "../../config";
 
 interface MatchedOrderDto {
   id: string;
@@ -21,11 +21,11 @@ interface MatchedOrderDto {
   to_date: string;
   created_at: string;
   order_status:
-  | "OPEN"
-  | "AWAITING_OPERATOR"
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "CANCELLED";
+    | "OPEN"
+    | "AWAITING_OPERATOR"
+    | "IN_PROGRESS"
+    | "COMPLETED"
+    | "CANCELLED";
   client_status: "PENDING" | "ACCEPTED" | "REJECTED";
   operator_status: "PENDING" | "ACCEPTED" | "REJECTED";
 }
@@ -35,13 +35,9 @@ interface ClientInfo {
   surname: string;
 }
 
-interface OperatorHistoryViewProps {
-  onEdit?: (order: any) => void;
-}
+type OperatorHistoryViewProps = Record<string, never>;
 
-export default function OperatorHistoryView({
-  onEdit,
-}: OperatorHistoryViewProps) {
+export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
   const [matchedOrders, setMatchedOrders] = useState<MatchedOrderDto[]>([]);
   const [clientNames, setClientNames] = useState<Record<string, ClientInfo>>(
     {}
@@ -77,9 +73,12 @@ export default function OperatorHistoryView({
 
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`${API_URL}/api/user/getUserData?user_id=${clientId}`, {
-          headers: { "X-USER-TOKEN": `Bearer ${token}` },
-        });
+        const res = await fetch(
+          `${API_URL}/api/user/getUserData?user_id=${clientId}`,
+          {
+            headers: { "X-USER-TOKEN": `Bearer ${token}` },
+          }
+        );
         if (res.ok) {
           const data = await res.json();
           const clientInfo = {
@@ -103,9 +102,12 @@ export default function OperatorHistoryView({
   const fetchMatchedOrders = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_URL}/api/operators/getMatchedOrders?size=100`, {
-        headers: { "X-USER-TOKEN": `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${API_URL}/api/operators/getMatchedOrders?size=100`,
+        {
+          headers: { "X-USER-TOKEN": `Bearer ${token}` },
+        }
+      );
       if (res.ok) {
         const data = await res.json();
         const filtered = (data.content || []).filter(
@@ -329,14 +331,13 @@ export default function OperatorHistoryView({
 
       {reviewingOrder && (
         <ReviewModule
-          operatorId={reviewingOrder.client_id}
           operatorName={
             clientNames[reviewingOrder.client_id]
-              ? `${clientNames[reviewingOrder.client_id].name} ${clientNames[reviewingOrder.client_id].surname
-              }`
+              ? `${clientNames[reviewingOrder.client_id].name} ${
+                  clientNames[reviewingOrder.client_id].surname
+                }`
               : "Klient"
           }
-          orderId={reviewingOrder.id}
           onClose={() => setReviewingOrder(null)}
           onSubmit={handleReviewSubmit}
           isClientReview={true}

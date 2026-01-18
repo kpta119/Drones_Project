@@ -47,9 +47,12 @@ export default function ActiveView({ isOperator }: { isOperator: boolean }) {
           const data = await res.json();
           const ordersArray = data.content || [];
           const enrichedOrders = await Promise.all(
-            ordersArray.map(async (order: any) => {
-              const addr = await getAddressFromCoordinates(order.coordinates);
-              const alreadyAdded = order.is_already_added ?? null;
+            ordersArray.map(async (order: Record<string, unknown>) => {
+              const addr = await getAddressFromCoordinates(
+                order.coordinates as string
+              );
+              const alreadyAdded =
+                (order.is_already_added as boolean | null) ?? null;
               return {
                 ...order,
                 alreadyAdded,

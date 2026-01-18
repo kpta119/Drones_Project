@@ -128,14 +128,11 @@ export default function OrdersPage() {
           <ActiveView isOperator={userRole === "OPERATOR"} />
         )}
         {view === "history" && userRole === "OPERATOR" && (
-          <OperatorHistoryView onEdit={handleEdit} />
+          <OperatorHistoryView />
         )}
-        {view === "history" && userRole !== "OPERATOR" && (
-          <HistoryView onEdit={handleEdit} />
-        )}
+        {view === "history" && userRole !== "OPERATOR" && <HistoryView />}
         {view === "create" && (
           <CreateOrderView
-            onCancel={handleBackToCreated}
             onSuccess={handleBackToCreated}
             editData={editingOrder}
           />

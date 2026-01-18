@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [status, setStatus] = useState("Przetwarzanie logowania...");
 
   useEffect(() => {
     const token = searchParams.get("token");
@@ -38,7 +37,7 @@ function AuthCallbackContent() {
     <div className="flex h-screen w-full items-center justify-center bg-gray-50">
       <div className="text-center">
         <h2 className="text-xl font-semibold mb-2">Logowanie...</h2>
-        <p className="text-gray-500">{status}</p>
+        <p className="text-gray-500">Przetwarzanie autentykacji...</p>
         <div className="mt-4 h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto"></div>
       </div>
     </div>

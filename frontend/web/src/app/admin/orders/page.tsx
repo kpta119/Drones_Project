@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { API_URL } from "../../config";
 
 interface Order {
@@ -60,16 +60,65 @@ export default function AdminOrders() {
   const [sortBy, setSortBy] = useState<"NEWEST" | "OLDEST">("NEWEST");
   const [services, setServices] = useState<string[]>([]);
 
-  useEffect(() => {
-    fetchOrders();
+  const fetchOrders = useCallback(async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+
+      let url = `${API_URL}/api/admin/getOrders?page=${page}&size=20`;
+      if (searchOrderId)
+        url += `&order_id=${encodeURIComponent(searchOrderId)}`;
+      if (statusFilter) url += `&order_status=${statusFilter}`;
+      if (searchClientId)
+        url += `&client_id=${encodeURIComponent(searchClientId)}`;
+      if (serviceFilter) url += `&service=${encodeURIComponent(serviceFilter)}`;
+      url += `&sort_by=${sortBy}`;
+
+      console.log("🔍 Fetching orders with URL:", url);
+      console.log("Filters:", {
+        searchOrderId,
+        statusFilter,
+        searchClientId,
+        serviceFilter,
+        sortBy,
+      });
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "X-USER-TOKEN": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok)
+        throw new Error(`Failed to fetch orders: ${response.status}`);
+
+      const data = (await response.json()) as ApiResponse<Order>;
+      console.log("📦 Received data:", data);
+      setOrders(data.content || []);
+      setTotalPages(data.page?.totalPages || 0);
+      setError("");
+    } catch (err: unknown) {
+      const error =
+        err instanceof Error ? err.message : "Failed to load orders";
+      console.error("❌ Error fetching orders:", error);
+      setError(error);
+    } finally {
+      setLoading(false);
+    }
   }, [
     page,
+    searchOrderId,
     statusFilter,
+    searchClientId,
     serviceFilter,
     sortBy,
-    searchOrderId,
-    searchClientId,
   ]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   useEffect(() => {
     fetchServices();
@@ -113,56 +162,6 @@ export default function AdminOrders() {
       }
     } catch (err: unknown) {
       console.error("Failed to fetch services", err);
-    }
-  };
-
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-
-      // Build URL with filter parameters (backend expects snake_case)
-      let url = `${API_URL}/api/admin/getOrders?page=${page}&size=20`;
-      if (searchOrderId)
-        url += `&order_id=${encodeURIComponent(searchOrderId)}`;
-      if (statusFilter) url += `&order_status=${statusFilter}`;
-      if (searchClientId)
-        url += `&client_id=${encodeURIComponent(searchClientId)}`;
-      if (serviceFilter) url += `&service=${encodeURIComponent(serviceFilter)}`;
-      url += `&sort_by=${sortBy}`;
-
-      console.log("🔍 Fetching orders with URL:", url);
-      console.log("Filters:", {
-        searchOrderId,
-        statusFilter,
-        searchClientId,
-        serviceFilter,
-        sortBy,
-      });
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          "X-USER-TOKEN": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok)
-        throw new Error(`Failed to fetch orders: ${response.status}`);
-
-      const data = (await response.json()) as ApiResponse<Order>;
-      console.log("📦 Received data:", data);
-      setOrders(data.content || []);
-      setTotalPages(data.page?.totalPages || 0);
-      setError("");
-    } catch (err: unknown) {
-      const error =
-        err instanceof Error ? err.message : "Failed to load orders";
-      console.error("❌ Error fetching orders:", error);
-      setError(error);
-    } finally {
-      setLoading(false);
     }
   };
 

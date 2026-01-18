@@ -33,9 +33,7 @@ export default function ClientLayout({
   const [showReviews, setShowReviews] = useState(false);
   const [recentReviews, setRecentReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
-  const [reviewsError, setReviewsError] = useState<string | null>(null);
   const [averageRating, setAverageRating] = useState(0);
-  const [totalReviewsCount, setTotalReviewsCount] = useState(0);
 
   useEffect(() => {
     const fetchRecentReviews = async () => {
@@ -59,7 +57,6 @@ export default function ClientLayout({
         if (res.ok) {
           const allReviews = await res.json();
           setRecentReviews(allReviews.slice(0, 3));
-          setTotalReviewsCount(allReviews.length);
 
           if (allReviews && allReviews.length > 0) {
             const avgRating =
@@ -71,20 +68,14 @@ export default function ClientLayout({
           } else {
             setAverageRating(0);
           }
-
-          setReviewsError(null);
         } else {
           setRecentReviews([]);
           setAverageRating(0);
-          setTotalReviewsCount(0);
-          setReviewsError(null);
         }
       } catch (err) {
         console.error("Error fetching reviews:", err);
         setRecentReviews([]);
         setAverageRating(0);
-        setTotalReviewsCount(0);
-        setReviewsError(null);
       } finally {
         setReviewsLoading(false);
       }
