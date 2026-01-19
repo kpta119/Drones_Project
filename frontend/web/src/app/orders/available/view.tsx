@@ -16,7 +16,7 @@ export default function AvailableView({ isOperator }: { isOperator: boolean }) {
   const fetchAvailable = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`/operators/getMatchedOrders`, {
+      const res = await fetch(`/operators/getMatchedOrders?operator_status=PENDING`, {
         headers: { "X-USER-TOKEN": `Bearer ${token}` },
       });
       if (res.ok) {

@@ -343,7 +343,13 @@ export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
                 </p>
                 <p className="text-gray-400 text-xs mt-2 uppercase tracking-widest font-bold">
                   Status:{" "}
-                  <span className="text-green-400">
+                  <span
+                    className={`${
+                      order.order_status === "COMPLETED"
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }`}
+                  >
                     {OrderStatusLabels[order.order_status]}
                   </span>
                 </p>
