@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { OperatorDto } from "./operator_dto";
 import ReviewsView from "@/src/app/orders/utils/reviews_view";
 import OperatorUpdateModule from "./operator_update/operator_update_module";
@@ -9,74 +8,20 @@ import { FaStar, FaUser, FaPhone, FaEnvelope } from "react-icons/fa";
 import Portfolio from "./portfolio/portfolio_view";
 import EditPortfolio from "./portfolio/portfolio_edit";
 
-interface Review {
-  body: string;
-  stars: number;
-  name?: string;
-  surname?: string;
-  username?: string;
-  author_name?: string;
-  author_username?: string;
-}
-
 export default function OperatorLayout({
   data,
   isOwnProfile,
+  averageRating,
 }: {
   data: OperatorDto;
   isOwnProfile: boolean;
+  reviews?: { body: string; stars: number }[];
+  averageRating: number;
 }) {
-  const searchParams = useSearchParams();
-  const displayedUserId = searchParams.get("user_id");
-
   const [showReviews, setShowReviews] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showEditPortfolio, setShowEditPortfolio] = useState(false);
 
-  const [averageRating, setAverageRating] = useState(0);
-
-  useEffect(() => {
-    const fetchRating = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token || !displayedUserId) {
-          return;
-        }
-
-        const res = await fetch(
-          `/reviews/getUserReviews/${displayedUserId}`,
-          {
-            headers: {
-              "X-USER-TOKEN": `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (res.ok) {
-          const allReviews = await res.json();
-
-          if (allReviews && allReviews.length > 0) {
-            const avgRating =
-              allReviews.reduce(
-                (sum: number, review: Review) => sum + review.stars,
-                0
-              ) / allReviews.length;
-            setAverageRating(Math.round(avgRating * 10) / 10);
-          } else {
-            setAverageRating(0);
-          }
-        } else {
-          setAverageRating(0);
-        }
-      } catch (err) {
-        console.error("Error fetching rating:", err);
-        setAverageRating(0);
-      }
-    };
-
-    fetchRating();
-  }, [displayedUserId]);
   return (
     <div>
       <div

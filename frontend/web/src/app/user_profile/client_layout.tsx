@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { ClientDto } from "./client_dto";
 import OperatorRegisterButton from "@/src/components/operator_register_button";
 import OperatorRegisterModule from "./operator_register/operator_register_module";
@@ -21,67 +20,18 @@ interface Review {
 export default function ClientLayout({
   data,
   isOwnProfile,
+  reviews,
+  averageRating,
 }: {
   data: ClientDto;
   isOwnProfile: boolean;
+  reviews: Review[];
+  averageRating: number;
 }) {
-  const searchParams = useSearchParams();
-  const displayedUserId = searchParams.get("user_id");
-
   const [showRegister, setShowRegister] = useState(false);
   const [showReviews, setShowReviews] = useState(false);
-  const [recentReviews, setRecentReviews] = useState<Review[]>([]);
-  const [reviewsLoading, setReviewsLoading] = useState(true);
-  const [averageRating, setAverageRating] = useState(0);
 
-  useEffect(() => {
-    const fetchRecentReviews = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token || !displayedUserId) {
-          setReviewsLoading(false);
-          return;
-        }
-
-        const res = await fetch(
-          `/reviews/getUserReviews/${displayedUserId}`,
-          {
-            headers: {
-              "X-USER-TOKEN": `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (res.ok) {
-          const allReviews = await res.json();
-          setRecentReviews(allReviews.slice(0, 3));
-
-          if (allReviews && allReviews.length > 0) {
-            const avgRating =
-              allReviews.reduce(
-                (sum: number, review: Review) => sum + review.stars,
-                0
-              ) / allReviews.length;
-            setAverageRating(Math.round(avgRating * 10) / 10);
-          } else {
-            setAverageRating(0);
-          }
-        } else {
-          setRecentReviews([]);
-          setAverageRating(0);
-        }
-      } catch (err) {
-        console.error("Error fetching reviews:", err);
-        setRecentReviews([]);
-        setAverageRating(0);
-      } finally {
-        setReviewsLoading(false);
-      }
-    };
-
-    fetchRecentReviews();
-  }, [displayedUserId]);
+  const recentReviews = reviews.slice(0, 3);
 
   return (
     <>
@@ -151,13 +101,7 @@ export default function ClientLayout({
           </h3>
 
           <div className="flex-1 overflow-y-auto pr-2">
-            {reviewsLoading ? (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-gray-600 text-sm italic animate-pulse">
-                  Ładowanie opinii...
-                </p>
-              </div>
-            ) : recentReviews?.length > 0 ? (
+            {recentReviews?.length > 0 ? (
               recentReviews.map((review, idx) => (
                 <div
                   key={idx}
