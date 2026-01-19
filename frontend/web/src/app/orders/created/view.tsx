@@ -7,7 +7,7 @@ import {
   OperatorApplicantDto,
   OrderStatusLabels,
 } from "../types";
-import OpMatch from "./op_match";
+import OpList from "./op_list";
 import OrderDetailsModule from "../utils/details_module";
 import {
   FaTrash,
@@ -30,7 +30,6 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
     null
   );
   const [applicants, setApplicants] = useState<OperatorApplicantDto[]>([]);
-  const [currentAppIndex, setCurrentAppIndex] = useState(0);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
@@ -65,10 +64,10 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
       });
       if (res.ok) {
         const data = await res.json();
+        console.log("Applicants data:", data);
         const list = Array.isArray(data) ? data : [];
         if (list.length > 0) {
           setApplicants(list);
-          setCurrentAppIndex(0);
           setMatchingOrderId(orderId);
         } else {
           alert("Brak chętnych operatorów dla tego zlecenia.");
@@ -95,11 +94,18 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
         }
       );
       if (res.ok) {
-        if (currentAppIndex < applicants.length - 1) {
-          setCurrentAppIndex((prev) => prev + 1);
-        } else {
+        if (action === "accept") {
+          // Po zaakceptowaniu zamknij modal
           setMatchingOrderId(null);
           setRefreshTrigger((prev) => prev + 1);
+        } else {
+          // Usuń operatora z listy po odrzuceniu
+          setApplicants((prev) => prev.filter((a) => a.user_id !== operatorId));
+          // Jeśli lista jest pusta, zamknij modal
+          if (applicants.length <= 1) {
+            setMatchingOrderId(null);
+            setRefreshTrigger((prev) => prev + 1);
+          }
         }
       }
     } catch (err) {
@@ -283,9 +289,9 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
         />
       )}
 
-      {matchingOrderId && applicants[currentAppIndex] && (
-        <OpMatch
-          applicant={applicants[currentAppIndex]}
+      {matchingOrderId && applicants.length > 0 && (
+        <OpList
+          applicants={applicants}
           onClose={() => setMatchingOrderId(null)}
           onAccept={(opId) => handleOpDecision(opId, "accept")}
           onReject={(opId) => handleOpDecision(opId, "reject")}

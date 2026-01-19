@@ -55,6 +55,8 @@ public class OperatorsServiceTests {
     private NewMatchedOrdersRepository newMatchedOrdersRepository;
     @Mock
     private OrdersMapper ordersMapper;
+    @Mock
+    private com.example.drones.reviews.ReviewsRepository reviewsRepository;
 
     @InjectMocks
     private OperatorsService service;
@@ -620,12 +622,15 @@ public class OperatorsServiceTests {
                 .certificates(List.of("UAV License", "Commercial Pilot"))
                 .operatorServices(services)
                 .portfolio(portfolioDto)
+                .averageStars(5.0)
                 .build();
 
+        Double averageStars = 5.0;
         when(userRepository.findByIdWithPortfolio(userId)).thenReturn(Optional.of(operator));
+        when(reviewsRepository.getAverageStars(userId)).thenReturn(averageStars);
         when(operatorServicesService.getOperatorServices(operator)).thenReturn(services);
         when(portfolioMapper.toOperatorPortfolioDto(portfolio)).thenReturn(portfolioDto);
-        when(operatorMapper.toOperatorDto(operator, services, portfolioDto)).thenReturn(expectedDto);
+        when(operatorMapper.toOperatorDto(operator, services, portfolioDto, averageStars)).thenReturn(expectedDto);
 
         OperatorDto result = service.getOperatorProfile(userId);
 
@@ -633,7 +638,7 @@ public class OperatorsServiceTests {
         verify(userRepository).findByIdWithPortfolio(userId);
         verify(operatorServicesService).getOperatorServices(operator);
         verify(portfolioMapper).toOperatorPortfolioDto(portfolio);
-        verify(operatorMapper).toOperatorDto(operator, services, portfolioDto);
+        verify(operatorMapper).toOperatorDto(operator, services, portfolioDto, averageStars);
     }
 
     @Test
@@ -662,12 +667,15 @@ public class OperatorsServiceTests {
                 .certificates(List.of("Basic UAV License"))
                 .operatorServices(services)
                 .portfolio(null)
+                .averageStars(0.0)
                 .build();
 
+        Double averageStars = 0.0;
         when(userRepository.findByIdWithPortfolio(userId)).thenReturn(Optional.of(operator));
+        when(reviewsRepository.getAverageStars(userId)).thenReturn(averageStars);
         when(operatorServicesService.getOperatorServices(operator)).thenReturn(services);
         when(portfolioMapper.toOperatorPortfolioDto(null)).thenReturn(null);
-        when(operatorMapper.toOperatorDto(operator, services, null)).thenReturn(expectedDto);
+        when(operatorMapper.toOperatorDto(operator, services, null, averageStars)).thenReturn(expectedDto);
 
         OperatorDto result = service.getOperatorProfile(userId);
 
@@ -676,7 +684,7 @@ public class OperatorsServiceTests {
         verify(userRepository).findByIdWithPortfolio(userId);
         verify(operatorServicesService).getOperatorServices(operator);
         verify(portfolioMapper).toOperatorPortfolioDto(null);
-        verify(operatorMapper).toOperatorDto(operator, services, null);
+        verify(operatorMapper).toOperatorDto(operator, services, null, averageStars);
     }
 
     @Test
@@ -692,7 +700,7 @@ public class OperatorsServiceTests {
         verify(userRepository).findByIdWithPortfolio(userId);
         verify(operatorServicesService, never()).getOperatorServices(any());
         verify(portfolioMapper, never()).toOperatorPortfolioDto(any());
-        verify(operatorMapper, never()).toOperatorDto(any(), any(), any());
+        verify(operatorMapper, never()).toOperatorDto(any(), any(), any(), any());
     }
 
     @Test
@@ -716,7 +724,7 @@ public class OperatorsServiceTests {
         verify(userRepository).findByIdWithPortfolio(userId);
         verify(operatorServicesService, never()).getOperatorServices(any());
         verify(portfolioMapper, never()).toOperatorPortfolioDto(any());
-        verify(operatorMapper, never()).toOperatorDto(any(), any(), any());
+        verify(operatorMapper, never()).toOperatorDto(any(), any(), any(), any());
     }
 
     @Test
@@ -745,12 +753,15 @@ public class OperatorsServiceTests {
                 .certificates(List.of())
                 .operatorServices(emptyServices)
                 .portfolio(null)
+                .averageStars(0.0)
                 .build();
 
+        Double averageStars = 0.0;
         when(userRepository.findByIdWithPortfolio(userId)).thenReturn(Optional.of(operator));
+        when(reviewsRepository.getAverageStars(userId)).thenReturn(averageStars);
         when(operatorServicesService.getOperatorServices(operator)).thenReturn(emptyServices);
         when(portfolioMapper.toOperatorPortfolioDto(null)).thenReturn(null);
-        when(operatorMapper.toOperatorDto(operator, emptyServices, null)).thenReturn(expectedDto);
+        when(operatorMapper.toOperatorDto(operator, emptyServices, null, averageStars)).thenReturn(expectedDto);
 
         OperatorDto result = service.getOperatorProfile(userId);
 
@@ -759,7 +770,7 @@ public class OperatorsServiceTests {
         verify(userRepository).findByIdWithPortfolio(userId);
         verify(operatorServicesService).getOperatorServices(operator);
         verify(portfolioMapper).toOperatorPortfolioDto(null);
-        verify(operatorMapper).toOperatorDto(operator, emptyServices, null);
+        verify(operatorMapper).toOperatorDto(operator, emptyServices, null, averageStars);
     }
 
     @Test
@@ -779,32 +790,13 @@ public class OperatorsServiceTests {
                 .user(client)
                 .build();
 
-        UserEntity operator1 = UserEntity.builder()
-                .id(operator1Id)
-                .name("John")
-                .surname("Smith")
-                .displayName("operator1")
-                .role(UserRole.OPERATOR)
-                .certificates(List.of("UAV License", "Commercial Pilot"))
-                .build();
-
-        UserEntity operator2 = UserEntity.builder()
-                .id(operator2Id)
-                .name("Jane")
-                .surname("Doe")
-                .displayName("operator2")
-                .role(UserRole.OPERATOR)
-                .certificates(List.of("Basic UAV License"))
-                .build();
-
-        List<UserEntity> matchedOperators = List.of(operator1, operator2);
-
         MatchingOperatorDto matchingDto1 = new MatchingOperatorDto(
                 operator1Id,
                 "operator1",
                 "John",
                 "Smith",
-                List.of("UAV License", "Commercial Pilot")
+                List.of("UAV License", "Commercial Pilot"),
+                4.5
         );
 
         MatchingOperatorDto matchingDto2 = new MatchingOperatorDto(
@@ -812,13 +804,14 @@ public class OperatorsServiceTests {
                 "operator2",
                 "Jane",
                 "Doe",
-                List.of("Basic UAV License")
+                List.of("Basic UAV License"),
+                4.0
         );
+
+        List<MatchingOperatorDto> matchedOperators = List.of(matchingDto1, matchingDto2);
 
         when(ordersRepository.findByIdWithUser(orderId)).thenReturn(Optional.of(order));
         when(newMatchedOrdersRepository.findInterestedOperatorByOrderId(orderId)).thenReturn(matchedOperators);
-        when(operatorMapper.toMatchingOperatorDto(operator1)).thenReturn(matchingDto1);
-        when(operatorMapper.toMatchingOperatorDto(operator2)).thenReturn(matchingDto2);
 
         List<MatchingOperatorDto> result = service.getOperatorInfo(userId, orderId);
 
@@ -826,8 +819,6 @@ public class OperatorsServiceTests {
         assertThat(result).containsExactly(matchingDto1, matchingDto2);
         verify(ordersRepository).findByIdWithUser(orderId);
         verify(newMatchedOrdersRepository).findInterestedOperatorByOrderId(orderId);
-        verify(operatorMapper).toMatchingOperatorDto(operator1);
-        verify(operatorMapper).toMatchingOperatorDto(operator2);
     }
 
     @Test
@@ -845,7 +836,7 @@ public class OperatorsServiceTests {
                 .user(client)
                 .build();
 
-        List<UserEntity> emptyMatchedOperators = List.of();
+        List<MatchingOperatorDto> emptyMatchedOperators = List.of();
 
         when(ordersRepository.findByIdWithUser(orderId)).thenReturn(Optional.of(order));
         when(newMatchedOrdersRepository.findInterestedOperatorByOrderId(orderId)).thenReturn(emptyMatchedOperators);
@@ -855,7 +846,6 @@ public class OperatorsServiceTests {
         assertThat(result).isEmpty();
         verify(ordersRepository).findByIdWithUser(orderId);
         verify(newMatchedOrdersRepository).findInterestedOperatorByOrderId(orderId);
-        verify(operatorMapper, never()).toMatchingOperatorDto(any());
     }
 
     @Test
@@ -870,7 +860,6 @@ public class OperatorsServiceTests {
 
         verify(ordersRepository).findByIdWithUser(orderId);
         verify(newMatchedOrdersRepository, never()).findInterestedOperatorByOrderId(any());
-        verify(operatorMapper, never()).toMatchingOperatorDto(any());
     }
 
     @Test
@@ -896,7 +885,6 @@ public class OperatorsServiceTests {
 
         verify(ordersRepository).findByIdWithUser(orderId);
         verify(newMatchedOrdersRepository, never()).findInterestedOperatorByOrderId(any());
-        verify(operatorMapper, never()).toMatchingOperatorDto(any());
     }
 
     @Test
@@ -915,28 +903,19 @@ public class OperatorsServiceTests {
                 .user(client)
                 .build();
 
-        UserEntity operator = UserEntity.builder()
-                .id(operatorId)
-                .name("Alice")
-                .surname("Operator")
-                .displayName("alice_operator")
-                .role(UserRole.OPERATOR)
-                .certificates(List.of("Advanced Drone License", "Night Flight Certification"))
-                .build();
-
-        List<UserEntity> matchedOperators = List.of(operator);
-
         MatchingOperatorDto matchingDto = new MatchingOperatorDto(
                 operatorId,
                 "alice_operator",
                 "Alice",
                 "Operator",
-                List.of("Advanced Drone License", "Night Flight Certification")
+                List.of("Advanced Drone License", "Night Flight Certification"),
+                4.8
         );
+
+        List<MatchingOperatorDto> matchedOperators = List.of(matchingDto);
 
         when(ordersRepository.findByIdWithUser(orderId)).thenReturn(Optional.of(order));
         when(newMatchedOrdersRepository.findInterestedOperatorByOrderId(orderId)).thenReturn(matchedOperators);
-        when(operatorMapper.toMatchingOperatorDto(operator)).thenReturn(matchingDto);
 
         List<MatchingOperatorDto> result = service.getOperatorInfo(userId, orderId);
 
@@ -949,7 +928,6 @@ public class OperatorsServiceTests {
         assertThat(result.getFirst().certificates()).hasSize(2);
         verify(ordersRepository).findByIdWithUser(orderId);
         verify(newMatchedOrdersRepository).findInterestedOperatorByOrderId(orderId);
-        verify(operatorMapper).toMatchingOperatorDto(operator);
     }
 
     @Test

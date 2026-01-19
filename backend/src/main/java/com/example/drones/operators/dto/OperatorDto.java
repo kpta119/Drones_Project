@@ -17,6 +17,7 @@ public record OperatorDto(
         String email,
         String coordinates,
         Integer radius,
+        @JsonProperty("average_stars") Double averageStars,
         @JsonProperty("phone_number") String phoneNumber,
         OperatorPortfolioDto portfolio
 ) {

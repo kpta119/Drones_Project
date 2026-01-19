@@ -14,4 +14,8 @@ public interface ReviewsRepository extends JpaRepository<ReviewEntity, Integer> 
 
     @Query("SELECT r FROM ReviewEntity r JOIN FETCH r.author WHERE r.target.id = :userId")
     List<ReviewEntity> findAllByTargetId(@Param("userId") UUID userId);
+
+    @Query("SELECT AVG(r.stars) FROM ReviewEntity r WHERE r.target.id = :userId")
+    Double getAverageStars(UUID userId);
+
 }
