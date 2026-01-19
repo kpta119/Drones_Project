@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { OrderResponse, OrderStatusLabels } from "../types";
 import AddToCalButton from "./add_to_cal_button";
 import {
@@ -26,6 +26,21 @@ export default function ActiveView({ isOperator }: { isOperator: boolean }) {
     null
   );
 
+  const fetchAddressForOrder = useCallback(async (orderId: string, coordinates: string) => {
+    try {
+      const addr = await getAddressFromCoordinates(coordinates);
+      setActiveOrders((prev) =>
+        prev.map((order) =>
+          order.id === orderId
+            ? { ...order, city: addr.city, street: addr.street }
+            : order
+        )
+      );
+    } catch (err) {
+      console.error("Error fetching address:", err);
+    }
+  }, []);
+
   useEffect(() => {
     if (!isOperator) {
       setLoading(false);
@@ -45,22 +60,21 @@ export default function ActiveView({ isOperator }: { isOperator: boolean }) {
         if (res.ok) {
           const data = await res.json();
           const ordersArray = data.content || [];
-          const enrichedOrders = await Promise.all(
-            ordersArray.map(async (order: Record<string, unknown>) => {
-              const addr = await getAddressFromCoordinates(
-                order.coordinates as string
-              );
-              const alreadyAdded =
-                (order.is_already_added as boolean | null) ?? null;
-              return {
-                ...order,
-                alreadyAdded,
-                city: addr.city,
-                street: addr.street,
-              };
+          const orders: SchedulableOrder[] = ordersArray.map(
+            (order: Record<string, unknown>) => ({
+              ...order,
+              alreadyAdded: (order.is_already_added as boolean | null) ?? null,
+              city: "",
+              street: "",
             })
           );
-          setActiveOrders(enrichedOrders);
+          setActiveOrders(orders);
+          setLoading(false);
+
+          // Pobierz adresy asynchronicznie po załadowaniu strony
+          orders.forEach((order) => {
+            fetchAddressForOrder(order.id, order.coordinates);
+          });
         }
       } catch (err) {
         console.error(err);
@@ -70,7 +84,7 @@ export default function ActiveView({ isOperator }: { isOperator: boolean }) {
     };
 
     fetchActiveOrders();
-  }, [isOperator]);
+  }, [isOperator, fetchAddressForOrder]);
 
   if (!isOperator) {
     return (
@@ -120,7 +134,9 @@ export default function ActiveView({ isOperator }: { isOperator: boolean }) {
                   {order.title}
                 </h3>
                 <p className="text-gray-500 text-sm font-medium">
-                  {order.city}, {order.street}
+                  {order.city && order.street
+                    ? `${order.city}, ${order.street}`
+                    : <span className="text-gray-400 animate-pulse">Ładowanie adresu...</span>}
                 </p>
                 <div className="flex gap-2 mt-1">
                   <span className="text-[10px] text-primary-700 font-bold uppercase tracking-widest bg-primary-50 px-2 py-0.5 rounded-md border border-primary-100">
