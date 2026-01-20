@@ -18,6 +18,9 @@ import {
   FaCheckCircle,
   FaClipboardList,
   FaSyncAlt,
+  FaClock,
+  FaUsers,
+  FaPaperPlane,
 } from "react-icons/fa";
 
 interface CreatedViewProps {
@@ -34,6 +37,14 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
   const [applicants, setApplicants] = useState<OperatorApplicantDto[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Statystyki zleceń
+  const stats = {
+    open: myOrders.filter((o) => o.status === "OPEN").length,
+    awaiting: myOrders.filter((o) => o.status === "AWAITING_OPERATOR").length,
+    inProgress: myOrders.filter((o) => o.status === "IN_PROGRESS").length,
+    total: myOrders.length,
+  };
 
   useEffect(() => {
     const fetchMyOrders = async () => {
@@ -195,6 +206,39 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
               Wystaw nowe zlecenie
             </button>
           </div>
+
+          {/* Stats bar */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-slate-900/90 backdrop-blur border border-white/5 rounded-2xl p-4 text-center hover:border-blue-500/30 transition-all">
+              <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                <FaPaperPlane className="text-blue-400" size={16} />
+              </div>
+              <p className="text-3xl font-bold text-white">{stats.open}</p>
+              <span className="text-xs uppercase tracking-wider font-semibold text-gray-400">Otwarte</span>
+            </div>
+            <div className="bg-slate-900/90 backdrop-blur border border-white/5 rounded-2xl p-4 text-center hover:border-amber-500/30 transition-all">
+              <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                <FaUsers className="text-amber-400" size={16} />
+              </div>
+              <p className="text-3xl font-bold text-white">{stats.awaiting}</p>
+              <span className="text-xs uppercase tracking-wider font-semibold text-gray-400">Szukam operatora</span>
+            </div>
+            <div className="bg-slate-900/90 backdrop-blur border border-white/5 rounded-2xl p-4 text-center hover:border-emerald-500/30 transition-all">
+              <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                <FaClock className="text-emerald-400" size={16} />
+              </div>
+              <p className="text-3xl font-bold text-white">{stats.inProgress}</p>
+              <span className="text-xs uppercase tracking-wider font-semibold text-gray-400">W realizacji</span>
+            </div>
+            <div className="bg-slate-900/90 backdrop-blur border border-white/5 rounded-2xl p-4 text-center hover:border-primary-500/30 transition-all">
+              <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-primary-500/20 flex items-center justify-center">
+                <FaClipboardList className="text-primary-400" size={16} />
+              </div>
+              <p className="text-3xl font-bold text-white">{stats.total}</p>
+              <span className="text-xs uppercase tracking-wider font-semibold text-gray-400">Wszystkie</span>
+            </div>
+          </div>
+
           <div className="space-y-6">
             {myOrders.map((order) => (
           <div

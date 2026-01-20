@@ -5,7 +5,7 @@ import Image from "next/image";
 import { OrderStatusLabels } from "../types";
 import OrderDetailsModule from "../utils/details_module";
 import ReviewModule from "../utils/review_module";
-import { FaSearchPlus, FaStar, FaUser } from "react-icons/fa";
+import { FaSearchPlus, FaStar, FaUser, FaCheckCircle, FaTimesCircle, FaTrophy, FaUserTie, FaHandshake } from "react-icons/fa";
 
 interface MatchedOrderDto {
   id: string;
@@ -203,31 +203,29 @@ export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
       }
 
       setMatchedOrders(allOrders);
+      setLoading(false);
 
-      // Pobierz nazwy klientów
-      const clientIds = allOrders
+      // Pobierz nazwy klientów równolegle
+      const clientIds = [...new Set(allOrders
         .filter((order: MatchedOrderDto) => !order.isClientOrder)
         .map((order: MatchedOrderDto) => order.client_id)
-        .filter((id: string) => !clientNames[id]);
+        .filter((id: string) => !clientNames[id]))];
 
-      for (const clientId of clientIds) {
-        await fetchClientInfo(clientId);
-      }
-
-      // Pobierz nazwy operatorów
-      const operatorIds = allOrders
+      // Pobierz nazwy operatorów równolegle
+      const operatorIds = [...new Set(allOrders
         .filter(
           (order: MatchedOrderDto) => order.isClientOrder && order.operator_id
         )
         .map((order: MatchedOrderDto) => order.operator_id as string)
-        .filter((id: string) => !operatorNames[id]);
+        .filter((id: string) => !operatorNames[id]))];
 
-      for (const operatorId of operatorIds) {
-        await fetchOperatorInfo(operatorId);
-      }
+      // Wykonaj wszystkie zapytania równolegle
+      await Promise.all([
+        ...clientIds.map((id) => fetchClientInfo(id)),
+        ...operatorIds.map((id) => fetchOperatorInfo(id)),
+      ]);
     } catch (err) {
       console.error(err);
-    } finally {
       setLoading(false);
     }
   }, [clientNames, operatorNames, fetchClientInfo, fetchOperatorInfo]);
@@ -300,8 +298,11 @@ export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
 
   if (loading) {
     return (
-      <div className="text-primary-800 font-bold py-20 text-center animate-pulse">
-        Ładowanie historii zleceń...
+      <div className="flex flex-col items-center justify-center py-20 text-white">
+        <div className="w-12 h-12 border-4 border-primary-300 border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-gray-400 text-sm uppercase tracking-widest">
+          Ładowanie historii zleceń...
+        </p>
       </div>
     );
   }
@@ -317,8 +318,87 @@ export default function OperatorHistoryView({}: OperatorHistoryViewProps) {
     );
   }
 
+  // Statystyki historii
+  const stats = {
+    completed: matchedOrders.filter((o) => o.order_status === "COMPLETED").length,
+    cancelled: matchedOrders.filter((o) => o.order_status === "CANCELLED").length,
+    asClient: matchedOrders.filter((o) => o.isClientOrder).length,
+    asOperator: matchedOrders.filter((o) => !o.isClientOrder).length,
+    reviewed: matchedOrders.filter((o) => reviewedOrderIds.has(o.id)).length,
+    toReview: matchedOrders.filter((o) => o.order_status === "COMPLETED" && !reviewedOrderIds.has(o.id)).length,
+  };
+
   return (
     <div className="w-full max-w-4xl animate-fadeIn space-y-6 font-montserrat text-black">
+      {/* Stats panel */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {/* Podsumowanie */}
+        <div className="bg-slate-900/90 backdrop-blur border border-white/5 rounded-2xl p-4">
+          <div className="flex items-center gap-2 text-gray-400 text-xs uppercase tracking-wider font-bold mb-3">
+            <FaTrophy size={14} />
+            Podsumowanie
+          </div>
+          <div className="flex justify-around">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-emerald-400">{stats.completed}</p>
+              <span className="text-[10px] text-gray-500 uppercase">Ukończonych</span>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-red-400">{stats.cancelled}</p>
+              <span className="text-[10px] text-gray-500 uppercase">Anulowanych</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Role */}
+        <div className="bg-slate-900/90 backdrop-blur border border-white/5 rounded-2xl p-4">
+          <div className="flex items-center gap-2 text-gray-400 text-xs uppercase tracking-wider font-bold mb-3">
+            <FaHandshake size={14} />
+            Twoja rola
+          </div>
+          <div className="flex justify-around">
+            <div className="text-center">
+              <div className="w-8 h-8 mx-auto mb-1 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                <FaUser className="text-blue-400" size={12} />
+              </div>
+              <p className="text-xl font-bold text-white">{stats.asClient}</p>
+              <span className="text-[10px] text-gray-500 uppercase">Jako klient</span>
+            </div>
+            <div className="text-center">
+              <div className="w-8 h-8 mx-auto mb-1 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                <FaUserTie className="text-amber-400" size={12} />
+              </div>
+              <p className="text-xl font-bold text-white">{stats.asOperator}</p>
+              <span className="text-[10px] text-gray-500 uppercase">Jako operator</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Recenzje */}
+        <div className="bg-slate-900/90 backdrop-blur border border-white/5 rounded-2xl p-4">
+          <div className="flex items-center gap-2 text-gray-400 text-xs uppercase tracking-wider font-bold mb-3">
+            <FaStar size={14} />
+            Recenzje
+          </div>
+          <div className="flex justify-around">
+            <div className="text-center">
+              <div className="w-8 h-8 mx-auto mb-1 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                <FaCheckCircle className="text-emerald-400" size={12} />
+              </div>
+              <p className="text-xl font-bold text-white">{stats.reviewed}</p>
+              <span className="text-[10px] text-gray-500 uppercase">Wystawione</span>
+            </div>
+            <div className="text-center">
+              <div className="w-8 h-8 mx-auto mb-1 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                <FaStar className="text-amber-400" size={12} />
+              </div>
+              <p className="text-xl font-bold text-white">{stats.toReview}</p>
+              <span className="text-[10px] text-gray-500 uppercase">Do oceny</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="space-y-6">
         {matchedOrders.map((order) => (
           <div

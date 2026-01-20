@@ -9,6 +9,10 @@ import {
   FaClipboardList,
   FaSearchPlus,
   FaUserAlt,
+  FaCalendarAlt,
+  FaMapMarkerAlt,
+  FaRocket,
+  FaCheckCircle,
 } from "react-icons/fa";
 import { getAddressFromCoordinates } from "../utils/geocoding";
 import OrderDetailsModule from "../utils/details_module";
@@ -25,6 +29,14 @@ export default function ActiveView({ isOperator }: { isOperator: boolean }) {
   const [selectedOrder, setSelectedOrder] = useState<SchedulableOrder | null>(
     null
   );
+
+  const handleCalendarAdded = (orderId: string) => {
+    setActiveOrders((prev) =>
+      prev.map((order) =>
+        order.id === orderId ? { ...order, alreadyAdded: true } : order
+      )
+    );
+  };
 
   const fetchAddressForOrder = useCallback(async (orderId: string, coordinates: string) => {
     try {
@@ -112,15 +124,98 @@ export default function ActiveView({ isOperator }: { isOperator: boolean }) {
 
   if (loading)
     return (
-      <div className="text-primary-800 font-bold py-20 text-center animate-pulse">
-        Ładowanie Twoich prac...
+      <div className="flex flex-col items-center justify-center py-20 text-white">
+        <div className="w-12 h-12 border-4 border-primary-300 border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-gray-400 text-sm uppercase tracking-widest">
+          Ładowanie Twoich prac...
+        </p>
       </div>
     );
 
+  // Znajdź najbliższe zlecenie po dacie
+  const sortedByDate = [...activeOrders].sort(
+    (a, b) => new Date(a.from_date).getTime() - new Date(b.from_date).getTime()
+  );
+  const nextOrder = sortedByDate[0];
+  const addedToCalendar = activeOrders.filter((o) => o.alreadyAdded).length;
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("pl-PL", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const getDaysUntil = (dateString: string) => {
+    const now = new Date();
+    const target = new Date(dateString);
+    const diff = Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff < 0) return "Trwa";
+    if (diff === 0) return "Dziś";
+    if (diff === 1) return "Jutro";
+    return `Za ${diff} dni`;
+  };
+
   return (
-    <div className="w-full max-w-5xl space-y-4 animate-fadeIn font-montserrat">
+    <div className="w-full max-w-5xl space-y-6 animate-fadeIn font-montserrat">
       {activeOrders.length > 0 ? (
-        activeOrders.map((order) => (
+        <>
+          {/* Info panel */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Następne zlecenie */}
+            {nextOrder && (
+              <div className="md:col-span-2 bg-gradient-to-br from-primary-600 to-primary-800 rounded-2xl p-5 text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 text-primary-200 text-xs uppercase tracking-widest font-bold mb-2">
+                    <FaRocket size={12} />
+                    Najbliższy deadline
+                  </div>
+                  <h3 className="text-xl font-bold mb-3 truncate">{nextOrder.title}</h3>
+                  <div className="flex flex-wrap gap-4 text-lg text-primary-100">
+                    <span className="flex items-center gap-2 font-bold">
+                      <FaCalendarAlt size={16} />
+                      {formatDate(nextOrder.from_date)}
+                    </span>
+                    {nextOrder.city && (
+                      <span className="flex items-center gap-2 font-bold">
+                        <FaMapMarkerAlt size={16} />
+                        {nextOrder.city}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Mini statystyki */}
+            <div className="flex flex-col gap-4">
+              <div className="bg-white border-2 border-primary-100 rounded-2xl p-4 flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
+                  <FaClipboardList className="text-primary-600 text-xl" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-primary-900">{activeOrders.length}</p>
+                  <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Aktywnych zleceń</span>
+                </div>
+              </div>
+              <div className="bg-white border-2 border-primary-100 rounded-2xl p-4 flex items-center gap-4">
+                <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                  <FaCheckCircle className="text-emerald-600 text-xl" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-primary-900">{addedToCalendar}</p>
+                  <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">W kalendarzu</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Lista zleceń */}
+          <div className="space-y-4">
+            {activeOrders.map((order) => (
           <div
             key={order.id}
             className="bg-white border-2 border-primary-100 rounded-[2.5rem] p-6 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 hover:border-primary-300 transition-all"
@@ -179,10 +274,14 @@ export default function ActiveView({ isOperator }: { isOperator: boolean }) {
               <AddToCalButton
                 orderId={order.id}
                 alreadyAdded={order.alreadyAdded}
+                onAdded={() => handleCalendarAdded(order.id)}
               />
             </div>
           </div>
         ))
+          }
+          </div>
+        </>
       ) : (
         <div className="text-center py-20 text-gray-400 font-bold uppercase tracking-widest">
           Nie masz obecnie żadnych aktywnych zleceń.

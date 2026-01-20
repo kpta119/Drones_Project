@@ -5,7 +5,7 @@ import Image from "next/image";
 import { OrderResponse, OrderStatusLabels } from "../types";
 import OrderDetailsModule from "../utils/details_module";
 import ReviewModule from "../utils/review_module";
-import { FaSearchPlus, FaStar, FaUserTie } from "react-icons/fa";
+import { FaSearchPlus, FaStar, FaUserTie, FaTrophy, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
 interface OperatorInfo {
   name: string;
@@ -188,8 +188,67 @@ export default function HistoryView({}: HistoryViewProps) {
     );
   }
 
+  // Statystyki dla klienta
+  const stats = {
+    completed: myOrders.filter((o) => o.status === "COMPLETED").length,
+    cancelled: myOrders.filter((o) => o.status === "CANCELLED").length,
+    reviewed: myOrders.filter((o) => reviewedOrderIds.has(o.id)).length,
+    toReview: myOrders.filter((o) => o.status === "COMPLETED" && !reviewedOrderIds.has(o.id) && (o as unknown as Record<string, unknown>).operator_id).length,
+  };
+
   return (
     <div className="w-full max-w-4xl animate-fadeIn space-y-6 font-montserrat text-black">
+      {/* Stats panel dla klienta */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Zlecenia jako klient */}
+        <div className="bg-slate-900/90 backdrop-blur border border-white/5 rounded-2xl p-4">
+          <div className="flex items-center gap-2 text-gray-400 text-xs uppercase tracking-wider font-bold mb-3">
+            <FaUserTie size={14} />
+            Jako klient
+          </div>
+          <div className="flex justify-around">
+            <div className="text-center">
+              <div className="w-8 h-8 mx-auto mb-1 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                <FaCheckCircle className="text-emerald-400" size={12} />
+              </div>
+              <p className="text-xl font-bold text-white">{stats.completed}</p>
+              <span className="text-[10px] text-gray-500 uppercase">Zrealizowanych</span>
+            </div>
+            <div className="text-center">
+              <div className="w-8 h-8 mx-auto mb-1 bg-red-500/20 rounded-lg flex items-center justify-center">
+                <FaTimesCircle className="text-red-400" size={12} />
+              </div>
+              <p className="text-xl font-bold text-white">{stats.cancelled}</p>
+              <span className="text-[10px] text-gray-500 uppercase">Anulowanych</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Recenzje do wystawienia */}
+        <div className="bg-slate-900/90 backdrop-blur border border-white/5 rounded-2xl p-4">
+          <div className="flex items-center gap-2 text-gray-400 text-xs uppercase tracking-wider font-bold mb-3">
+            <FaStar size={14} />
+            Recenzje
+          </div>
+          <div className="flex justify-around">
+            <div className="text-center">
+              <div className="w-8 h-8 mx-auto mb-1 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                <FaCheckCircle className="text-emerald-400" size={12} />
+              </div>
+              <p className="text-xl font-bold text-white">{stats.reviewed}</p>
+              <span className="text-[10px] text-gray-500 uppercase">Wystawione</span>
+            </div>
+            <div className="text-center">
+              <div className="w-8 h-8 mx-auto mb-1 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                <FaStar className="text-amber-400" size={12} />
+              </div>
+              <p className="text-xl font-bold text-white">{stats.toReview}</p>
+              <span className="text-[10px] text-gray-500 uppercase">Do oceny</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="space-y-6">
         {myOrders.map((order) => (
           <div
