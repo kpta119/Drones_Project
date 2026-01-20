@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import OfferMatch from "./offer_match";
 import { MatchedOrderDto } from "../types";
 import { getAddressFromCoordinates } from "../utils/geocoding";
-import { FaLock, FaUserPlus } from "react-icons/fa";
+import { FaLock, FaUserPlus, FaSearchLocation } from "react-icons/fa";
 
 export default function AvailableView({ isOperator }: { isOperator: boolean }) {
   const [matches, setMatches] = useState<MatchedOrderDto[]>([]);
@@ -102,14 +102,29 @@ export default function AvailableView({ isOperator }: { isOperator: boolean }) {
 
   if (loading)
     return (
-      <div className="text-primary-800 font-bold py-20 text-center animate-pulse">
-        Szukanie zleceń...
+      <div className="flex flex-col items-center justify-center py-20 text-center animate-fadeIn font-montserrat">
+        <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mb-4"></div>
+        <span className="text-primary-800 font-bold">Szukanie zleceń...</span>
       </div>
     );
   if (currentIndex >= matches.length)
     return (
-      <div className="text-gray-400 font-light py-20 text-center">
-        Brak nowych ofert w Twoim zasięgu.
+      <div className="flex flex-col items-center justify-center py-20 text-center animate-fadeIn text-black font-montserrat">
+        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center text-4xl mb-8 shadow-inner border border-gray-200">
+          <FaSearchLocation className="text-gray-400" />
+        </div>
+        <h2 className="text-2xl font-bold mb-4 text-gray-700 uppercase tracking-tight">
+          Brak nowych zleceń
+        </h2>
+        <p className="text-gray-500 max-w-md font-medium px-4 leading-relaxed">
+          Aktualnie nie ma dostępnych zleceń w Twoim zasięgu. Sprawdź ponownie później lub rozszerz swój obszar działania w ustawieniach profilu.
+        </p>
+        <button
+          onClick={() => fetchAvailable()}
+          className="mt-8 px-8 py-3 bg-primary-300 text-primary-900 rounded-xl font-bold hover:bg-primary-400 transition-all shadow-lg uppercase tracking-widest text-sm"
+        >
+          Odśwież
+        </button>
       </div>
     );
 

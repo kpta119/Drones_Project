@@ -16,6 +16,8 @@ import {
   FaSearchPlus,
   FaUserTie,
   FaCheckCircle,
+  FaClipboardList,
+  FaSyncAlt,
 } from "react-icons/fa";
 
 interface CreatedViewProps {
@@ -31,9 +33,11 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
   );
   const [applicants, setApplicants] = useState<OperatorApplicantDto[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchMyOrders = async () => {
+      setLoading(true);
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(`/orders/getMyOrders`, {
@@ -50,6 +54,8 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
         }
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -64,7 +70,6 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
       });
       if (res.ok) {
         const data = await res.json();
-        console.log("Applicants data:", data);
         const list = Array.isArray(data) ? data : [];
         if (list.length > 0) {
           setApplicants(list);
@@ -143,18 +148,55 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
 
   return (
     <div className="w-full max-w-4xl animate-fadeIn space-y-8 font-montserrat text-black">
-      <div className="flex justify-center md:justify-end">
-        <button
-          onClick={onCreateNew}
-          className="flex items-center gap-3 px-10 py-4 bg-primary-300 text-primary-900 rounded-2xl font-bold shadow-lg hover:bg-primary-400 transition-all border-2 border-primary-500/20 uppercase tracking-widest text-sm"
-        >
-          <FaPlus />
-          Wystaw nowe zlecenie
-        </button>
-      </div>
-
-      <div className="space-y-6">
-        {myOrders.map((order) => (
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 text-white">
+          <div className="w-12 h-12 border-4 border-primary-300 border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-gray-400 text-sm uppercase tracking-widest">
+            Ładowanie zleceń...
+          </p>
+        </div>
+      ) : myOrders.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center mb-6 shadow-lg border border-white/10">
+            <FaClipboardList className="text-primary-300 text-4xl" />
+          </div>
+          <h3 className="text-2xl font-bold text-white mb-2">
+            Brak aktywnych zleceń
+          </h3>
+          <p className="text-gray-400 max-w-md mb-6">
+            Nie masz jeszcze żadnych aktywnych zleceń. Wystaw nowe zlecenie, aby
+            znaleźć operatora drona do wykonania usługi.
+          </p>
+          <div className="flex gap-4">
+            <button
+              onClick={onCreateNew}
+              className="flex items-center gap-2 px-6 py-3 bg-primary-300 text-primary-900 rounded-xl font-bold hover:bg-primary-400 transition-all text-sm uppercase tracking-widest shadow-md"
+            >
+              <FaPlus />
+              Nowe zlecenie
+            </button>
+            <button
+              onClick={() => setRefreshTrigger((n) => n + 1)}
+              className="flex items-center gap-2 px-6 py-3 bg-slate-700 text-white rounded-xl font-bold hover:bg-slate-600 transition-all text-sm uppercase tracking-widest shadow-md"
+            >
+              <FaSyncAlt />
+              Odśwież
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex justify-center md:justify-end">
+            <button
+              onClick={onCreateNew}
+              className="flex items-center gap-3 px-10 py-4 bg-primary-300 text-primary-900 rounded-2xl font-bold shadow-lg hover:bg-primary-400 transition-all border-2 border-primary-500/20 uppercase tracking-widest text-sm"
+            >
+              <FaPlus />
+              Wystaw nowe zlecenie
+            </button>
+          </div>
+          <div className="space-y-6">
+            {myOrders.map((order) => (
           <div
             key={order.id}
             className="relative bg-slate-900 rounded-[2.5rem] p-8 overflow-hidden shadow-xl border border-white/5 text-white"
@@ -276,7 +318,9 @@ export default function CreatedView({ onCreateNew, onEdit }: CreatedViewProps) {
             </div>
           </div>
         ))}
-      </div>
+          </div>
+        </>
+      )}
 
       {selectedOrder && (
         <OrderDetailsModule
