@@ -5,7 +5,7 @@ import Image from "next/image";
 import { OrderResponse, OrderStatusLabels } from "../types";
 import OrderDetailsModule from "../utils/details_module";
 import ReviewModule from "../utils/review_module";
-import { FaSearchPlus, FaStar, FaUserTie, FaTrophy, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+import { FaSearchPlus, FaStar, FaUserTie, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
 interface OperatorInfo {
   name: string;
@@ -211,15 +211,15 @@ export default function HistoryView({}: HistoryViewProps) {
               <div className="w-8 h-8 mx-auto mb-1 bg-emerald-500/20 rounded-lg flex items-center justify-center">
                 <FaCheckCircle className="text-emerald-400" size={12} />
               </div>
-              <p className="text-xl font-bold text-white">{stats.completed}</p>
-              <span className="text-[10px] text-gray-500 uppercase">Zrealizowanych</span>
+              <p className="text-3xl font-bold text-white">{stats.completed}</p>
+              <span className="text-xs uppercase tracking-wider font-semibold text-gray-400">Zrealizowanych</span>
             </div>
             <div className="text-center">
               <div className="w-8 h-8 mx-auto mb-1 bg-red-500/20 rounded-lg flex items-center justify-center">
                 <FaTimesCircle className="text-red-400" size={12} />
               </div>
-              <p className="text-xl font-bold text-white">{stats.cancelled}</p>
-              <span className="text-[10px] text-gray-500 uppercase">Anulowanych</span>
+              <p className="text-3xl font-bold text-white">{stats.cancelled}</p>
+              <span className="text-xs uppercase tracking-wider font-semibold text-gray-400">Anulowanych</span>
             </div>
           </div>
         </div>
@@ -235,15 +235,15 @@ export default function HistoryView({}: HistoryViewProps) {
               <div className="w-8 h-8 mx-auto mb-1 bg-emerald-500/20 rounded-lg flex items-center justify-center">
                 <FaCheckCircle className="text-emerald-400" size={12} />
               </div>
-              <p className="text-xl font-bold text-white">{stats.reviewed}</p>
-              <span className="text-[10px] text-gray-500 uppercase">Wystawione</span>
+              <p className="text-3xl font-bold text-white">{stats.reviewed}</p>
+              <span className="text-xs uppercase tracking-wider font-semibold text-gray-400">Wystawione</span>
             </div>
             <div className="text-center">
               <div className="w-8 h-8 mx-auto mb-1 bg-amber-500/20 rounded-lg flex items-center justify-center">
                 <FaStar className="text-amber-400" size={12} />
               </div>
-              <p className="text-xl font-bold text-white">{stats.toReview}</p>
-              <span className="text-[10px] text-gray-500 uppercase">Do oceny</span>
+              <p className="text-3xl font-bold text-white">{stats.toReview}</p>
+              <span className="text-xs uppercase tracking-wider font-semibold text-gray-400">Do oceny</span>
             </div>
           </div>
         </div>

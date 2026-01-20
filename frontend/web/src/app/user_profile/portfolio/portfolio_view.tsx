@@ -61,20 +61,12 @@ const Portfolio = () => {
         setCurrentPhotoIndex((prev) => (prev === photos.length - 1 ? 0 : prev + 1));
     };
 
-    const photoSize = "50vh";
-
     return (
-        <div style={{ display: "flex", height: "55vh", width: "100%", gap: "2rem", alignItems: "flex-start" }}>
+        <div className="flex flex-col w-full gap-6 p-8">
+            {/* Zdjęcie - poziomy layout dla poziomych zdjęć */}
             <div
-                style={{
-                    position: "relative",
-                    width: "30vw",
-                    height: photoSize,
-                    flexShrink: 0,
-                    borderRadius: "12px",
-                    overflow: "hidden",
-                    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
-                }}
+                className="relative w-full rounded-2xl overflow-hidden shadow-lg"
+                style={{ height: "500px" }}
             >
                 {hasPhotos ? (
                     <Image
@@ -88,20 +80,7 @@ const Portfolio = () => {
                         }}
                     />
                 ) : (
-                    <div
-                        style={{
-                            width: "100%",
-                            height: "100%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            backgroundColor: "linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%)",
-                            background: "linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%)",
-                            color: "#888",
-                            fontSize: "1.1rem",
-                            fontWeight: 500,
-                        }}
-                    >
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 text-gray-500 text-lg font-medium">
                         Brak zdjęć w portfolio
                     </div>
                 )}
@@ -110,81 +89,24 @@ const Portfolio = () => {
                     <>
                         <button
                             onClick={prevPhoto}
-                            style={{
-                                position: "absolute",
-                                top: "50%",
-                                left: "12px",
-                                transform: "translateY(-50%)",
-                                background: "rgba(255, 255, 255, 0.9)",
-                                color: "#333",
-                                border: "none",
-                                width: "40px",
-                                height: "40px",
-                                borderRadius: "50%",
-                                cursor: "pointer",
-                                fontSize: "1.4rem",
-                                fontWeight: "bold",
-                                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
-                                transition: "all 0.2s ease",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-50%) scale(1.1)")}
-                            onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(-50%)")}
+                            className="absolute top-1/2 left-3 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 w-10 h-10 rounded-full shadow-lg transition-all hover:scale-110 flex items-center justify-center text-2xl font-bold"
                         >
                             ‹
                         </button>
                         <button
                             onClick={nextPhoto}
-                            style={{
-                                position: "absolute",
-                                top: "50%",
-                                right: "12px",
-                                transform: "translateY(-50%)",
-                                background: "rgba(255, 255, 255, 0.9)",
-                                color: "#333",
-                                border: "none",
-                                width: "40px",
-                                height: "40px",
-                                borderRadius: "50%",
-                                cursor: "pointer",
-                                fontSize: "1.4rem",
-                                fontWeight: "bold",
-                                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
-                                transition: "all 0.2s ease",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-50%) scale(1.1)")}
-                            onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(-50%)")}
+                            className="absolute top-1/2 right-3 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 w-10 h-10 rounded-full shadow-lg transition-all hover:scale-110 flex items-center justify-center text-2xl font-bold"
                         >
                             ›
                         </button>
-                        <div
-                            style={{
-                                position: "absolute",
-                                bottom: "12px",
-                                left: "50%",
-                                transform: "translateX(-50%)",
-                                display: "flex",
-                                gap: "8px",
-                            }}
-                        >
+                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
                             {photos.map((_: PortfolioPhoto, index: number) => (
                                 <div
                                     key={index}
                                     onClick={() => setCurrentPhotoIndex(index)}
-                                    style={{
-                                        width: "10px",
-                                        height: "10px",
-                                        borderRadius: "50%",
-                                        backgroundColor: index === currentPhotoIndex ? "#fff" : "rgba(255,255,255,0.5)",
-                                        cursor: "pointer",
-                                        transition: "all 0.2s ease",
-                                        boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-                                    }}
+                                    className={`w-2.5 h-2.5 rounded-full cursor-pointer transition-all shadow ${
+                                        index === currentPhotoIndex ? "bg-white scale-125" : "bg-white/50"
+                                    }`}
                                 />
                             ))}
                         </div>
@@ -192,43 +114,12 @@ const Portfolio = () => {
                 )}
             </div>
 
-            <div
-                style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "flex-start",
-                    alignItems: "flex-start",
-                    padding: "1.5rem",
-                    backgroundColor: "#fafafa",
-                    borderRadius: "12px",
-                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
-                    maxHeight: "50vh",
-                    overflowY: "auto",
-                }}
-            >
-                <h2
-                    style={{
-                        fontSize: "1.75rem",
-                        fontWeight: 600,
-                        marginBottom: "1rem",
-                        color: "#1a1a1a",
-                        wordBreak: "break-word",
-                        lineHeight: 1.3,
-                    }}
-                >
+            {/* Opis pod zdjęciem */}
+            <div className="flex flex-col bg-gray-50 rounded-2xl p-6 shadow-inner max-h-80 overflow-y-auto">
+                <h2 className="text-2xl font-bold mb-4 text-gray-900 break-words leading-tight">
                     {title || "Brak tytułu"}
                 </h2>
-                <p
-                    style={{
-                        fontSize: "1.05rem",
-                        lineHeight: 1.7,
-                        color: "#4a4a4a",
-                        wordBreak: "break-word",
-                        whiteSpace: "pre-wrap",
-                        textAlign: "justify",
-                    }}
-                >
+                <p className="text-base leading-relaxed text-gray-700 break-words whitespace-pre-wrap text-justify">
                     {description || "Brak opisu"}
                 </p>
             </div>

@@ -148,16 +148,6 @@ export default function ActiveView({ isOperator }: { isOperator: boolean }) {
     });
   };
 
-  const getDaysUntil = (dateString: string) => {
-    const now = new Date();
-    const target = new Date(dateString);
-    const diff = Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    if (diff < 0) return "Trwa";
-    if (diff === 0) return "Dziś";
-    if (diff === 1) return "Jutro";
-    return `Za ${diff} dni`;
-  };
-
   return (
     <div className="w-full max-w-5xl space-y-6 animate-fadeIn font-montserrat">
       {activeOrders.length > 0 ? (

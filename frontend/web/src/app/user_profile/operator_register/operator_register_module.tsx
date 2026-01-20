@@ -104,14 +104,7 @@ export default function OperatorRegisterModule({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 h-full p-4 lg:p-8 overflow-y-auto">
       <div className="lg:col-span-2 relative flex flex-col h-full">
-        <button
-          onClick={onClose}
-          className="absolute -top-2 -right-2 lg:top-0 lg:right-0 text-gray-500 hover:text-gray-700 text-2xl font-bold z-50"
-        >
-          ✕
-        </button>
-
-        <div className="flex-1 mt-8 lg:mt-0">
+        <div className="flex-1">
           {step === 0 && (
             <OperatorRegisterIntroModule onNext={() => setStep(1)} />
           )}

@@ -23,99 +23,97 @@ export default function OperatorLayout({
   const [showEditPortfolio, setShowEditPortfolio] = useState(false);
 
   return (
-    <div>
-      <div
-        className="grid grid-cols-2 grid-rows-1 gap-10 ps-5 pt-10 pb-10 m-auto font-montserrat w-7xl"
-        style={{ height: "50vh" }}
-      >
-        <style>{`
-        @keyframes colorShine {
-          0%, 100% {
-            color: var(--color-primary-500);
-          }
-          50% {
-            color: var(--color-primary-900);
-          }
-        }
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-10">
+      <div className="max-w-7xl mx-auto px-6 space-y-6">
+        {/* Główna karta profilu */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Lewa kolumna - info o użytkowniku */}
+          <div className="lg:col-span-1 space-y-6">
+            <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
+              <div className="flex flex-col items-center">
+                {/* Avatar */}
+                <div className="w-40 h-40 bg-gradient-to-br from-primary-100 to-primary-200 rounded-full flex items-center justify-center mb-4 border-4 border-primary-300 shadow-md">
+                  <FaUser className="text-6xl text-primary-600" />
+                </div>
 
-        .shine-text {
-          animation: colorShine 5s ease-in-out infinite;
-        }
-      `}</style>
+                {/* Nazwa i username */}
+                <h2 className="text-2xl font-bold text-gray-900 text-center mb-1">
+                  {data.name} {data.surname}
+                </h2>
+                <p className="text-primary-600 font-semibold text-sm mb-1">@{data.username}</p>
+                <p className="text-xs text-gray-500 mb-4">Operator dronów</p>
 
-        <div className="rounded-2xl p-8 flex flex-col">
-          <div className="flex gap-6">
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-40 h-40 lg:w-48 lg:h-48 bg-[#D9D9D9] rounded-full flex items-center justify-center shrink-0 drop-shadow-lg ring-2 ring-primary-700 hover:ring-4 hover:ring-[#D9D9D9] transition-all">
-                <FaUser className="text-5xl lg:text-6xl text-gray-600" />
+                {/* Rating */}
+                <div className="flex gap-1 mb-6">
+                  {[...Array(5)].map((_, i) => (
+                    <FaStar
+                      key={i}
+                      size={20}
+                      className={
+                        i < Math.floor(averageRating)
+                          ? "text-amber-400"
+                          : "text-gray-300"
+                      }
+                    />
+                  ))}
+                </div>
+
+                {/* Kontakt */}
+                <div className="w-full space-y-2 mb-6">
+                  <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3 border border-gray-200">
+                    <FaPhone className="text-primary-600" size={14} />
+                    <p className="text-gray-700 text-sm">{data.phone_number}</p>
+                  </div>
+                  <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3 border border-gray-200">
+                    <FaEnvelope className="text-primary-600" size={14} />
+                    <p className="text-gray-700 text-sm break-all">{data.email}</p>
+                  </div>
+                </div>
+
+                {/* Przyciski akcji */}
+                <div className="w-full space-y-2">
+                  <button
+                    onClick={() => setShowReviews(true)}
+                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-xl py-2.5 font-semibold transition-all border border-gray-300"
+                  >
+                    Czytaj opinie
+                  </button>
+
+                  {isOwnProfile && (
+                    <>
+                      <button
+                        onClick={() => setShowEdit(true)}
+                        className="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-xl py-2.5 font-semibold transition-all"
+                      >
+                        Edytuj dane
+                      </button>
+                      <button
+                        onClick={() => setShowEditPortfolio(true)}
+                        className="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-xl py-2.5 font-semibold transition-all"
+                      >
+                        Edytuj portfolio
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className="flex text-black text-2xl lg:text-3xl pt-2 gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <FaStar
-                    key={i}
-                    size={24}
-                    className={
-                      i < Math.floor(averageRating)
-                        ? "text-primary-400"
-                        : "text-gray-300"
-                    }
-                  />
-                ))}
-              </div>
-              <p className="text-sm font-semibold text-center shine-text">
-                Operator dronów
-              </p>
             </div>
 
-            <div className="flex flex-col justify-center pl-5 flex-1 ms-4">
-              <h2 className="text-3xl font-light">
-                {data.name} {data.surname}
-              </h2>
-              <p className="text-gray-600 text-lg mb-4">@{data.username}</p>
-              <div className="space-y-1 mb-6">
-                <div className="flex items-center justify-center sm:justify-start gap-2">
-                  <FaPhone className="text-primary-700" size={16} />
-                  <p>{data.phone_number}</p>
-                </div>
-                <div className="flex items-center justify-center sm:justify-start gap-2">
-                  <FaEnvelope className="text-primary-700" size={16} />
-                  <p className="break-all">{data.email}</p>
-                </div>
-              </div>
+            {/* O mnie - pod kartą użytkownika */}
+            <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900 mb-3">O mnie</h3>
+              <p className="text-gray-700 leading-relaxed">{data.description || "Brak opisu"}</p>
+            </div>
+          </div>
 
-              <div className="flex flex-col w-full pt-4 gap-2">
-                <button
-                  onClick={() => setShowReviews(true)}
-                  className="flex-1 bg-gray-200 text-black rounded-xl py-1 font-semibold hover:bg-gray-300 transition-all text-sm"
-                >
-                  Czytaj opinie
-                </button>
-
-                {isOwnProfile && (
-                  <button
-                    onClick={() => setShowEdit(true)}
-                    className="flex-1 bg-primary-600 text-white rounded-xl py-1 font-semibold hover:bg-primary-700 transition-all text-sm"
-                  >
-                    Edytuj dane
-                  </button>
-                )}
-                {isOwnProfile && (
-                  <button
-                    onClick={() => setShowEditPortfolio(true)}
-                    className="flex-1 bg-primary-600 text-white rounded-xl py-1 font-semibold hover:bg-primary-700 transition-all text-sm"
-                  >
-                    Edytuj portfolio
-                  </button>
-                )}
-              </div>
+          {/* Portfolio - więcej miejsca */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
+              <Portfolio />
             </div>
           </div>
         </div>
-
-        <div className="bg-gray-300 rounded-2xl p-6">
-          <h3 className="font-semibold mb-3">O mnie:</h3>
-          <p className="text-gray-700 text-sm">{data.description}</p>
-        </div>
+      </div>
 
 
         {showReviews && (
@@ -131,10 +129,10 @@ export default function OperatorLayout({
 
         {showEdit && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="bg-white rounded-2xl w-full max-w-5xl h-[90vh] overflow-auto p-6 relative">
+            <div className="bg-white rounded-3xl w-full max-w-5xl h-[90vh] overflow-auto p-8 relative shadow-2xl">
               <button
                 onClick={() => setShowEdit(false)}
-                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                className="absolute top-6 right-6 text-gray-500 hover:text-gray-900 text-2xl font-bold"
               >
                 ✕
               </button>
@@ -142,12 +140,6 @@ export default function OperatorLayout({
             </div>
           </div>
         )}
-      </div>
-      <div
-        className="grid grid-cols-1 grid-rows-1 gap-10 ps-5 pt-10 pb-10 m-auto font-montserrat w-7xl"
-        style={{ height: "50vh" }}
-
-      ><Portfolio /></div>
     </div >
   );
 }
