@@ -11,5 +11,4 @@ public interface OperatorServicesRepository extends JpaRepository<OperatorServic
     void deleteAllByOperator(UserEntity operator);
 
     List<OperatorServicesEntity> findAllByOperatorId(UUID operatorId);
-
 }

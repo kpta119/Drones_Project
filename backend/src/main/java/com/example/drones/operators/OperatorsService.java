@@ -26,6 +26,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.*;
 
@@ -42,6 +44,7 @@ public class OperatorsService {
     private final NewMatchedOrdersRepository newMatchedOrdersRepository;
     private final OrdersMapper ordersMapper;
     private final ReviewsRepository reviewsRepository;
+    private final MatchingService matchingService;
 
     @Transactional
     @CacheEvict(value = "users", key = "#userId")
@@ -56,6 +59,14 @@ public class OperatorsService {
         UserEntity savedUser = userRepository.save(user);
 
         List<String> savedServices = operatorServicesService.addOperatorServices(savedUser, operatorDto.services());
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                matchingService.matchOrdersToNewOperator(savedUser);
+            }
+        });
+
         return operatorMapper.toOperatorProfileDto(savedUser, savedServices);
     }
 
