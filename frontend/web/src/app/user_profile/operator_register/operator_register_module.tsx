@@ -45,7 +45,7 @@ export default function OperatorRegisterModule({
     certificates: [],
     services: [],
     coordinates: { lat: 52.237, lng: 21.017 },
-    radius: 5000,
+    radius: 5,
   });
 
   const handleSubmit = async () => {
@@ -80,6 +80,8 @@ export default function OperatorRegisterModule({
       );
 
       if (response.ok) {
+        localStorage.setItem("role", "OPERATOR");
+        window.dispatchEvent(new Event("authChanged"));
         onClose();
         window.location.reload();
       } else {
