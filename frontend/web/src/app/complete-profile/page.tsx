@@ -44,7 +44,8 @@ export default function CompleteProfilePage() {
 
         localStorage.setItem("token", token);
         localStorage.setItem("role", data.role);
-        localStorage.setItem("username", data.username);
+        localStorage.setItem("name", data.username);
+
         window.location.href = "/user_profile";
         return;
       } else {
