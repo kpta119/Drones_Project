@@ -98,12 +98,6 @@ export default function OperatorLayout({
                 </div>
               </div>
             </div>
-
-            {/* O mnie - pod kartą użytkownika */}
-            <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900 mb-3">O mnie</h3>
-              <p className="text-gray-700 leading-relaxed">{data.description || "Brak opisu"}</p>
-            </div>
           </div>
 
           {/* Portfolio - więcej miejsca */}
