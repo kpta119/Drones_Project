@@ -63,10 +63,20 @@ const Portfolio = () => {
 
     return (
         <div className="flex flex-col w-full gap-6 p-8">
-            {/* Zdjęcie - poziomy layout dla poziomych zdjęć */}
+            {/* Opis na górze - więcej miejsca */}
+            <div className="flex flex-col bg-gray-50 rounded-2xl p-6 shadow-inner max-h-160 overflow-y-auto">
+                <h2 className="text-2xl font-bold mb-4 text-gray-900 break-words leading-tight">
+                    {title || "Brak tytułu"}
+                </h2>
+                <p className="text-base leading-relaxed text-gray-700 break-words whitespace-pre-wrap text-justify">
+                    {description || "Brak opisu"}
+                </p>
+            </div>
+
+            {/* Zdjęcie pod opisem - mniejsze */}
             <div
                 className="relative w-full rounded-2xl overflow-hidden shadow-lg"
-                style={{ height: "500px" }}
+                style={{ height: "400px" }}
             >
                 {hasPhotos ? (
                     <Image
@@ -112,16 +122,6 @@ const Portfolio = () => {
                         </div>
                     </>
                 )}
-            </div>
-
-            {/* Opis pod zdjęciem */}
-            <div className="flex flex-col bg-gray-50 rounded-2xl p-6 shadow-inner max-h-80 overflow-y-auto">
-                <h2 className="text-2xl font-bold mb-4 text-gray-900 break-words leading-tight">
-                    {title || "Brak tytułu"}
-                </h2>
-                <p className="text-base leading-relaxed text-gray-700 break-words whitespace-pre-wrap text-justify">
-                    {description || "Brak opisu"}
-                </p>
             </div>
 
         </div>
