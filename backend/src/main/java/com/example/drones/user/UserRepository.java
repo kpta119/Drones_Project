@@ -1,5 +1,6 @@
 package com.example.drones.user;
 
+import com.example.drones.orders.OrdersEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,21 +23,22 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
     Optional<UserEntity> findByIdWithPortfolio(UUID userId);
 
     @Query(value = """
-            SELECT u.* FROM users u
-            JOIN operator_service os ON u.id = os.operator_id
+            SELECT u FROM UserEntity u
+            LEFT JOIN FETCH u.portfolio
+            JOIN OperatorServicesEntity os ON u.id = os.operatorId
             WHERE u.role = 'OPERATOR'
               AND u.id != :creatorId
-              AND os.service_name = :serviceName
+              AND os.serviceName = :serviceName
               AND u.coordinates IS NOT NULL
               AND u.radius IS NOT NULL
               AND (
                   6371 * acos(
-                      cos(radians(:orderLat)) * cos(radians(CAST(SPLIT_PART(u.coordinates, ',', 1) AS DOUBLE PRECISION))) *
-                      cos(radians(CAST(SPLIT_PART(u.coordinates, ',', 2) AS DOUBLE PRECISION)) - radians(:orderLon)) +
-                      sin(radians(:orderLat)) * sin(radians(CAST(SPLIT_PART(u.coordinates, ',', 1) AS DOUBLE PRECISION)))
+                      cos(radians(:orderLat)) * cos(radians(CAST(FUNCTION('SPLIT_PART', u.coordinates, ',', 1) AS double))) *
+                      cos(radians(CAST(FUNCTION('SPLIT_PART', u.coordinates, ',', 2) AS double)) - radians(:orderLon)) +
+                      sin(radians(:orderLat)) * sin(radians(CAST(FUNCTION('SPLIT_PART', u.coordinates, ',', 1) AS double)))
                   )
               ) <= u.radius
-            """, nativeQuery = true)
+            """)
     List<UserEntity> findMatchingOperators(
             @Param("serviceName") String serviceName,
             @Param("orderLat") double orderLat,
@@ -45,4 +47,26 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
     );
 
     Optional<UserEntity> findByProviderUserId(String providerUserId);
+
+    @Query("""
+            SELECT o FROM OrdersEntity o
+            WHERE o.user.id != :operatorId
+              AND o.service.name IN :serviceNames
+              AND o.coordinates IS NOT NULL
+              AND o.status = 'OPEN' OR o.status = 'AWAITING_OPERATOR'
+              AND (
+                  6371 * acos(
+                      cos(radians(:operatorLat)) * cos(radians(CAST(FUNCTION('SPLIT_PART', o.coordinates, ',', 1) AS double))) *
+                      cos(radians(CAST(FUNCTION('SPLIT_PART', o.coordinates, ',', 2) AS double)) - radians(:operatorLon)) +
+                      sin(radians(:operatorLat)) * sin(radians(CAST(FUNCTION('SPLIT_PART', o.coordinates, ',', 1) AS double)))
+                  )
+              ) <= :operatorRadius
+        """)
+    List<OrdersEntity> findMatchingOrdersForOperator(
+            @Param("operatorId") UUID operatorId,
+            @Param("operatorLat") double operatorLat,
+            @Param("operatorLon") double operatorLon,
+            @Param("operatorRadius") Integer operatorRadius,
+            @Param("serviceNames") List<String> serviceNames
+    );
 }

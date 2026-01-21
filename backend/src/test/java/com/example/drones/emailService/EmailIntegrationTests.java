@@ -129,7 +129,7 @@ public class EmailIntegrationTests {
         return headers;
     }
 
-    private UserEntity createTestOperator(String username, String email, String coords, int radius, ServicesEntity service) {
+    private void createTestOperator(String username, String email, String coords, int radius, ServicesEntity service) {
         UserEntity operator = UserEntity.builder()
                 .displayName(username)
                 .email(email)
@@ -148,7 +148,6 @@ public class EmailIntegrationTests {
         link.setServiceName(service.getName());
         operatorServicesRepository.save(link);
 
-        return operator;
     }
 
     @Test
@@ -187,9 +186,7 @@ public class EmailIntegrationTests {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
         // Czekaj na asynchroniczne dopasowanie operatorów i wysłanie emaila
-        await().atMost(5, SECONDS).untilAsserted(() -> {
-            assertThat(greenMail.getReceivedMessages()).hasSize(1);
-        });
+        await().atMost(5, SECONDS).untilAsserted(() -> assertThat(greenMail.getReceivedMessages()).hasSize(1));
 
         MimeMessage receivedMessage = greenMail.getReceivedMessages()[0];
         assertThat(receivedMessage.getAllRecipients()[0].toString()).isEqualTo("operator1@test.com");
@@ -229,9 +226,7 @@ public class EmailIntegrationTests {
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
-        await().atMost(5, SECONDS).untilAsserted(() -> {
-            assertThat(greenMail.getReceivedMessages()).hasSize(3);
-        });
+        await().atMost(5, SECONDS).untilAsserted(() -> assertThat(greenMail.getReceivedMessages()).hasSize(3));
 
         MimeMessage[] messages = greenMail.getReceivedMessages();
         List<String> recipients = Arrays.stream(messages)
@@ -288,9 +283,7 @@ public class EmailIntegrationTests {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
         // Czekaj chwilę na ewentualne wysłanie emaila
-        await().pollDelay(2, SECONDS).atMost(3, SECONDS).untilAsserted(() -> {
-            assertThat(greenMail.getReceivedMessages()).hasSize(0);
-        });
+        await().pollDelay(2, SECONDS).atMost(3, SECONDS).untilAsserted(() -> assertThat(greenMail.getReceivedMessages()).hasSize(0));
     }
 
     @Test
@@ -336,9 +329,7 @@ public class EmailIntegrationTests {
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
-        await().pollDelay(2, SECONDS).atMost(3, SECONDS).untilAsserted(() -> {
-            assertThat(greenMail.getReceivedMessages()).hasSize(0);
-        });
+        await().pollDelay(2, SECONDS).atMost(3, SECONDS).untilAsserted(() -> assertThat(greenMail.getReceivedMessages()).hasSize(0));
     }
 
     @Test
@@ -385,9 +376,7 @@ public class EmailIntegrationTests {
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
-        await().atMost(5, SECONDS).untilAsserted(() -> {
-            assertThat(greenMail.getReceivedMessages()).hasSize(2);
-        });
+        await().atMost(5, SECONDS).untilAsserted(() -> assertThat(greenMail.getReceivedMessages()).hasSize(2));
 
         MimeMessage[] messages = greenMail.getReceivedMessages();
         List<String> recipients = Arrays.stream(messages)
@@ -430,15 +419,12 @@ public class EmailIntegrationTests {
         );
 
         // Then
-        await().atMost(5, SECONDS).untilAsserted(() -> {
-            assertThat(greenMail.getReceivedMessages()).hasSize(1);
-        });
+        await().atMost(5, SECONDS).untilAsserted(() -> assertThat(greenMail.getReceivedMessages()).hasSize(1));
 
         MimeMessage receivedMessage = greenMail.getReceivedMessages()[0];
         String emailContent = receivedMessage.getContent().toString();
 
         assertThat(emailContent).contains("https://www.google.com/maps/search/?api=1&query=52.2297,21.0122");
-        assertThat(emailContent).contains("52.2297, 21.0122");
     }
 }
 

@@ -8,6 +8,7 @@ import com.example.drones.operators.exceptions.NoSuchPortfolioException;
 import com.example.drones.operators.exceptions.PortfolioAlreadyExistsException;
 import com.example.drones.orders.*;
 import com.example.drones.orders.exceptions.OrderNotFoundException;
+import com.example.drones.reviews.ReviewsRepository;
 import com.example.drones.services.OperatorServicesService;
 import com.example.drones.services.ServicesEntity;
 import com.example.drones.user.UserEntity;
@@ -25,6 +26,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.*;
 
@@ -40,6 +43,8 @@ public class OperatorsService {
     private final OrdersRepository ordersRepository;
     private final NewMatchedOrdersRepository newMatchedOrdersRepository;
     private final OrdersMapper ordersMapper;
+    private final ReviewsRepository reviewsRepository;
+    private final MatchingService matchingService;
 
     @Transactional
     @CacheEvict(value = "users", key = "#userId")
@@ -54,6 +59,14 @@ public class OperatorsService {
         UserEntity savedUser = userRepository.save(user);
 
         List<String> savedServices = operatorServicesService.addOperatorServices(savedUser, operatorDto.services());
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                matchingService.matchOrdersToNewOperator(savedUser);
+            }
+        });
+
         return operatorMapper.toOperatorProfileDto(savedUser, savedServices);
     }
 
@@ -131,8 +144,9 @@ public class OperatorsService {
             throw new NoSuchOperatorException();
         }
         List<String> services = operatorServicesService.getOperatorServices(user);
+        Double averageStars = reviewsRepository.getAverageStars(user.getId());
         PortfolioEntity portfolio = user.getPortfolio();
-        return operatorMapper.toOperatorDto(user, services, portfolioMapper.toOperatorPortfolioDto(portfolio));
+        return operatorMapper.toOperatorDto(user, services, portfolioMapper.toOperatorPortfolioDto(portfolio), averageStars);
     }
 
     public List<MatchingOperatorDto> getOperatorInfo(UUID userId, UUID orderId) {
@@ -142,10 +156,7 @@ public class OperatorsService {
             throw new InvalidCredentialsException();
         }
 
-        List<UserEntity> matchedOperators = newMatchedOrdersRepository.findInterestedOperatorByOrderId(orderId);
-        return matchedOperators.stream()
-                .map(operatorMapper::toMatchingOperatorDto)
-                .toList();
+        return newMatchedOrdersRepository.findInterestedOperatorByOrderId(orderId);
     }
 
     @Transactional(readOnly = true)

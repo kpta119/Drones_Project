@@ -1,6 +1,6 @@
 package com.example.drones.orders;
 
-import com.example.drones.user.UserEntity;
+import com.example.drones.operators.dto.MatchingOperatorDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -15,13 +15,23 @@ public interface NewMatchedOrdersRepository extends JpaRepository<NewMatchedOrde
     boolean existsByOrderIdAndClientStatus(UUID orderId, MatchedOrderStatus clientStatus);
 
     @Query("""
-                        SELECT nmo.operator
-                        FROM NewMatchedOrderEntity nmo
-                        LEFT JOIN FETCH nmo.operator.portfolio p
-                        WHERE nmo.order.id = :orderId
-                        AND nmo.operatorStatus = 'ACCEPTED'
-                        AND nmo.clientStatus = 'PENDING'
+
+            SELECT new com.example.drones.operators.dto.MatchingOperatorDto(
+                nmo.operator.id,
+                nmo.operator.displayName,
+                nmo.operator.name,
+                nmo.operator.surname,
+                nmo.operator.certificates,
+                AVG(r.stars)
+                )
+            FROM NewMatchedOrderEntity nmo
+            LEFT JOIN nmo.operator.portfolio p
+            LEFT JOIN ReviewEntity r on r.target.id = nmo.operator.id
+            WHERE nmo.order.id = :orderId
+            AND nmo.operatorStatus = 'ACCEPTED'
+            AND nmo.clientStatus = 'PENDING'
+            GROUP BY nmo.operator.id
             
             """)
-    List<UserEntity> findInterestedOperatorByOrderId(UUID orderId);
+    List<MatchingOperatorDto> findInterestedOperatorByOrderId(UUID orderId);
 }

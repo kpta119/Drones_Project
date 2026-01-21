@@ -41,6 +41,7 @@ public class OrdersService {
             OrderStatus.COMPLETED,
             OrderStatus.CANCELLED
     );
+    private final EmailService emailService;
 
     @Transactional
     public OrderResponse createOrder(OrderRequest request, UUID userId) {
@@ -122,6 +123,7 @@ public class OrdersService {
             if (foundOrder.getStatus() == OrderStatus.OPEN) {
                 foundOrder.setStatus(OrderStatus.AWAITING_OPERATOR);
             }
+            emailService.sendOrderAcceptedByOperatorNotification(match.getOrder().getUser(), foundOrder);
         } else {
             // Client accepts
             if (!foundOrder.getUser().getId().equals(currentUserId)) {
@@ -141,11 +143,11 @@ public class OrdersService {
                 throw new OrderAlreadyHasAcceptedOperatorException();
             }
 
-
             match.setClientStatus(MatchedOrderStatus.ACCEPTED);
             if (match.getOperatorStatus() == MatchedOrderStatus.ACCEPTED) {
                 foundOrder.setStatus(OrderStatus.IN_PROGRESS);
             }
+            emailService.sendOperatorAcceptedByClientNotification(match.getOperator(), foundOrder);
         }
 
         newMatchedOrdersRepository.save(match);

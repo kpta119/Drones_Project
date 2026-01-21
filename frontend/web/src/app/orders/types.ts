@@ -55,4 +55,5 @@ export interface OperatorApplicantDto {
   certificates: string[];
   rating?: number;
   description?: string;
+  average_stars?: number;
 }

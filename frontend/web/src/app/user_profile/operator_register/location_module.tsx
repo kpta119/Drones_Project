@@ -53,7 +53,13 @@ export function LocationInputModule({
   );
 
   const updateRadius = (newRadius: number) => {
-    setData({ ...data, radius: Math.max(100, newRadius) });
+    setData({ ...data, radius: newRadius });
+  };
+
+  const handleRadiusBlur = () => {
+    if (data.radius < 1 || isNaN(data.radius)) {
+      setData({ ...data, radius: 1 });
+    }
   };
 
   const centerEventHandlers = useMemo(
@@ -76,24 +82,27 @@ export function LocationInputModule({
         <div className="grid grid-cols-4 gap-4 mb-4">
           <div className="col-span-1">
             <label className="block text-sm font-medium mb-1">
-              Promień (m)
+              Promień (km)
             </label>
             <input
               type="number"
-              value={data.radius}
-              onChange={(e) => updateRadius(Number(e.target.value))}
+              value={data.radius || ''}
+              onChange={(e) => updateRadius(e.target.value === '' ? 0 : Number(e.target.value))}
+              onBlur={handleRadiusBlur}
+              step="0.1"
+              min="1"
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
             />
           </div>
           <div className="col-span-3">
             <label className="block text-sm font-medium mb-1">
-              Zasięg: {(data.radius / 1000).toFixed(1)} km
+              Zasięg: {data.radius.toFixed(1)} km
             </label>
             <input
               type="range"
-              min="1000"
-              max="100000"
-              step="500"
+              min="1"
+              max="300"
+              step="0.5"
               value={data.radius}
               onChange={(e) => updateRadius(Number(e.target.value))}
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600 mt-3"
@@ -118,7 +127,7 @@ export function LocationInputModule({
             />
             <Circle
               center={[data.coordinates.lat, data.coordinates.lng]}
-              radius={data.radius}
+              radius={data.radius * 1000}
               pathOptions={{
                 color: "#2563eb",
                 fillColor: "#2563eb",

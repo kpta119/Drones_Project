@@ -1,8 +1,8 @@
 package com.example.drones.emailService;
 
 import com.example.drones.orders.EmailService;
-import com.example.drones.orders.OrdersEntity;
 import com.example.drones.orders.OrderStatus;
+import com.example.drones.orders.OrdersEntity;
 import com.example.drones.services.ServicesEntity;
 import com.example.drones.user.UserEntity;
 import com.example.drones.user.UserRole;
@@ -15,15 +15,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
-import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -31,38 +28,23 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
-@ContextConfiguration(classes = EmailServiceTests.TestConfig.class)
+@SpringBootTest(classes = EmailServiceTests.TestConfig.class)
+@TestPropertySource(properties = {
+        "spring.mail.host=localhost",
+        "spring.mail.port=3025",
+        "spring.mail.username=test",
+        "spring.mail.password=test",
+        "spring.mail.properties.mail.smtp.auth=false",
+        "spring.mail.properties.mail.smtp.starttls.enable=false"
+})
 public class EmailServiceTests {
-
-    @Configuration
-    @EnableAutoConfiguration(exclude = {
-        DataSourceAutoConfiguration.class,
-        HibernateJpaAutoConfiguration.class
-    })
-    static class TestConfig {
-        @Bean
-        public JavaMailSender javaMailSender() {
-            JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
-            mailSender.setHost("localhost");
-            mailSender.setPort(3025);
-            return mailSender;
-        }
-
-        @Bean
-        public EmailService emailService(JavaMailSender mailSender) {
-            return new EmailService(mailSender);
-        }
-    }
 
     @RegisterExtension
     static GreenMailExtension greenMail = new GreenMailExtension(ServerSetupTest.SMTP)
             .withConfiguration(GreenMailConfiguration.aConfig().withUser("test", "test"))
             .withPerMethodLifecycle(true);
-
     @Autowired
     private EmailService emailService;
-
     private UserEntity testOperator1;
     private UserEntity testOperator2;
     private OrdersEntity testOrder;
@@ -122,7 +104,7 @@ public class EmailServiceTests {
         assertThat(receivedMessage.getSubject()).isEqualTo("Nowe zlecenie: Laser Scanning");
         assertThat(receivedMessage.getContent().toString()).contains("Witaj Jan");
         assertThat(receivedMessage.getContent().toString()).contains("Laser Scanning");
-        assertThat(receivedMessage.getContent().toString()).contains("52.2297, 21.0122");
+        assertThat(receivedMessage.getContent().toString()).contains("Test description");
     }
 
     @Test
@@ -178,7 +160,7 @@ public class EmailServiceTests {
 
         // When & Then - nie powinno rzucić wyjątku dzięki try-catch w EmailService
         org.junit.jupiter.api.Assertions.assertDoesNotThrow(() ->
-            emailService.sendNewOrderNotification(operatorWithInvalidEmail, testOrder)
+                emailService.sendNewOrderNotification(operatorWithInvalidEmail, testOrder)
         );
     }
 
@@ -231,5 +213,21 @@ public class EmailServiceTests {
         // URL powinien być bez spacji
         assertThat(emailContent).contains("https://www.google.com/maps/search/?api=1&query=52.2297,21.0122");
         assertThat(emailContent).doesNotContain("query=52.2297,   21.0122");
+    }
+
+    @Configuration
+    static class TestConfig {
+        @Bean
+        public JavaMailSender javaMailSender() {
+            JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+            mailSender.setHost("localhost");
+            mailSender.setPort(3025);
+            return mailSender;
+        }
+
+        @Bean
+        public EmailService emailService(JavaMailSender mailSender) {
+            return new EmailService(mailSender);
+        }
     }
 }

@@ -6,11 +6,13 @@ import { FaCalendarPlus, FaCheck, FaTimes } from "react-icons/fa";
 interface AddToCalButtonProps {
   orderId: string;
   alreadyAdded?: boolean | null;
+  onAdded?: () => void;
 }
 
 export default function AddToCalButton({
   orderId,
   alreadyAdded = null,
+  onAdded,
 }: AddToCalButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isAdded, setIsAdded] = useState(alreadyAdded === true);
@@ -49,6 +51,7 @@ export default function AddToCalButton({
       if (res.ok) {
         const link = await res.text();
         setIsAdded(true);
+        onAdded?.();
         setNotificationMessage("Dodano do Google Calendar! 🎉");
         setShowNotification(true);
         setTimeout(() => setShowNotification(false), 3000);
