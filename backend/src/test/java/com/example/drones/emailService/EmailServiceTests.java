@@ -18,6 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,7 +41,10 @@ public class EmailServiceTests {
     @Configuration
     @EnableAutoConfiguration(exclude = {
         DataSourceAutoConfiguration.class,
-        HibernateJpaAutoConfiguration.class
+        HibernateJpaAutoConfiguration.class,
+        SecurityAutoConfiguration.class,
+        UserDetailsServiceAutoConfiguration.class,
+        OAuth2ClientAutoConfiguration.class
     })
     static class TestConfig {
         @Bean
