@@ -19,12 +19,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -63,80 +65,84 @@ public class OperatorsServiceTests {
 
     @Test
     public void givenValidOperatorDto_whenCreateProfile_thenProfileCreatedAndReturnsDto() {
-        UUID userId = UUID.randomUUID();
-        CreateOperatorProfileDto operatorDto = CreateOperatorProfileDto.builder()
-                .coordinates("45.0,90.0")
-                .radius(10)
-                .certificates(List.of("Cert1", "Cert2"))
-                .services(List.of("Delivery", "Surveillance"))
-                .build();
-        OperatorProfileDto expectedDto = OperatorProfileDto.builder()
-                .coordinates("45.0,90.0")
-                .radius(10)
-                .certificates(List.of("Cert1", "Cert2"))
-                .services(List.of("Delivery", "Surveillance"))
-                .build();
-        UserEntity user = UserEntity.builder()
-                .id(userId)
-                .role(UserRole.CLIENT)
-                .build();
+        try (MockedStatic<TransactionSynchronizationManager> ignored = mockStatic(TransactionSynchronizationManager.class)) {
+            UUID userId = UUID.randomUUID();
+            CreateOperatorProfileDto operatorDto = CreateOperatorProfileDto.builder()
+                    .coordinates("45.0,90.0")
+                    .radius(10)
+                    .certificates(List.of("Cert1", "Cert2"))
+                    .services(List.of("Delivery", "Surveillance"))
+                    .build();
+            OperatorProfileDto expectedDto = OperatorProfileDto.builder()
+                    .coordinates("45.0,90.0")
+                    .radius(10)
+                    .certificates(List.of("Cert1", "Cert2"))
+                    .services(List.of("Delivery", "Surveillance"))
+                    .build();
+            UserEntity user = UserEntity.builder()
+                    .id(userId)
+                    .role(UserRole.CLIENT)
+                    .build();
 
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(userRepository.save(any(UserEntity.class))).thenReturn(user);
-        when(operatorServicesService.addOperatorServices(any(UserEntity.class), anyList()))
-                .thenReturn(operatorDto.services());
-        when(operatorMapper.toOperatorProfileDto(any(UserEntity.class), anyList()))
-                .thenReturn(expectedDto);
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(userRepository.save(any(UserEntity.class))).thenReturn(user);
+            when(operatorServicesService.addOperatorServices(any(UserEntity.class), anyList()))
+                    .thenReturn(operatorDto.services());
+            when(operatorMapper.toOperatorProfileDto(any(UserEntity.class), anyList()))
+                    .thenReturn(expectedDto);
 
-        OperatorProfileDto result = service.createProfile(userId, operatorDto);
+            OperatorProfileDto result = service.createProfile(userId, operatorDto);
 
-        verify(userRepository).findById(userId);
-        verify(userRepository).save(any(UserEntity.class));
-        verify(operatorServicesService).addOperatorServices(any(UserEntity.class), eq(operatorDto.services()));
-        verify(operatorMapper).toOperatorProfileDto(any(UserEntity.class), eq(operatorDto.services()));
+            verify(userRepository).findById(userId);
+            verify(userRepository).save(any(UserEntity.class));
+            verify(operatorServicesService).addOperatorServices(any(UserEntity.class), eq(operatorDto.services()));
+            verify(operatorMapper).toOperatorProfileDto(any(UserEntity.class), eq(operatorDto.services()));
 
-        assertThat(user.getRole()).isEqualTo(UserRole.OPERATOR);
-        assertThat(user.getCoordinates()).isEqualTo(operatorDto.coordinates());
-        assertThat(user.getRadius()).isEqualTo(operatorDto.radius());
-        assertThat(user.getCertificates()).isEqualTo(operatorDto.certificates());
-        assertThat(result).isEqualTo(expectedDto);
+            assertThat(user.getRole()).isEqualTo(UserRole.OPERATOR);
+            assertThat(user.getCoordinates()).isEqualTo(operatorDto.coordinates());
+            assertThat(user.getRadius()).isEqualTo(operatorDto.radius());
+            assertThat(user.getCertificates()).isEqualTo(operatorDto.certificates());
+            assertThat(result).isEqualTo(expectedDto);
+        }
     }
 
     @Test
     public void givenOperatorDtoWithNoCertificates_whenCreateProfile_thenProfileCreatedWithNullCertificates() {
-        UUID userId = UUID.randomUUID();
-        CreateOperatorProfileDto operatorDto = CreateOperatorProfileDto.builder()
-                .coordinates("45.0,90.0")
-                .radius(10)
-                .certificates(List.of())
-                .services(List.of("Delivery"))
-                .build();
-        OperatorProfileDto expectedDto = OperatorProfileDto.builder()
-                .coordinates("45.0,90.0")
-                .radius(10)
-                .certificates(List.of())
-                .services(List.of("Delivery"))
-                .build();
-        UserEntity user = UserEntity.builder()
-                .id(userId)
-                .role(UserRole.CLIENT)
-                .build();
+        try (MockedStatic<TransactionSynchronizationManager> ignored = mockStatic(TransactionSynchronizationManager.class)) {
+            UUID userId = UUID.randomUUID();
+            CreateOperatorProfileDto operatorDto = CreateOperatorProfileDto.builder()
+                    .coordinates("45.0,90.0")
+                    .radius(10)
+                    .certificates(List.of())
+                    .services(List.of("Delivery"))
+                    .build();
+            OperatorProfileDto expectedDto = OperatorProfileDto.builder()
+                    .coordinates("45.0,90.0")
+                    .radius(10)
+                    .certificates(List.of())
+                    .services(List.of("Delivery"))
+                    .build();
+            UserEntity user = UserEntity.builder()
+                    .id(userId)
+                    .role(UserRole.CLIENT)
+                    .build();
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(userRepository.save(any(UserEntity.class))).thenReturn(user);
-        when(operatorServicesService.addOperatorServices(any(UserEntity.class), anyList()))
-                .thenReturn(operatorDto.services());
-        when(operatorMapper.toOperatorProfileDto(any(UserEntity.class), anyList()))
-                .thenReturn(expectedDto);
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(userRepository.save(any(UserEntity.class))).thenReturn(user);
+            when(operatorServicesService.addOperatorServices(any(UserEntity.class), anyList()))
+                    .thenReturn(operatorDto.services());
+            when(operatorMapper.toOperatorProfileDto(any(UserEntity.class), anyList()))
+                    .thenReturn(expectedDto);
 
-        OperatorProfileDto result = service.createProfile(userId, operatorDto);
+            OperatorProfileDto result = service.createProfile(userId, operatorDto);
 
-        assertThat(user.getCertificates()).isEmpty();
-        assertThat(result).isEqualTo(expectedDto);
-        verify(userRepository).save(any(UserEntity.class));
-        verify(operatorServicesService).addOperatorServices(any(UserEntity.class), eq(operatorDto.services()));
-        verify(operatorMapper).toOperatorProfileDto(any(UserEntity.class), eq(operatorDto.services()));
+            assertThat(user.getCertificates()).isEmpty();
+            assertThat(result).isEqualTo(expectedDto);
+            verify(userRepository).save(any(UserEntity.class));
+            verify(operatorServicesService).addOperatorServices(any(UserEntity.class), eq(operatorDto.services()));
+            verify(operatorMapper).toOperatorProfileDto(any(UserEntity.class), eq(operatorDto.services()));
+        }
     }
 
     @Test
