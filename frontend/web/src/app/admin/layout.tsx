@@ -72,6 +72,14 @@ export default function AdminLayout({
                 Zlecenia
               </Link>
             </li>
+            <li>
+              <Link
+                href="/admin/services"
+                className="text-blue-600 no-underline hover:text-blue-800"
+              >
+                Usługi
+              </Link>
+            </li>
           </ul>
         </nav>
       </aside>

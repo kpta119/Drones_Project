@@ -122,7 +122,7 @@ public class EmailServiceTests {
         assertThat(receivedMessage.getSubject()).isEqualTo("Nowe zlecenie: Laser Scanning");
         assertThat(receivedMessage.getContent().toString()).contains("Witaj Jan");
         assertThat(receivedMessage.getContent().toString()).contains("Laser Scanning");
-        assertThat(receivedMessage.getContent().toString()).contains("52.2297, 21.0122");
+        assertThat(receivedMessage.getContent().toString()).contains("Test description");
     }
 
     @Test

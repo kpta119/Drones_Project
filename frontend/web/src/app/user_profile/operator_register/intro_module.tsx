@@ -7,39 +7,37 @@ export function OperatorRegisterIntroModule({
 }) {
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 p-2 lg:p-10">
-        <h2 className="text-2xl lg:text-4xl font-bold mb-4 lg:mb-6 leading-tight">
+      <div className="flex-1 p-6">
+        <h2 className="text-3xl font-bold mb-6 text-gray-900">
           Zakładasz konto operatora dronów
         </h2>
-        <p className="text-gray-700 mb-4 text-base lg:text-lg">
+        <p className="text-gray-700 mb-6 text-lg leading-relaxed">
           Od chwili zmiany statusu konta, odblokujesz następujące funkcje:
         </p>
-        <ul className="space-y-3 mb-6 text-gray-700 text-sm lg:text-lg">
-          <li className="flex items-start gap-2">
-            <span>•</span>
-            <span>wystawianie recenzji pracodawcom</span>
+        <ul className="space-y-4 mb-8 text-gray-700 text-base">
+          <li className="flex items-start gap-3">
+            <span className="text-primary-600 font-bold">•</span>
+            <span>Wystawianie recenzji pracodawcom</span>
           </li>
-          <li className="flex items-start gap-2">
-            <span>•</span>
-            <span>
-              możliwość wprowadzenia danych o własnym portfolio, w tym:
-            </span>
+          <li className="flex items-start gap-3">
+            <span className="text-primary-600 font-bold">•</span>
+            <span>Możliwość wprowadzenia danych o własnym portfolio:</span>
           </li>
-          <li className="flex items-start gap-4 ml-4">
-            <span>•</span>
-            <span>własnych zdjęć</span>
+          <li className="flex items-start gap-3 ml-8">
+            <span className="text-primary-400">•</span>
+            <span>własne zdjęcia</span>
           </li>
-          <li className="flex items-start gap-4 ml-4">
-            <span>•</span>
-            <span>specjalności oraz kwalifikacji</span>
+          <li className="flex items-start gap-3 ml-8">
+            <span className="text-primary-400">•</span>
+            <span>specjalności oraz kwalifikacje</span>
           </li>
-          <li className="flex items-start gap-4 ml-4">
-            <span>•</span>
-            <span>opisu konta lub swojej działalności</span>
+          <li className="flex items-start gap-3 ml-8">
+            <span className="text-primary-400">•</span>
+            <span>opis konta lub swojej działalności</span>
           </li>
         </ul>
-        <p className="text-gray-700 text-lg">
-          Jako operator, nadal będziesz móc wystawiać oferty pracy.
+        <p className="text-gray-700 text-base bg-gray-50 p-4 rounded-xl border border-gray-200">
+          💡 Jako operator, nadal będziesz móc wystawiać oferty pracy.
         </p>
       </div>
 

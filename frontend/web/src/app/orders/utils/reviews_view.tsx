@@ -48,22 +48,15 @@ export default function ReviewsView({ userName, onClose }: ReviewsViewProps) {
           return;
         }
 
-        console.log("Fetching reviews for userId:", displayedUserId);
-        const res = await fetch(
-          `/reviews/getUserReviews/${displayedUserId}`,
-          {
-            headers: {
-              "X-USER-TOKEN": `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        console.log("Response status:", res.status);
+        const res = await fetch(`/reviews/getUserReviews/${displayedUserId}`, {
+          headers: {
+            "X-USER-TOKEN": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
 
         if (res.ok) {
           const data = await res.json();
-          console.log("Reviews data:", data);
           setReviews(data);
 
           if (data && data.length > 0) {
@@ -133,10 +126,11 @@ export default function ReviewsView({ userName, onClose }: ReviewsViewProps) {
                     <FaStar
                       key={i}
                       size={24}
-                      className={`${i < Math.floor(rating)
+                      className={`${
+                        i < Math.floor(rating)
                           ? "text-primary-400"
                           : "text-gray-200"
-                        }`}
+                      }`}
                     />
                   ))}
                 </div>
@@ -176,10 +170,11 @@ export default function ReviewsView({ userName, onClose }: ReviewsViewProps) {
                           <FaStar
                             key={i}
                             size={16}
-                            className={`${i < review.stars
+                            className={`${
+                              i < review.stars
                                 ? "text-primary-400"
                                 : "text-gray-200"
-                              }`}
+                            }`}
                           />
                         ))}
                       </div>
@@ -188,8 +183,8 @@ export default function ReviewsView({ userName, onClose }: ReviewsViewProps) {
                           (review.name && review.surname
                             ? `${review.name} ${review.surname}`
                             : review.author_username ||
-                            review.username ||
-                            "Anonimowy użytkownik")}
+                              review.username ||
+                              "Anonimowy użytkownik")}
                       </p>
                     </div>
                   </div>

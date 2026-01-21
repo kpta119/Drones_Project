@@ -12,6 +12,7 @@ public record MatchingOperatorDto(
         @JsonProperty("username") String displayName,
         String name,
         String surname,
-        List<String> certificates
+        List<String> certificates,
+        @JsonProperty("average_stars") Double averageStars
 ) {
 }

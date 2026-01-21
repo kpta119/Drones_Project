@@ -333,7 +333,8 @@ public class OperatorsControllerTests {
                 "operator1",
                 "John",
                 "Smith",
-                List.of("UAV License", "Advanced Drone Pilot")
+                List.of("UAV License", "Advanced Drone Pilot"),
+                4.5
         );
 
         MatchingOperatorDto operator2 = new MatchingOperatorDto(
@@ -341,7 +342,8 @@ public class OperatorsControllerTests {
                 "operator2",
                 "Jane",
                 "Doe",
-                List.of("Commercial Drone License")
+                List.of("Commercial Drone License"),
+                4.2
         );
 
         List<MatchingOperatorDto> matchingOperators = List.of(operator1, operator2);

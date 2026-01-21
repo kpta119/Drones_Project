@@ -2,7 +2,6 @@ package com.example.drones.user;
 
 import com.example.drones.auth.dto.LoginResponse;
 import com.example.drones.auth.dto.RegisterRequest;
-import com.example.drones.operators.dto.MatchingOperatorDto;
 import com.example.drones.operators.dto.OperatorDto;
 import com.example.drones.operators.dto.OperatorPortfolioDto;
 import com.example.drones.operators.dto.OperatorProfileDto;
@@ -40,8 +39,6 @@ public interface UserMapper {
     @Mapping(target = "username", source = "user.displayName")
     @Mapping(target = "operatorServices", source = "services")
     @Mapping(target = "portfolio", source = "portfolio")
-    OperatorDto toOperatorDto(UserEntity user, List<String> services, OperatorPortfolioDto portfolio);
-
-    @Mapping(target = "userId", source = "id")
-    MatchingOperatorDto toMatchingOperatorDto(UserEntity operator);
+    @Mapping(target = "averageStars", source = "averageStars")
+    OperatorDto toOperatorDto(UserEntity user, List<String> services, OperatorPortfolioDto portfolio, Double averageStars);
 }

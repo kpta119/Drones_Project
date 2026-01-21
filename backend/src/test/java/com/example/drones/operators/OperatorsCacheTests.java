@@ -123,7 +123,7 @@ public class OperatorsCacheTests {
                 .thenReturn(List.of("Aerial Photography", "Surveying"));
         when(portfolioMapper.toOperatorPortfolioDto(portfolio))
                 .thenReturn(operatorDto.portfolio());
-        when(operatorMapper.toOperatorDto(any(UserEntity.class), anyList(), any()))
+        when(operatorMapper.toOperatorDto(any(UserEntity.class), anyList(), any(), any()))
                 .thenReturn(operatorDto);
 
         OperatorDto result1 = service.getOperatorProfile(userId);
@@ -142,7 +142,7 @@ public class OperatorsCacheTests {
                 .thenReturn(List.of("Aerial Photography", "Surveying"));
         when(portfolioMapper.toOperatorPortfolioDto(portfolio))
                 .thenReturn(operatorDto.portfolio());
-        when(operatorMapper.toOperatorDto(any(UserEntity.class), anyList(), any()))
+        when(operatorMapper.toOperatorDto(any(UserEntity.class), anyList(), any(), any()))
                 .thenReturn(operatorDto);
 
         service.getOperatorProfile(userId);
@@ -174,7 +174,7 @@ public class OperatorsCacheTests {
                 .thenReturn(List.of("Aerial Photography", "Surveying"));
         when(portfolioMapper.toOperatorPortfolioDto(portfolio))
                 .thenReturn(operatorDto.portfolio());
-        when(operatorMapper.toOperatorDto(any(UserEntity.class), anyList(), any()))
+        when(operatorMapper.toOperatorDto(any(UserEntity.class), anyList(), any(), any()))
                 .thenReturn(operatorDto);
 
         service.getOperatorProfile(userId);
@@ -209,7 +209,7 @@ public class OperatorsCacheTests {
                 .thenReturn(List.of("Aerial Photography", "Surveying"));
         when(portfolioMapper.toOperatorPortfolioDto(portfolio))
                 .thenReturn(operatorDto.portfolio());
-        when(operatorMapper.toOperatorDto(any(UserEntity.class), anyList(), any()))
+        when(operatorMapper.toOperatorDto(any(UserEntity.class), anyList(), any(), any()))
                 .thenReturn(operatorDto);
 
         service.getOperatorProfile(userId);
@@ -271,9 +271,9 @@ public class OperatorsCacheTests {
                 .thenReturn(List.of("Delivery"));
         when(portfolioMapper.toOperatorPortfolioDto(portfolio))
                 .thenReturn(operatorDto.portfolio());
-        when(operatorMapper.toOperatorDto(eq(operatorUser), anyList(), any()))
+        when(operatorMapper.toOperatorDto(eq(operatorUser), anyList(), any(), any()))
                 .thenReturn(operatorDto);
-        when(operatorMapper.toOperatorDto(eq(operatorUser2), anyList(), any()))
+        when(operatorMapper.toOperatorDto(eq(operatorUser2), anyList(), any(), any()))
                 .thenReturn(operatorDto2);
 
         OperatorDto result1 = service.getOperatorProfile(userId);
@@ -297,7 +297,7 @@ public class OperatorsCacheTests {
                 .thenReturn(List.of("Aerial Photography", "Surveying"));
         when(portfolioMapper.toOperatorPortfolioDto(portfolio))
                 .thenReturn(operatorDto.portfolio());
-        when(operatorMapper.toOperatorDto(any(UserEntity.class), anyList(), any()))
+        when(operatorMapper.toOperatorDto(any(UserEntity.class), anyList(), any(), any()))
                 .thenReturn(operatorDto);
 
         service.getOperatorProfile(userId);
